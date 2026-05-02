@@ -183,6 +183,18 @@ CREATE TABLE IF NOT EXISTS generated_post (
 
 CREATE INDEX IF NOT EXISTS idx_post_status ON generated_post(status);
 CREATE INDEX IF NOT EXISTS idx_post_campaign ON generated_post(campaign_id);
+
+CREATE TABLE IF NOT EXISTS schedule (
+  campaign_id TEXT NOT NULL REFERENCES campaign(id),
+  persona_id TEXT NOT NULL,
+  role TEXT NOT NULL,
+  scheduled_at TEXT NOT NULL,
+  generated INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (campaign_id, persona_id, role)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sched_due
+  ON schedule(generated, scheduled_at);
 """
 
 
@@ -330,6 +342,58 @@ class Storage:
             await db.execute(
                 "UPDATE generated_post SET status = 'failed', error = ? WHERE id = ?",
                 (error, post_id),
+            )
+            await db.commit()
+
+    # ---------- schedule ----------
+
+    async def insert_schedule(
+        self, campaign_id: str, persona_id: str, role: Role, scheduled_at: str
+    ) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                """INSERT OR IGNORE INTO schedule
+                   (campaign_id, persona_id, role, scheduled_at, generated)
+                   VALUES (?, ?, ?, ?, 0)""",
+                (campaign_id, persona_id, role, scheduled_at),
+            )
+            await db.commit()
+
+    async def list_due_schedule(self, *, now: str) -> list[tuple[str, str, Role, str]]:
+        """Return (campaign_id, persona_id, role, scheduled_at) for entries
+        where generated=0 AND scheduled_at <= now AND campaign is running."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cur = await db.execute(
+                """SELECT s.campaign_id, s.persona_id, s.role, s.scheduled_at
+                   FROM schedule s
+                   JOIN campaign c ON c.id = s.campaign_id
+                   WHERE s.generated = 0
+                     AND s.scheduled_at <= ?
+                     AND c.status = 'running'
+                   ORDER BY s.scheduled_at ASC""",
+                (now,),
+            )
+            return [
+                (r["campaign_id"], r["persona_id"], r["role"], r["scheduled_at"])
+                for r in await cur.fetchall()
+            ]
+
+    async def mark_schedule_generated(
+        self, campaign_id: str, persona_id: str, role: Role
+    ) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                """UPDATE schedule SET generated = 1
+                   WHERE campaign_id = ? AND persona_id = ? AND role = ?""",
+                (campaign_id, persona_id, role),
+            )
+            await db.commit()
+
+    async def delete_schedule_for_campaign(self, campaign_id: str) -> None:
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "DELETE FROM schedule WHERE campaign_id = ?", (campaign_id,)
             )
             await db.commit()
 
