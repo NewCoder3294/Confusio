@@ -1,0 +1,6 @@
+telethon>=1.36
+openai>=1.40
+streamlit>=1.36
+pydantic>=2.7
+python-dotenv>=1.0
+aiosqlite>=0.20

@@ -1,0 +1,4 @@
+{
+  "default_channel": "@mendacity_demo_channel",
+  "allowed_channels": ["@mendacity_demo_channel"]
+}

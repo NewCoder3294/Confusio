@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Mendacity secrets / state — NEVER commit
+social/config/api_credentials.env
+social/sessions/
+social/sessions/*.session
+social/sessions/*.session-journal
+social/posts.jsonl
+social/mendacity.db
+social/mendacity.db-journal
+social/mendacity.db-wal
+social/mendacity.db-shm
+
+# Streamlit
+.streamlit/secrets.toml
