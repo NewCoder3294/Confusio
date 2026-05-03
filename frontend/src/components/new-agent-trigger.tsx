@@ -16,7 +16,7 @@ export function NewAgentTrigger({ agents }: { agents: AgentLite[] }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-info-fg"
+        className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-2 font-mono text-[13px] uppercase tracking-[0.16em] text-info-fg"
       >
         + New agent
       </button>

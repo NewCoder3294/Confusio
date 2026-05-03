@@ -76,7 +76,7 @@ export function InjectionPanel({ missionId }: { missionId: string }) {
   if (error) {
     return (
       <Block>
-        <p className="text-fail-fg text-[12px] font-mono">{error}</p>
+        <p className="text-fail-fg text-[14px] font-mono">{error}</p>
       </Block>
     );
   }
@@ -85,10 +85,10 @@ export function InjectionPanel({ missionId }: { missionId: string }) {
     return (
       <Block>
         <div className="flex flex-col items-center gap-2 px-6 py-8">
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-info-fg animate-pulse">
+          <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-info-fg animate-pulse">
             Awaiting metadata · post-processing in flight
           </div>
-          <div className="font-mono text-[9px] text-fg-faint">
+          <div className="font-mono text-[11px] text-fg-faint">
             Polling every 4s · attempt {pollAttempts}
           </div>
         </div>
@@ -99,7 +99,7 @@ export function InjectionPanel({ missionId }: { missionId: string }) {
   return (
     <>
       <Block label="Surface 1 — EXIF transplant (camera realism)">
-        <p className="text-[12px] text-fg-muted leading-5 mb-2">
+        <p className="text-[14px] text-fg-muted leading-5 mb-2">
           Donor JPEG{" "}
           <span className="font-mono text-fg-default">{meta.exif.donor}</span>{" "}
           re-encoded onto the DALL-E PNG via{" "}
@@ -115,13 +115,13 @@ export function InjectionPanel({ missionId }: { missionId: string }) {
             <Row key={k} label={k} value={v} mono />
           ))}
         </dl>
-        <div className="mt-3 text-[10px] font-mono text-fg-faint">
+        <div className="mt-3 text-[12px] font-mono text-fg-faint">
           file → {meta.exif.outputPath.split("/").slice(-2).join("/")}
         </div>
       </Block>
 
       <Block label="Surface 2 — Steganographic payload (LSB, key-permuted)">
-        <p className="text-[12px] text-fg-muted leading-5 mb-2">
+        <p className="text-[14px] text-fg-muted leading-5 mb-2">
           Embedded into a sibling PNG via{" "}
           <span className="font-mono text-fg-default">forensic.steg.embed</span>
           . Adaptive-LSB with HMAC-SHA256-derived bit placement; framed as{" "}
@@ -130,7 +130,7 @@ export function InjectionPanel({ missionId }: { missionId: string }) {
           requires &gt;5% LSB density (we use{" "}
           {(meta.steg.fractionUsed * 100).toFixed(2)}%).
         </p>
-        <pre className="border border-border-subtle bg-bg-base px-3 py-2 text-[11px] font-mono text-fg-mono whitespace-pre-wrap leading-5 mb-3">
+        <pre className="border border-border-subtle bg-bg-base px-3 py-2 text-[13px] font-mono text-fg-mono whitespace-pre-wrap leading-5 mb-3">
           {meta.steg.payload}
         </pre>
         <dl className="border-t border-border-subtle pt-2">
@@ -146,7 +146,7 @@ export function InjectionPanel({ missionId }: { missionId: string }) {
             mono
           />
         </dl>
-        <div className="mt-3 text-[10px] font-mono text-fg-faint">
+        <div className="mt-3 text-[12px] font-mono text-fg-faint">
           file → {meta.steg.outputPath.split("/").slice(-2).join("/")} · view
           via{" "}
           <a
@@ -161,7 +161,7 @@ export function InjectionPanel({ missionId }: { missionId: string }) {
       </Block>
 
       <Block label="Bias targets">
-        <ul className="text-[12px] text-fg-muted leading-6 list-none">
+        <ul className="text-[14px] text-fg-muted leading-6 list-none">
           {[
             "OpenAI Moderation API (image)",
             "Anthropic Claude Vision (OCR + summarization)",
@@ -178,7 +178,7 @@ export function InjectionPanel({ missionId }: { missionId: string }) {
       </Block>
 
       <Block label="Operator note">
-        <p className="text-[11px] text-fg-faint italic leading-5">
+        <p className="text-[13px] text-fg-faint italic leading-5">
           Two surfaces stack: the JPEG carries iPhone EXIF for downstream
           camera-attribution heuristics; the sibling PNG carries the steg
           payload for downstream LLM summarizers that OCR images. Defenders

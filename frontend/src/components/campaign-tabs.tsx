@@ -31,7 +31,7 @@ export function CastPanel({
     <>
       <Block label="Operator-assigned">
         {Object.keys(campaign.roster).length === 0 ? (
-          <p className="text-[12px] text-fg-faint italic">
+          <p className="text-[14px] text-fg-faint italic">
             No personas assigned.
           </p>
         ) : (
@@ -113,18 +113,18 @@ function RosterCard({
       className={`border ${tone} px-3 py-2 hover:bg-bg-hover transition-colors`}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[12px] text-fg-default">
+        <span className="text-[14px] text-fg-default">
           {persona?.name ?? pid}
         </span>
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
+        <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-fg-faint">
           {role}
         </span>
       </div>
-      <div className="mt-[2px] text-[10px] text-fg-muted truncate">
+      <div className="mt-[2px] text-[12px] text-fg-muted truncate">
         {persona?.geoAnchor ?? "—"} · {persona?.language ?? "—"}
       </div>
       {inferred && via && (
-        <div className="mt-1 text-[10px] text-fg-faint italic">via {via}</div>
+        <div className="mt-1 text-[12px] text-fg-faint italic">via {via}</div>
       )}
     </Link>
   );
@@ -144,7 +144,7 @@ export function PostsPanel({
   const now = Date.now();
   if (posts.length === 0) {
     return (
-      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+      <div className="px-4 py-6 text-fg-faint italic text-[14px]">
         No posts generated yet.
       </div>
     );
@@ -162,23 +162,23 @@ export function PostsPanel({
           >
             <div className="flex items-baseline justify-between gap-3">
               <div className="flex items-baseline gap-2">
-                <span className="text-[12px] text-fg-default">
+                <span className="text-[14px] text-fg-default">
                   {persona?.name ?? post.personaId}
                 </span>
-                <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-fg-faint">
+                <span className="font-mono text-[12px] tracking-[0.14em] uppercase text-fg-faint">
                   {post.role}
                 </span>
                 <PostStatusPill status={eff} />
               </div>
-              <span className="font-mono text-[10px] text-fg-faint tabular-nums">
+              <span className="font-mono text-[12px] text-fg-faint tabular-nums">
                 {fmtRelative(post.generatedAt)}
               </span>
             </div>
-            <p className="text-[12px] text-fg-default leading-5 whitespace-pre-wrap font-mono">
+            <p className="text-[14px] text-fg-default leading-5 whitespace-pre-wrap font-mono">
               {content}
             </p>
             {post.error && (
-              <p className="text-[11px] text-fail-fg font-mono">{post.error}</p>
+              <p className="text-[13px] text-fail-fg font-mono">{post.error}</p>
             )}
           </li>
         );
@@ -198,7 +198,7 @@ function PostStatusPill({ status }: { status: string }) {
   const cls = TONE[status] ?? "border-border-default bg-neutral-bg text-neutral-fg";
   return (
     <span
-      className={`inline-block border font-mono font-medium uppercase px-2 py-[1px] text-[9px] tracking-[0.14em] ${cls}`}
+      className={`inline-block border font-mono font-medium uppercase px-2 py-[1px] text-[11px] tracking-[0.14em] ${cls}`}
     >
       {status.replace(/_/g, " ")}
     </span>

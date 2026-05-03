@@ -198,16 +198,16 @@ export function NewAgentModal({
       <div className="w-[760px] max-w-[92vw] max-h-[88vh] flex flex-col border border-border-default bg-bg-panel shadow-2xl">
         <header className="flex items-baseline justify-between px-5 py-3 border-b border-border-default bg-bg-elevated shrink-0">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-classified">
+            <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-classified">
               Agent forge
             </div>
-            <h2 className="text-[15px] font-medium text-fg-default tracking-wide mt-[1px]">
+            <h2 className="text-[17px] font-medium text-fg-default tracking-wide mt-[1px]">
               {createdId ? "Agent created" : "Fabricate new agent"}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-faint hover:text-fg-default"
+            className="font-mono text-[13px] uppercase tracking-[0.14em] text-fg-faint hover:text-fg-default"
           >
             ✕ close
           </button>
@@ -245,20 +245,20 @@ export function NewAgentModal({
             </div>
 
             {error && (
-              <div className="mx-5 mb-3 border border-fail-border bg-fail-bg/40 px-3 py-2 text-fail-fg text-[11px] font-mono">
+              <div className="mx-5 mb-3 border border-fail-border bg-fail-bg/40 px-3 py-2 text-fail-fg text-[13px] font-mono">
                 {error}
               </div>
             )}
 
             <footer className="px-5 py-3 border-t border-border-default bg-bg-elevated flex items-center justify-between shrink-0">
-              <div className="font-mono text-[10px] text-fg-faint uppercase tracking-[0.14em]">
+              <div className="font-mono text-[12px] text-fg-faint uppercase tracking-[0.14em]">
                 Step {stepIdx + 1} / {STEPS.length} · {STEP_LABEL[step]}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={back}
                   disabled={stepIdx === 0 || busy}
-                  className="px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="px-3 py-1 font-mono text-[13px] uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   ← Back
                 </button>
@@ -266,7 +266,7 @@ export function NewAgentModal({
                   <button
                     onClick={submit}
                     disabled={busy}
-                    className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[13px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {busy ? "Creating…" : "Create agent"}
                   </button>
@@ -274,7 +274,7 @@ export function NewAgentModal({
                   <button
                     onClick={next}
                     disabled={!canAdvance[step]}
-                    className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[13px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Next →
                   </button>
@@ -299,7 +299,7 @@ function Stepper({ current }: { current: Step }) {
         return (
           <div
             key={s}
-            className={`flex-1 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] border-r border-border-subtle last:border-r-0 ${
+            className={`flex-1 px-4 py-2 font-mono text-[12px] uppercase tracking-[0.16em] border-r border-border-subtle last:border-r-0 ${
               active
                 ? "text-fg-default bg-bg-panel border-b-[2px] border-b-info-fg -mb-[1px]"
                 : done
@@ -350,7 +350,7 @@ function IdentityStep({
             }))
           }
           placeholder="e.g. ivan_kh"
-          className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+          className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
         />
       </Field>
       <Field label="Display name" hint="Operator-facing name.">
@@ -358,7 +358,7 @@ function IdentityStep({
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
           placeholder="e.g. Ivan"
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
         />
       </Field>
       <div className="grid grid-cols-2 gap-3">
@@ -371,7 +371,7 @@ function IdentityStep({
                 language: e.target.value.toLowerCase().slice(0, 8),
               }))
             }
-            className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+            className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
           />
         </Field>
         <Field label="Geo anchor" hint="Where this identity appears to live.">
@@ -381,7 +381,7 @@ function IdentityStep({
               setForm((f) => ({ ...f, geoAnchor: e.target.value }))
             }
             placeholder="e.g. Kharkiv, UA"
-            className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+            className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
           />
         </Field>
       </div>
@@ -395,7 +395,7 @@ function IdentityStep({
             setForm((f) => ({ ...f, bioShort: e.target.value }))
           }
           placeholder="e.g. Delivery driver, posts what he sees on his routes"
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
         />
       </Field>
     </div>
@@ -421,7 +421,7 @@ function VoiceStep({
           onChange={(e) =>
             setForm((f) => ({ ...f, backstory: e.target.value }))
           }
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
       <Field
@@ -432,7 +432,7 @@ function VoiceStep({
           rows={3}
           value={form.style}
           onChange={(e) => setForm((f) => ({ ...f, style: e.target.value }))}
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
       <Field
@@ -446,7 +446,7 @@ function VoiceStep({
             setForm((f) => ({ ...f, vocabularyQuirks: e.target.value }))
           }
           placeholder="короче, блин, ну, abbreviates locations"
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
       <Field
@@ -460,7 +460,7 @@ function VoiceStep({
             setForm((f) => ({ ...f, topicFocus: e.target.value }))
           }
           placeholder="traffic, sirens, neighborhood incidents"
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
       <Field
@@ -474,7 +474,7 @@ function VoiceStep({
             setForm((f) => ({ ...f, examples: e.target.value }))
           }
           placeholder={"видел колонну на М-04\nопять воет сирена. уже привык"}
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
     </div>
@@ -509,7 +509,7 @@ function NetworkStep({
                 activeStart: Math.max(0, Math.min(23, Number(e.target.value))),
               }))
             }
-            className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+            className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
           />
         </Field>
         <Field label="Active hours end" hint="1–24 local, > start.">
@@ -524,7 +524,7 @@ function NetworkStep({
                 activeEnd: Math.max(1, Math.min(24, Number(e.target.value))),
               }))
             }
-            className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+            className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
           />
         </Field>
         <Field label="Posts per day" hint="Average. 0–96.">
@@ -542,7 +542,7 @@ function NetworkStep({
                 ),
               }))
             }
-            className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+            className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
           />
         </Field>
       </div>
@@ -552,7 +552,7 @@ function NetworkStep({
         hint="Other agents this one corroborates with after a seed lands."
       >
         {agents.length === 0 ? (
-          <p className="text-fg-faint italic text-[11px]">
+          <p className="text-fg-faint italic text-[13px]">
             No other agents in the library yet.
           </p>
         ) : (
@@ -575,8 +575,8 @@ function NetworkStep({
                     className="mt-1 accent-info-fg"
                   />
                   <span className="flex-1">
-                    <span className="text-[12px] text-fg-default">{a.name}</span>
-                    <span className="block text-[10px] text-fg-faint italic truncate">
+                    <span className="text-[14px] text-fg-default">{a.name}</span>
+                    <span className="block text-[12px] text-fg-faint italic truncate">
                       {a.geoAnchor} · {a.language}
                     </span>
                   </span>
@@ -639,7 +639,7 @@ function ReviewStep({
         />
         <ReviewRow label="Knows" value={knowsNames || "(operates alone)"} />
       </ReviewBlock>
-      <p className="text-[10px] text-fg-faint italic leading-5">
+      <p className="text-[12px] text-fg-faint italic leading-5">
         On create: a JSON file is written to{" "}
         <span className="font-mono text-fg-default">
           social/personas/{form.id}.json
@@ -660,26 +660,26 @@ function CreatedView({
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-5 py-6 flex flex-col gap-4">
       <div className="border border-pass-border bg-pass-bg/30 px-4 py-3">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-pass-fg">
+        <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-pass-fg">
           Created
         </div>
-        <div className="mt-1 font-mono text-[14px] text-fg-default tracking-wide">
+        <div className="mt-1 font-mono text-[16px] text-fg-default tracking-wide">
           {agentId}
         </div>
-        <div className="mt-2 text-[12px] text-fg-muted leading-6">
+        <div className="mt-2 text-[14px] text-fg-muted leading-6">
           Persona file written. The roster has been refreshed.
         </div>
       </div>
       <div className="flex gap-2">
         <a
           href={`/personas?p=${encodeURIComponent(agentId)}`}
-          className="border border-info-border bg-info-bg px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-info-fg hover:opacity-90"
+          className="border border-info-border bg-info-bg px-4 py-2 font-mono text-[13px] uppercase tracking-[0.16em] text-info-fg hover:opacity-90"
         >
           Open agent
         </a>
         <button
           onClick={onClose}
-          className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-faint hover:text-fg-default px-3"
+          className="font-mono text-[13px] uppercase tracking-[0.14em] text-fg-faint hover:text-fg-default px-3"
         >
           Close
         </button>
@@ -705,11 +705,11 @@ function Field({
     hintTone === "fail-fg" ? "text-fail-fg" : "text-fg-faint italic";
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
+      <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-fg-faint">
         {label}
       </span>
       {children}
-      {hint && <span className={`text-[10px] ${hintClass}`}>{hint}</span>}
+      {hint && <span className={`text-[12px] ${hintClass}`}>{hint}</span>}
     </label>
   );
 }
@@ -723,7 +723,7 @@ function ReviewBlock({
 }) {
   return (
     <div className="border border-border-subtle bg-bg-base px-3 py-2">
-      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg-faint mb-2">
+      <div className="font-mono text-[12px] uppercase tracking-[0.16em] text-fg-faint mb-2">
         {label}
       </div>
       {children}
@@ -742,11 +742,11 @@ function ReviewRow({
 }) {
   return (
     <div className="grid grid-cols-[120px_1fr] gap-3 py-1 items-baseline">
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
+      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[12px]">
         {label}
       </dt>
       <dd
-        className={`text-fg-muted text-[12px] whitespace-pre-wrap ${mono ? "font-mono" : ""}`}
+        className={`text-fg-muted text-[14px] whitespace-pre-wrap ${mono ? "font-mono" : ""}`}
       >
         {value || "—"}
       </dd>

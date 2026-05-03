@@ -118,7 +118,7 @@ function Tally({
           : "border-border-subtle"
       }`}
     >
-      <div className="text-[10px] uppercase tracking-[0.16em] text-fg-faint font-mono">
+      <div className="text-[12px] uppercase tracking-[0.16em] text-fg-faint font-mono">
         {label}
       </div>
       <div className={`mt-1 text-2xl font-medium tabular-nums ${valueColor}`}>
@@ -137,12 +137,12 @@ function EmptyLibrary({
 }) {
   return (
     <div className="border border-border-subtle bg-bg-panel py-16 text-center">
-      <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-faint">
+      <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-fg-faint">
         {filter === "all"
           ? "No triages recorded"
           : `No records match filter "${filter}"`}
       </div>
-      <p className="mt-3 text-[13px] text-fg-muted leading-6 max-w-md mx-auto">
+      <p className="mt-3 text-[15px] text-fg-muted leading-6 max-w-md mx-auto">
         {totalAll === 0 ? (
           <>
             Submit a suspect image at{" "}
@@ -167,9 +167,9 @@ function EmptyLibrary({
 function ThreatTable({ records }: { records: ThreatRecord[] }) {
   return (
     <div className="flex-1 min-h-0 overflow-y-auto border border-border-subtle bg-bg-panel">
-      <table className="w-full text-[12px]">
+      <table className="w-full text-[14px]">
         <thead>
-          <tr className="border-b border-border-subtle text-[10px] uppercase tracking-[0.14em] text-fg-faint font-mono">
+          <tr className="border-b border-border-subtle text-[12px] uppercase tracking-[0.14em] text-fg-faint font-mono">
             <th className="text-left px-3 py-2 font-medium">Received</th>
             <th className="text-left px-3 py-2 font-medium">Filename</th>
             <th className="text-left px-3 py-2 font-medium">Verdict</th>
@@ -203,20 +203,20 @@ function ThreatRow({ record }: { record: ThreatRecord }) {
       <td className="px-3 py-2">
         <VerdictPill label={v.label} />
       </td>
-      <td className="px-3 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted">
+      <td className="px-3 py-2 font-mono text-[13px] uppercase tracking-[0.14em] text-fg-muted">
         {v.confidence} · {v.score >= 0 ? "+" : ""}
         {v.score}
       </td>
-      <td className="px-3 py-2 font-mono text-[11px] text-fg-muted">
+      <td className="px-3 py-2 font-mono text-[13px] text-fg-muted">
         {record.reviewer}
       </td>
       <td
-        className="px-3 py-2 font-mono text-[10px] text-fg-faint truncate max-w-[140px]"
+        className="px-3 py-2 font-mono text-[12px] text-fg-faint truncate max-w-[140px]"
         title={sha}
       >
         {sha.slice(0, 16)}…
       </td>
-      <td className="px-3 py-2 text-[11px] text-fg-muted italic truncate max-w-[420px]">
+      <td className="px-3 py-2 text-[13px] text-fg-muted italic truncate max-w-[420px]">
         {v.drivers[0] ?? "—"}
       </td>
     </tr>
@@ -236,7 +236,7 @@ function VerdictPill({ label }: { label: string }) {
   };
   return (
     <span
-      className={`inline-block border font-mono font-medium uppercase px-2 py-[2px] text-[10px] tracking-[0.14em] ${TONE[label] ?? "border-border-default bg-neutral-bg text-neutral-fg"}`}
+      className={`inline-block border font-mono font-medium uppercase px-2 py-[2px] text-[12px] tracking-[0.14em] ${TONE[label] ?? "border-border-default bg-neutral-bg text-neutral-fg"}`}
     >
       {COPY[label] ?? label}
     </span>

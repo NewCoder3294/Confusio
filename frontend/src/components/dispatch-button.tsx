@@ -39,10 +39,10 @@ export function DispatchButton({
         }
         className="flex flex-col justify-center px-4 border border-info-border bg-info-bg/40 hover:bg-info-bg text-info-fg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-80">
+        <span className="font-mono text-[12px] uppercase tracking-[0.14em] opacity-80">
           Dispatch
         </span>
-        <span className="font-mono text-[12px] tracking-wide">
+        <span className="font-mono text-[14px] tracking-wide">
           + New mission
         </span>
       </button>

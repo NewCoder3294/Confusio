@@ -55,14 +55,14 @@ export function DetectorPill({ d }: { d: DetectionResult }) {
   return (
     <div className={`border ${TONE_CLASS[tone]} px-3 py-2 flex flex-col gap-[2px]`}>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="font-mono text-[11px] tracking-[0.16em] text-fg-default">
+        <span className="font-mono text-[13px] tracking-[0.16em] text-fg-default">
           {LABEL[d.detector]}
         </span>
-        <span className="font-mono text-[10px] tracking-[0.14em] font-medium uppercase">
+        <span className="font-mono text-[12px] tracking-[0.14em] font-medium uppercase">
           {verdict}
         </span>
       </div>
-      <div className="flex items-baseline justify-between gap-3 text-[10px]">
+      <div className="flex items-baseline justify-between gap-3 text-[12px]">
         <span className="text-fg-faint truncate">{SUB_LABEL[d.detector]}</span>
         <span className="text-fg-muted/80 font-mono">{detail}</span>
       </div>

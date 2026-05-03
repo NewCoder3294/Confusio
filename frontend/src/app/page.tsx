@@ -162,7 +162,7 @@ export default async function MissionBoardPage({
           />
         ) : (
           <Card title="No mission selected">
-            <div className="px-4 py-8 text-fg-faint italic text-[12px] text-center">
+            <div className="px-4 py-8 text-fg-faint italic text-[14px] text-center">
               Pick a mission from the left.
             </div>
           </Card>
@@ -209,7 +209,7 @@ function MissionList({
 }) {
   if (missions.length === 0) {
     return (
-      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+      <div className="px-4 py-6 text-fg-faint italic text-[14px]">
         No missions yet.
       </div>
     );
@@ -231,12 +231,12 @@ function MissionList({
               }`}
             >
               <div className="flex items-baseline justify-between gap-2">
-                <span className="font-mono text-[11px] text-fg-default truncate">
+                <span className="font-mono text-[13px] text-fg-default truncate">
                   {m.missionId}
                 </span>
                 <StatusPill status={m.status} />
               </div>
-              <div className="mt-1 text-[10px] text-fg-faint truncate">
+              <div className="mt-1 text-[12px] text-fg-faint truncate">
                 {channel?.displayName ?? m.targetChannelId}
               </div>
             </Link>
@@ -275,7 +275,7 @@ function MissionDetail({
     <span className="flex items-baseline gap-3">
       <StatusPill status={mission.status} />
       {mission.dryRun && (
-        <span className="font-mono text-[9px] tracking-[0.16em] text-fg-faint border border-border-default px-2 py-[1px]">
+        <span className="font-mono text-[11px] tracking-[0.16em] text-fg-faint border border-border-default px-2 py-[1px]">
           DRY RUN
         </span>
       )}
@@ -287,7 +287,7 @@ function MissionDetail({
       {/* meta is rendered below as a header strip; Card's meta slot is small */}
       <div className="px-4 py-2 border-b border-border-subtle bg-bg-base flex items-baseline justify-between gap-3">
         <div className="flex items-baseline gap-3">{meta}</div>
-        <span className="font-mono text-[10px] text-fg-faint">
+        <span className="font-mono text-[12px] text-fg-faint">
           {mission.dispatchedAt ? `dispatched ${formatRelative(mission.dispatchedAt)}` : ""}
         </span>
       </div>
@@ -394,14 +394,14 @@ function SummaryPanel({
       </Block>
       {artifact && (
         <Block label="Brief">
-          <p className="text-[12px] leading-6 text-fg-default">
+          <p className="text-[14px] leading-6 text-fg-default">
             {summarizeArtifact(artifact)}
           </p>
         </Block>
       )}
       {mission.status === "failed" && mission.failureCode && (
         <Block label="Failure">
-          <div className="font-mono text-[12px] text-fail-fg">
+          <div className="font-mono text-[14px] text-fail-fg">
             {mission.failureCode}
           </div>
         </Block>
@@ -419,7 +419,7 @@ function ProvenancePanel({
 }) {
   if (detections.length === 0) {
     return (
-      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+      <div className="px-4 py-6 text-fg-faint italic text-[14px]">
         No detector results recorded.
       </div>
     );
@@ -466,7 +466,7 @@ function ProvenancePanel({
         </Block>
       )}
       <Block>
-        <p className="text-[10px] text-fg-faint italic">
+        <p className="text-[12px] text-fg-faint italic">
           Detectors are run on the offensive side as self-grading: artifacts
           that flag here would not survive an adversary&apos;s vetting pipeline.
         </p>
@@ -486,7 +486,7 @@ function ArtifactPanel({
 }) {
   if (!artifact) {
     return (
-      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+      <div className="px-4 py-6 text-fg-faint italic text-[14px]">
         No artifact recorded for this mission.
       </div>
     );
@@ -516,10 +516,10 @@ function ArtifactPanel({
       <Block>
         <div className="flex items-baseline justify-between gap-3">
           <div>
-            <div className="font-mono text-[11px] tracking-[0.16em] text-fg-default">
+            <div className="font-mono text-[13px] tracking-[0.16em] text-fg-default">
               {copy.label}
             </div>
-            <div className="text-[10px] text-fg-faint italic mt-[1px]">
+            <div className="text-[12px] text-fg-faint italic mt-[1px]">
               {copy.sub}
             </div>
           </div>
@@ -553,7 +553,7 @@ function TimelinePanel({
 }) {
   if (stages.length === 0 && campaignEvents.length === 0) {
     return (
-      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+      <div className="px-4 py-6 text-fg-faint italic text-[14px]">
         No timeline events recorded.
       </div>
     );
@@ -616,13 +616,13 @@ function TimelinePanel({
               <span className={`font-mono text-base ${STAGE_TONE[tone] ?? "text-fg-muted"}`}>
                 {STAGE_ICON[tone] ?? "·"}
               </span>
-              <span className="font-mono text-[11px] tracking-[0.12em] text-fg-default">
+              <span className="font-mono text-[13px] tracking-[0.12em] text-fg-default">
                 {STAGE_LABEL[s.stage] ?? s.stage.toUpperCase()}
               </span>
-              <span className="font-mono text-[10px] text-fg-faint tabular-nums">
+              <span className="font-mono text-[12px] text-fg-faint tabular-nums">
                 {s.ts ? new Date(s.ts).toISOString().slice(11, 19) + "Z" : "—"}
               </span>
-              <span className="text-[12px] text-fg-muted italic">
+              <span className="text-[14px] text-fg-muted italic">
                 {s.summary ?? "—"}
               </span>
             </li>
@@ -637,11 +637,11 @@ function TimelinePanel({
             <span className={`font-mono text-base ${CAMPAIGN_TONE[e.tone]}`}>
               {CAMPAIGN_ICON[e.tone]}
             </span>
-            <span className="text-[12px] text-fg-default">{e.label}</span>
-            <span className="font-mono text-[10px] text-fg-faint tabular-nums">
+            <span className="text-[14px] text-fg-default">{e.label}</span>
+            <span className="font-mono text-[12px] text-fg-faint tabular-nums">
               {e.ts ? new Date(e.ts).toISOString().slice(11, 19) + "Z" : "—"}
             </span>
-            <span className="text-[10px] text-fg-faint italic">
+            <span className="text-[12px] text-fg-faint italic">
               {e.detail}
             </span>
           </li>
@@ -679,12 +679,12 @@ function RawPanel({
   return (
     <>
       <Block label="Provenance report (audit-source)">
-        <pre className="text-[11px] overflow-x-auto text-fg-mono whitespace-pre">
+        <pre className="text-[13px] overflow-x-auto text-fg-mono whitespace-pre">
           {provenancePretty}
         </pre>
       </Block>
       <Block label="Stages JSON">
-        <pre className="text-[11px] overflow-x-auto text-fg-mono whitespace-pre">
+        <pre className="text-[13px] overflow-x-auto text-fg-mono whitespace-pre">
           {stagesPretty}
         </pre>
       </Block>
@@ -715,7 +715,7 @@ function ArtifactVariantSwitcher({
             scroll={false}
             replace
             prefetch={false}
-            className={`px-2 py-[2px] font-mono text-[10px] uppercase tracking-[0.14em] border ${
+            className={`px-2 py-[2px] font-mono text-[12px] uppercase tracking-[0.14em] border ${
               i > 0 ? "border-l-0" : ""
             } ${
               isActive
@@ -749,10 +749,10 @@ function MiniStat({
       : "text-fg-default";
   return (
     <div className="border border-border-subtle bg-bg-panel px-3 py-1 flex flex-col justify-center min-w-[68px]">
-      <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-fg-faint">
+      <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-faint">
         {label}
       </div>
-      <div className={`text-[14px] font-medium tabular-nums ${valueColor}`}>
+      <div className={`text-[16px] font-medium tabular-nums ${valueColor}`}>
         {value}
       </div>
     </div>

@@ -26,12 +26,12 @@ export function Card({
       className={`flex flex-col min-h-0 h-full border border-border-default bg-bg-panel ${className}`}
     >
       <header className="flex items-baseline justify-between gap-3 px-4 py-[10px] border-b border-border-subtle bg-bg-panel shrink-0">
-        <h2 className="text-[11px] text-fg-muted tracking-[0.18em] font-medium uppercase font-mono">
+        <h2 className="text-[13px] text-fg-muted tracking-[0.18em] font-medium uppercase font-mono">
           {title}
         </h2>
         <div className="flex items-baseline gap-3">
           {meta && (
-            <span className="font-mono text-[10px] text-fg-faint">{meta}</span>
+            <span className="font-mono text-[12px] text-fg-faint">{meta}</span>
           )}
           {actions}
         </div>
@@ -67,7 +67,7 @@ export function Tabs({
               role="tab"
               aria-selected={isActive}
               onClick={() => setActive(t.id)}
-              className={`px-4 py-[9px] font-mono text-[10px] uppercase tracking-[0.18em] transition-colors border-b-[2px] -mb-[1px] ${
+              className={`px-4 py-[9px] font-mono text-[12px] uppercase tracking-[0.18em] transition-colors border-b-[2px] -mb-[1px] ${
                 isActive
                   ? "text-fg-default bg-bg-base border-b-info-fg"
                   : "text-fg-faint hover:text-fg-default hover:bg-bg-hover border-b-transparent"
@@ -103,7 +103,7 @@ export function Block({
   return (
     <div className={`px-4 py-3 border-b border-border-subtle last:border-b-0 ${className}`}>
       {label && (
-        <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg-faint mb-2">
+        <div className="font-mono text-[12px] uppercase tracking-[0.16em] text-fg-faint mb-2">
           {label}
         </div>
       )}
@@ -124,10 +124,10 @@ export function Row({
 }) {
   return (
     <div className="grid grid-cols-[140px_1fr] gap-3 py-1 items-baseline">
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
+      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[12px]">
         {label}
       </dt>
-      <dd className={`text-fg-muted text-[12px] ${mono ? "font-mono" : ""}`}>
+      <dd className={`text-fg-muted text-[14px] ${mono ? "font-mono" : ""}`}>
         {value}
       </dd>
     </div>
@@ -150,14 +150,14 @@ export function PageHeader({
     <header className="border-b border-border-subtle bg-bg-panel shrink-0">
       <div className="px-6 py-3 flex items-start justify-between gap-6">
         <div className="min-w-0">
-          <div className="font-mono text-[9px] tracking-[0.22em] text-fg-faint uppercase">
+          <div className="font-mono text-[11px] tracking-[0.22em] text-fg-faint uppercase">
             {eyebrow}
           </div>
-          <h1 className="mt-[3px] text-[20px] text-fg-default tracking-tight font-medium leading-tight">
+          <h1 className="mt-[3px] text-[22px] text-fg-default tracking-tight font-medium leading-tight">
             {title}
           </h1>
           {brief && (
-            <p className="mt-[6px] text-[12px] text-fg-muted leading-[1.5] max-w-[640px]">
+            <p className="mt-[6px] text-[14px] text-fg-muted leading-[1.5] max-w-[640px]">
               {brief}
             </p>
           )}

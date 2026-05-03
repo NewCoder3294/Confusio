@@ -76,22 +76,22 @@ function ChannelTable({
   return (
     <section className="flex flex-col flex-1 min-h-0">
       <div className="flex items-baseline justify-between mb-2 shrink-0">
-        <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
+        <h2 className="text-[13px] font-mono uppercase tracking-[0.18em] text-fg-faint">
           {title}
         </h2>
-        <span className="text-[10px] font-mono text-fg-faint italic">
+        <span className="text-[12px] font-mono text-fg-faint italic">
           {subtitle}
         </span>
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto border border-border-subtle bg-bg-panel">
         {channels.length === 0 ? (
-          <div className="px-4 py-6 text-fg-faint italic text-[12px] text-center">
+          <div className="px-4 py-6 text-fg-faint italic text-[14px] text-center">
             No channels in this category.
           </div>
         ) : (
-          <table className="w-full text-[12px]">
+          <table className="w-full text-[14px]">
             <thead>
-              <tr className="border-b border-border-subtle text-[10px] uppercase tracking-[0.14em] text-fg-faint font-mono">
+              <tr className="border-b border-border-subtle text-[12px] uppercase tracking-[0.14em] text-fg-faint font-mono">
                 <th className="text-left px-3 py-2 font-medium">Channel ID</th>
                 <th className="text-left px-3 py-2 font-medium">Display name</th>
                 <th className="text-left px-3 py-2 font-medium">Platform</th>
@@ -109,7 +109,7 @@ function ChannelTable({
                     {c.channel_id}
                   </td>
                   <td className="px-3 py-2 text-fg-default">{c.displayName}</td>
-                  <td className="px-3 py-2 font-mono text-[11px] text-fg-muted uppercase tracking-[0.14em]">
+                  <td className="px-3 py-2 font-mono text-[13px] text-fg-muted uppercase tracking-[0.14em]">
                     {c.platform}
                   </td>
                   <td className="px-3 py-2 text-fg-muted italic">
@@ -117,7 +117,7 @@ function ChannelTable({
                   </td>
                   <td className="px-3 py-2">
                     <span
-                      className={`inline-block border font-mono font-medium uppercase px-2 py-[2px] text-[10px] tracking-[0.14em] ${PILL[tone]}`}
+                      className={`inline-block border font-mono font-medium uppercase px-2 py-[2px] text-[12px] tracking-[0.14em] ${PILL[tone]}`}
                     >
                       {tone === "pass" ? "SANDBOX" : "RESTRICTED"}
                     </span>
@@ -136,11 +136,11 @@ function Reference() {
   return (
     <div className="flex flex-col flex-1 min-h-0 border border-border-subtle bg-bg-panel">
       <header className="px-4 py-2 border-b border-border-subtle shrink-0">
-        <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
+        <h2 className="text-[13px] font-mono uppercase tracking-[0.18em] text-fg-faint">
           Reference
         </h2>
       </header>
-      <ul className="px-4 py-3 flex flex-col gap-2 text-[11px] text-fg-muted leading-5 flex-1 min-h-0 overflow-y-auto">
+      <ul className="px-4 py-3 flex flex-col gap-2 text-[13px] text-fg-muted leading-5 flex-1 min-h-0 overflow-y-auto">
         <li>
           <span className="font-mono text-fg-default">channel_id</span> is the
           PK; immutable once created.

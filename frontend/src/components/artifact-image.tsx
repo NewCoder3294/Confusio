@@ -121,21 +121,21 @@ export function ArtifactImage({
   if (isLocal && !ready) {
     return (
       <div className={`bg-bg-base border border-border-subtle flex flex-col items-center justify-center gap-2 px-6 ${heightClass}`}>
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-info-fg animate-pulse">
+        <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-info-fg animate-pulse">
           {busy === "regen" ? "Regenerating · DALL-E 3" : "Generating · DALL-E 3"}
         </div>
         {prompt && (
-          <p className="text-[11px] text-fg-faint italic text-center max-w-[420px]">
+          <p className="text-[13px] text-fg-faint italic text-center max-w-[420px]">
             {prompt}
           </p>
         )}
-        <div className="font-mono text-[9px] text-fg-faint mt-1">
+        <div className="font-mono text-[11px] text-fg-faint mt-1">
           Polls every 4s · usually ready in 10–25s
         </div>
         {error && (
           <button
             onClick={regenerate}
-            className="mt-2 border border-fail-border text-fail-fg bg-fail-bg/30 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] hover:bg-fail-bg"
+            className="mt-2 border border-fail-border text-fail-fg bg-fail-bg/30 px-3 py-1 font-mono text-[12px] uppercase tracking-[0.14em] hover:bg-fail-bg"
           >
             Retry · {error.slice(0, 60)}
           </button>
@@ -160,7 +160,7 @@ export function ArtifactImage({
           onClick={() => rotate(90)}
           disabled={busy !== null}
           title="Rotate 90° clockwise"
-          className="px-2 py-1 font-mono text-[11px] text-fg-default hover:text-info-fg disabled:opacity-40"
+          className="px-2 py-1 font-mono text-[13px] text-fg-default hover:text-info-fg disabled:opacity-40"
         >
           ↻
         </button>
@@ -168,7 +168,7 @@ export function ArtifactImage({
           onClick={() => rotate(180)}
           disabled={busy !== null}
           title="Flip 180°"
-          className="px-2 py-1 font-mono text-[11px] text-fg-default hover:text-info-fg disabled:opacity-40 border-l border-border-default"
+          className="px-2 py-1 font-mono text-[13px] text-fg-default hover:text-info-fg disabled:opacity-40 border-l border-border-default"
         >
           ⇅
         </button>
@@ -177,14 +177,14 @@ export function ArtifactImage({
             onClick={regenerate}
             disabled={busy !== null}
             title="Regenerate this artifact"
-            className="px-2 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-muted hover:text-info-fg disabled:opacity-40 border-l border-border-default"
+            className="px-2 py-1 font-mono text-[12px] uppercase tracking-[0.14em] text-fg-muted hover:text-info-fg disabled:opacity-40 border-l border-border-default"
           >
             {busy === "regen" ? "…" : "regen"}
           </button>
         )}
       </div>
       {error && (
-        <div className="absolute bottom-0 left-0 right-0 bg-fail-bg/70 border-t border-fail-border text-fail-fg font-mono text-[10px] px-3 py-1">
+        <div className="absolute bottom-0 left-0 right-0 bg-fail-bg/70 border-t border-fail-border text-fail-fg font-mono text-[12px] px-3 py-1">
           {error}
         </div>
       )}

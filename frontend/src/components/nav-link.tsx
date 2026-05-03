@@ -19,7 +19,7 @@ export function NavLink({
   return (
     <Link
       href={href}
-      className={`px-3 py-1 text-[12px] uppercase tracking-[0.14em] transition-colors ${
+      className={`px-3 py-1 text-[14px] uppercase tracking-[0.14em] transition-colors ${
         isActive
           ? "text-fg-default bg-bg-elevated border-b-[2px] border-info-fg -mb-[1px]"
           : "text-fg-muted hover:text-fg-default hover:bg-bg-hover border-b-[2px] border-transparent -mb-[1px]"

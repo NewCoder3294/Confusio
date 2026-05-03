@@ -209,16 +209,16 @@ export function NewMissionModal({
       <div className="w-[760px] max-w-[92vw] max-h-[88vh] flex flex-col border border-border-default bg-bg-panel shadow-2xl">
         <header className="flex items-baseline justify-between px-5 py-3 border-b border-border-default bg-bg-elevated shrink-0">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-classified">
+            <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-classified">
               Mission dispatch
             </div>
-            <h2 className="text-[15px] font-medium text-fg-default tracking-wide mt-[1px]">
+            <h2 className="text-[17px] font-medium text-fg-default tracking-wide mt-[1px]">
               {result ? "Mission dispatched" : "New attack chain"}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-faint hover:text-fg-default"
+            className="font-mono text-[13px] uppercase tracking-[0.14em] text-fg-faint hover:text-fg-default"
           >
             ✕ close
           </button>
@@ -289,20 +289,20 @@ export function NewMissionModal({
             </div>
 
             {error && (
-              <div className="mx-5 mb-3 border border-fail-border bg-fail-bg/40 px-3 py-2 text-fail-fg text-[11px] font-mono">
+              <div className="mx-5 mb-3 border border-fail-border bg-fail-bg/40 px-3 py-2 text-fail-fg text-[13px] font-mono">
                 {error}
               </div>
             )}
 
             <footer className="px-5 py-3 border-t border-border-default bg-bg-elevated flex items-center justify-between shrink-0">
-              <div className="font-mono text-[10px] text-fg-faint uppercase tracking-[0.14em]">
+              <div className="font-mono text-[12px] text-fg-faint uppercase tracking-[0.14em]">
                 Step {stepIdx + 1} / {STEPS.length} · {STEP_LABEL[step]}
               </div>
               <div className="flex items-center gap-2">
                 <button
                   onClick={back}
                   disabled={stepIdx === 0 || busy}
-                  className="px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="px-3 py-1 font-mono text-[13px] uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   ← Back
                 </button>
@@ -310,7 +310,7 @@ export function NewMissionModal({
                   <button
                     onClick={dispatch}
                     disabled={busy}
-                    className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[13px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {busy ? "Dispatching…" : "Dispatch mission"}
                   </button>
@@ -318,7 +318,7 @@ export function NewMissionModal({
                   <button
                     onClick={next}
                     disabled={!canAdvance[step]}
-                    className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[13px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Next →
                   </button>
@@ -343,7 +343,7 @@ function Stepper({ current }: { current: Step }) {
         return (
           <div
             key={s}
-            className={`flex-1 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.16em] border-r border-border-subtle last:border-r-0 ${
+            className={`flex-1 px-4 py-2 font-mono text-[12px] uppercase tracking-[0.16em] border-r border-border-subtle last:border-r-0 ${
               active
                 ? "text-fg-default bg-bg-panel border-b-[2px] border-b-info-fg -mb-[1px]"
                 : done
@@ -375,7 +375,7 @@ function TargetStep({
 }) {
   if (channels.length === 0) {
     return (
-      <p className="text-fail-fg text-[12px]">
+      <p className="text-fail-fg text-[14px]">
         No sandbox channels configured. Add one in /channels first.
       </p>
     );
@@ -386,7 +386,7 @@ function TargetStep({
         <select
           value={form.targetChannel}
           onChange={(e) => onChannelSelect(e.target.value)}
-          className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+          className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
         >
           {channels.map((c) => (
             <option key={c.id} value={c.id}>
@@ -403,14 +403,14 @@ function TargetStep({
           rows={2}
           value={form.audienceProfile}
           onChange={(e) => onAudience(e.target.value)}
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
       <Field label="Operator" hint="Recorded in the audit trail.">
         <input
           value={form.operator}
           onChange={(e) => onOperator(e.target.value)}
-          className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+          className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
         />
       </Field>
     </div>
@@ -434,7 +434,7 @@ function PersonaStep({
 }) {
   if (personas.length === 0) {
     return (
-      <p className="text-fail-fg text-[12px]">
+      <p className="text-fail-fg text-[14px]">
         No personas in the library. Add one in social/personas/ first.
       </p>
     );
@@ -459,12 +459,12 @@ function PersonaStep({
                 }`}
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="text-[12px] text-fg-default">{p.name}</span>
-                  <span className="font-mono text-[9px] text-fg-faint uppercase tracking-[0.14em]">
+                  <span className="text-[14px] text-fg-default">{p.name}</span>
+                  <span className="font-mono text-[11px] text-fg-faint uppercase tracking-[0.14em]">
                     {p.language}
                   </span>
                 </div>
-                <div className="mt-[2px] text-[10px] text-fg-faint italic truncate">
+                <div className="mt-[2px] text-[12px] text-fg-faint italic truncate">
                   {p.geoAnchor} · {p.bioShort}
                 </div>
               </button>
@@ -479,7 +479,7 @@ function PersonaStep({
           hint="Each will post a supporting message on a stagger after the seed lands."
         >
           {suggested.length === 0 ? (
-            <p className="text-fg-faint italic text-[11px]">
+            <p className="text-fg-faint italic text-[13px]">
               {seed.name} operates alone — no corroborators in the persona graph.
             </p>
           ) : (
@@ -502,8 +502,8 @@ function PersonaStep({
                       className="mt-1 accent-info-fg"
                     />
                     <span className="flex-1">
-                      <span className="text-[12px] text-fg-default">{p.name}</span>
-                      <span className="block text-[10px] text-fg-faint italic truncate">
+                      <span className="text-[14px] text-fg-default">{p.name}</span>
+                      <span className="block text-[12px] text-fg-faint italic truncate">
                         {p.geoAnchor} · {p.language}
                       </span>
                     </span>
@@ -549,7 +549,7 @@ function ArtifactStep({
               key={opt.key}
               type="button"
               onClick={() => onChangeMode(opt.key)}
-              className={`flex-1 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] ${
+              className={`flex-1 px-3 py-2 font-mono text-[12px] uppercase tracking-[0.16em] ${
                 i > 0 ? "border-l border-border-default" : ""
               } ${
                 active
@@ -589,11 +589,11 @@ function ArtifactStep({
               ? "e.g. unmarked aircraft over residential district at dawn"
               : "e.g. leaked regiment movement order, smudged unit stamp, low-light phone photo"
           }
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
 
-      <div className="border border-warn-border bg-warn-bg/20 px-3 py-2 text-[10px] text-warn-fg leading-5 font-mono">
+      <div className="border border-warn-border bg-warn-bg/20 px-3 py-2 text-[12px] text-warn-fg leading-5 font-mono">
         Sandbox enforcement — delivery.dry_run = true unconditionally.
       </div>
     </div>
@@ -632,7 +632,7 @@ function ArtifactDropZone({
         const dropped = e.dataTransfer.files?.[0];
         if (dropped) onChangeFile(dropped);
       }}
-      className={`flex flex-col items-center justify-center gap-2 cursor-pointer border border-dashed px-4 py-6 text-[11px] font-mono transition-colors ${
+      className={`flex flex-col items-center justify-center gap-2 cursor-pointer border border-dashed px-4 py-6 text-[13px] font-mono transition-colors ${
         dragging
           ? "border-info-fg bg-info-bg/30 text-info-fg"
           : "border-border-default bg-bg-base text-fg-muted hover:border-info-border"
@@ -658,7 +658,7 @@ function ArtifactDropZone({
           />
           <div className="flex-1 min-w-0">
             <div className="text-fg-default truncate">{file.name}</div>
-            <div className="text-fg-faint text-[10px] mt-1">
+            <div className="text-fg-faint text-[12px] mt-1">
               {(file.size / 1024).toFixed(1)} KB · {file.type || "image"}
             </div>
             <button
@@ -667,7 +667,7 @@ function ArtifactDropZone({
                 e.preventDefault();
                 onChangeFile(null);
               }}
-              className="mt-2 text-fail-fg uppercase tracking-[0.14em] text-[10px] hover:underline"
+              className="mt-2 text-fail-fg uppercase tracking-[0.14em] text-[12px] hover:underline"
             >
               Remove
             </button>
@@ -675,10 +675,10 @@ function ArtifactDropZone({
         </div>
       ) : (
         <>
-          <span className="uppercase tracking-[0.16em] text-[10px]">
+          <span className="uppercase tracking-[0.16em] text-[12px]">
             Drop image here
           </span>
-          <span className="text-fg-faint text-[10px]">
+          <span className="text-fg-faint text-[12px]">
             or click to choose · PNG / JPEG / WebP
           </span>
         </>
@@ -717,11 +717,11 @@ function ReviewStep({
         />
       </ReviewBlock>
       <ReviewBlock label="Artifact">
-        <p className="text-[12px] text-fg-default leading-6 whitespace-pre-wrap">
+        <p className="text-[14px] text-fg-default leading-6 whitespace-pre-wrap">
           {form.artifactPrompt}
         </p>
       </ReviewBlock>
-      <p className="text-[10px] text-fg-faint italic leading-5">
+      <p className="text-[12px] text-fg-faint italic leading-5">
         On dispatch: a YAML MissionSpec is emitted to{" "}
         <span className="font-mono text-fg-default">missions/inbox/</span> for
         the engine, and a campaign is opened on{" "}
@@ -746,39 +746,39 @@ function DispatchedView({
   return (
     <div className="flex-1 min-h-0 overflow-y-auto px-5 py-6 flex flex-col gap-4">
       <div className="border border-pass-border bg-pass-bg/30 px-4 py-3">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-pass-fg">
+        <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-pass-fg">
           Dispatched
         </div>
-        <div className="mt-1 font-mono text-[14px] text-fg-default tracking-wide">
+        <div className="mt-1 font-mono text-[16px] text-fg-default tracking-wide">
           {result.missionId}
         </div>
-        <div className="mt-2 text-[12px] text-fg-muted leading-6">
+        <div className="mt-2 text-[14px] text-fg-muted leading-6">
           {seedName} posted the seed. {corroboratorCount} corroborator
           {corroboratorCount === 1 ? "" : "s"} are scheduled to follow on a
           stagger.
         </div>
       </div>
       {result.campaignError && (
-        <div className="border border-warn-border bg-warn-bg/20 px-3 py-2 text-warn-fg text-[11px] font-mono">
+        <div className="border border-warn-border bg-warn-bg/20 px-3 py-2 text-warn-fg text-[13px] font-mono">
           Campaign write warning: {result.campaignError}
         </div>
       )}
       <div className="flex gap-2">
         <a
           href={`/backstop?c=${encodeURIComponent(result.campaignId)}`}
-          className="border border-info-border bg-info-bg px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-info-fg hover:opacity-90"
+          className="border border-info-border bg-info-bg px-4 py-2 font-mono text-[13px] uppercase tracking-[0.16em] text-info-fg hover:opacity-90"
         >
           Open campaign
         </a>
         <a
           href={`/?m=${encodeURIComponent(result.missionId)}`}
-          className="border border-border-default bg-bg-elevated px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-fg-default hover:bg-bg-hover"
+          className="border border-border-default bg-bg-elevated px-4 py-2 font-mono text-[13px] uppercase tracking-[0.16em] text-fg-default hover:bg-bg-hover"
         >
           Mission record
         </a>
         <button
           onClick={onClose}
-          className="font-mono text-[11px] uppercase tracking-[0.14em] text-fg-faint hover:text-fg-default px-3"
+          className="font-mono text-[13px] uppercase tracking-[0.14em] text-fg-faint hover:text-fg-default px-3"
         >
           Close
         </button>
@@ -800,12 +800,12 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
+      <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-fg-faint">
         {label}
       </span>
       {children}
       {hint && (
-        <span className="text-[10px] text-fg-faint italic">{hint}</span>
+        <span className="text-[12px] text-fg-faint italic">{hint}</span>
       )}
     </label>
   );
@@ -820,7 +820,7 @@ function ReviewBlock({
 }) {
   return (
     <div className="border border-border-subtle bg-bg-base px-3 py-2">
-      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg-faint mb-2">
+      <div className="font-mono text-[12px] uppercase tracking-[0.16em] text-fg-faint mb-2">
         {label}
       </div>
       {children}
@@ -839,10 +839,10 @@ function ReviewRow({
 }) {
   return (
     <div className="grid grid-cols-[120px_1fr] gap-3 py-1 items-baseline">
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
+      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[12px]">
         {label}
       </dt>
-      <dd className={`text-fg-muted text-[12px] ${mono ? "font-mono" : ""}`}>
+      <dd className={`text-fg-muted text-[14px] ${mono ? "font-mono" : ""}`}>
         {value}
       </dd>
     </div>

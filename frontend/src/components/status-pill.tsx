@@ -30,8 +30,8 @@ export function StatusPill({
   const tone = TONE[c.tone];
   const sizing =
     size === "md"
-      ? "text-[11px] tracking-[0.16em] gap-2"
-      : "text-[10px] tracking-[0.14em] gap-[6px]";
+      ? "text-[13px] tracking-[0.16em] gap-2"
+      : "text-[12px] tracking-[0.14em] gap-[6px]";
   const isExecuting = status === "executing";
   return (
     <span

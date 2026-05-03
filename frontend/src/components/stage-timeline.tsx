@@ -57,13 +57,13 @@ export function StageTimeline({ stages }: { stages: Stage[] }) {
             >
               {ICON[tone] ?? "·"}
             </span>
-            <span className="font-mono text-[11px] tracking-[0.12em] text-fg-default">
+            <span className="font-mono text-[13px] tracking-[0.12em] text-fg-default">
               {STAGE_LABEL[s.stage] ?? s.stage.toUpperCase()}
             </span>
-            <span className="font-mono text-[10px] text-fg-faint tabular-nums">
+            <span className="font-mono text-[12px] text-fg-faint tabular-nums">
               {relativeTime(s.ts)}
             </span>
-            <span className="text-[12px] text-fg-muted italic">
+            <span className="text-[14px] text-fg-muted italic">
               {s.summary ?? "—"}
             </span>
           </li>

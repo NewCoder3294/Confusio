@@ -131,7 +131,7 @@ export function SettingsForm({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="border border-border-subtle bg-bg-base px-4 py-2 text-[11px] font-mono text-fg-faint">
+      <div className="border border-border-subtle bg-bg-base px-4 py-2 text-[13px] font-mono text-fg-faint">
         Storage ·{" "}
         <span className="text-fg-default">{envPath}</span> · permissions 600,
         gitignored. Saved values are never echoed back — fields below show only
@@ -185,15 +185,15 @@ function ProviderCard({
     <section className="border border-border-default bg-bg-panel">
       <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border-default bg-bg-elevated">
         <div>
-          <h2 className="text-[14px] text-fg-default tracking-wide font-medium uppercase">
+          <h2 className="text-[16px] text-fg-default tracking-wide font-medium uppercase">
             {provider.title}
           </h2>
-          <p className="mt-[1px] text-[11px] text-fg-muted leading-5 max-w-[700px]">
+          <p className="mt-[1px] text-[13px] text-fg-muted leading-5 max-w-[700px]">
             {provider.blurb}
           </p>
         </div>
         <span
-          className={`font-mono text-[10px] uppercase tracking-[0.16em] px-2 py-[2px] border ${
+          className={`font-mono text-[12px] uppercase tracking-[0.16em] px-2 py-[2px] border ${
             provider.status === "wired"
               ? "text-pass-fg border-pass-border bg-pass-bg/30"
               : "text-warn-fg border-warn-border bg-warn-bg/30"
@@ -213,11 +213,11 @@ function ProviderCard({
               <div className="flex items-baseline justify-between">
                 <label
                   htmlFor={`field-${f.key}`}
-                  className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint"
+                  className="font-mono text-[12px] uppercase tracking-[0.14em] text-fg-faint"
                 >
                   {f.label}
                 </label>
-                <span className="font-mono text-[9px] text-fg-faint">
+                <span className="font-mono text-[11px] text-fg-faint">
                   {f.key}
                 </span>
               </div>
@@ -237,13 +237,13 @@ function ProviderCard({
                   }
                 }}
                 placeholder={f.placeholder}
-                className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+                className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
               />
               <div className="flex items-baseline justify-between">
-                <span className="text-[10px] text-fg-faint italic">
+                <span className="text-[12px] text-fg-faint italic">
                   {f.hint || ""}
                 </span>
-                <span className="font-mono text-[9px] text-fg-faint">
+                <span className="font-mono text-[11px] text-fg-faint">
                   {editing
                     ? draft.length === 0
                       ? "will clear"
@@ -258,12 +258,12 @@ function ProviderCard({
         })}
 
         {error && (
-          <div className="border border-fail-border bg-fail-bg/40 px-3 py-2 text-fail-fg text-[11px] font-mono">
+          <div className="border border-fail-border bg-fail-bg/40 px-3 py-2 text-fail-fg text-[13px] font-mono">
             {error}
           </div>
         )}
         {saved && !dirty && (
-          <div className="border border-pass-border bg-pass-bg/30 px-3 py-2 text-pass-fg text-[11px] font-mono">
+          <div className="border border-pass-border bg-pass-bg/30 px-3 py-2 text-pass-fg text-[13px] font-mono">
             Saved.
           </div>
         )}
@@ -273,7 +273,7 @@ function ProviderCard({
             type="button"
             onClick={onCancel}
             disabled={!dirty || busy}
-            className="px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default disabled:opacity-30 disabled:cursor-not-allowed"
+            className="px-3 py-1 font-mono text-[13px] uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default disabled:opacity-30 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
@@ -281,7 +281,7 @@ function ProviderCard({
             type="button"
             onClick={onSave}
             disabled={!dirty || busy}
-            className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
+            className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-1 font-mono text-[13px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {busy ? "Saving…" : "Save"}
           </button>

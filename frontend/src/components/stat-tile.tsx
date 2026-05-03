@@ -21,14 +21,14 @@ export function StatTile({
         : "text-fg-default";
   return (
     <div className="border border-border-subtle bg-bg-panel px-5 py-3 flex flex-col">
-      <div className="text-[10px] uppercase tracking-[0.18em] text-fg-faint font-mono">
+      <div className="text-[12px] uppercase tracking-[0.18em] text-fg-faint font-mono">
         {label}
       </div>
       <div className={`mt-1 text-3xl font-medium tabular-nums ${valueColor}`}>
         {value}
       </div>
       {hint && (
-        <div className="text-[10px] uppercase tracking-[0.14em] text-fg-faint/80 font-mono mt-auto pt-2">
+        <div className="text-[12px] uppercase tracking-[0.14em] text-fg-faint/80 font-mono mt-auto pt-2">
           {hint}
         </div>
       )}

@@ -45,11 +45,11 @@ function NavBar() {
               className="block w-[8px] h-[8px] bg-classified shrink-0"
               aria-hidden="true"
             />
-            <span className="font-sans font-medium text-fg-default tracking-tight text-[13px]">
+            <span className="font-sans font-medium text-fg-default tracking-tight text-[15px]">
               Confusio
             </span>
           </Link>
-          <span className="text-fg-faint text-[10px] font-mono uppercase tracking-[0.18em]">
+          <span className="text-fg-faint text-[12px] font-mono uppercase tracking-[0.18em]">
             Operator&nbsp;Console
           </span>
         </div>

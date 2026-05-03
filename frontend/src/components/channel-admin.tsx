@@ -48,7 +48,7 @@ export function NewChannelForm() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="border border-border-default bg-bg-elevated hover:bg-bg-hover px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-fg-default"
+        className="border border-border-default bg-bg-elevated hover:bg-bg-hover px-4 py-2 font-mono text-[13px] uppercase tracking-[0.16em] text-fg-default"
       >
         + Add sandbox channel
       </button>
@@ -61,13 +61,13 @@ export function NewChannelForm() {
       className="border border-border-default bg-bg-panel p-4 flex flex-col gap-3"
     >
       <div className="flex items-baseline justify-between">
-        <h3 className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-faint">
+        <h3 className="font-mono text-[13px] uppercase tracking-[0.18em] text-fg-faint">
           New sandbox channel
         </h3>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="font-mono text-[10px] text-fg-faint hover:text-fg-default uppercase tracking-[0.14em]"
+          className="font-mono text-[12px] text-fg-faint hover:text-fg-default uppercase tracking-[0.14em]"
         >
           Cancel
         </button>
@@ -86,7 +86,7 @@ export function NewChannelForm() {
             setForm((f) => ({ ...f, channel_id: e.target.value.trim() }))
           }
           placeholder="e.g. inscom_sandbox_bravo"
-          className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+          className="border border-border-default bg-bg-base px-3 py-2 font-mono text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
         />
       </Field>
 
@@ -99,7 +99,7 @@ export function NewChannelForm() {
           value={form.displayName}
           onChange={(e) => setForm((f) => ({ ...f, displayName: e.target.value }))}
           placeholder="e.g. @inscom_sandbox_bravo"
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg"
         />
       </Field>
 
@@ -115,15 +115,15 @@ export function NewChannelForm() {
             setForm((f) => ({ ...f, audienceProfile: e.target.value }))
           }
           placeholder="e.g. Russian-speaking, regional supply NCOs, mid-30s"
-          className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
+          className="border border-border-default bg-bg-base px-3 py-2 text-[14px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
 
       <div className="border border-warn-border bg-warn-bg/30 px-3 py-2">
-        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-warn-fg mb-1">
+        <div className="font-mono text-[12px] uppercase tracking-[0.14em] text-warn-fg mb-1">
           Sandbox enforcement
         </div>
-        <p className="text-[11px] text-warn-fg leading-5">
+        <p className="text-[13px] text-warn-fg leading-5">
           New channels are created with{" "}
           <span className="font-mono">isSandbox=true</span> unconditionally.
           Promoting a channel to non-sandbox requires out-of-band legal review
@@ -132,12 +132,12 @@ export function NewChannelForm() {
       </div>
 
       {error && (
-        <div className="border border-fail-border bg-fail-bg px-3 py-2 text-fail-fg text-[12px] font-mono">
+        <div className="border border-fail-border bg-fail-bg px-3 py-2 text-fail-fg text-[14px] font-mono">
           {error}
         </div>
       )}
       {success && (
-        <div className="border border-pass-border bg-pass-bg px-3 py-2 text-pass-fg text-[12px] font-mono">
+        <div className="border border-pass-border bg-pass-bg px-3 py-2 text-pass-fg text-[14px] font-mono">
           {success}
         </div>
       )}
@@ -145,7 +145,7 @@ export function NewChannelForm() {
       <button
         type="submit"
         disabled={busy}
-        className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-2 font-mono text-[12px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-50 disabled:cursor-wait"
+        className="border border-info-border bg-info-bg hover:opacity-90 px-4 py-2 font-mono text-[14px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-50 disabled:cursor-wait"
       >
         {busy ? "Creating…" : "Create channel"}
       </button>
@@ -164,11 +164,11 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
+      <span className="font-mono text-[12px] uppercase tracking-[0.14em] text-fg-faint">
         {label}
       </span>
       {children}
-      {hint && <span className="text-[10px] text-fg-faint italic">{hint}</span>}
+      {hint && <span className="text-[12px] text-fg-faint italic">{hint}</span>}
     </label>
   );
 }

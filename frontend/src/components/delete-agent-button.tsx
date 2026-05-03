@@ -56,7 +56,7 @@ export function DeleteAgentButton({
     <>
       <button
         onClick={() => setOpen(true)}
-        className="font-mono text-[10px] uppercase tracking-[0.14em] text-fail-fg hover:text-fg-default border border-fail-border/50 hover:bg-fail-bg/30 px-2 py-1 transition-colors"
+        className="font-mono text-[12px] uppercase tracking-[0.14em] text-fail-fg hover:text-fg-default border border-fail-border/50 hover:bg-fail-bg/30 px-2 py-1 transition-colors"
         title={`Delete ${agentName}`}
       >
         ✕ Delete
@@ -72,15 +72,15 @@ export function DeleteAgentButton({
         >
           <div className="w-[480px] max-w-[92vw] border border-fail-border bg-bg-panel shadow-2xl">
             <header className="px-5 py-3 border-b border-border-default bg-bg-elevated">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fail-fg">
+              <div className="font-mono text-[12px] uppercase tracking-[0.18em] text-fail-fg">
                 Destructive action
               </div>
-              <h2 className="text-[15px] font-medium text-fg-default tracking-wide mt-[1px]">
+              <h2 className="text-[17px] font-medium text-fg-default tracking-wide mt-[1px]">
                 Delete agent {agentName}?
               </h2>
             </header>
 
-            <div className="px-5 py-4 flex flex-col gap-3 text-[12px] text-fg-muted leading-6">
+            <div className="px-5 py-4 flex flex-col gap-3 text-[14px] text-fg-muted leading-6">
               <p>
                 Removes{" "}
                 <span className="font-mono text-fg-default">
@@ -88,7 +88,7 @@ export function DeleteAgentButton({
                 </span>
                 . The engine will skip it on its next library reload.
               </p>
-              <p className="text-[11px] text-fg-faint italic">
+              <p className="text-[13px] text-fg-faint italic">
                 The agent&rsquo;s session file, generated-post history, and any
                 Foundry record are left untouched — clean those up out of band
                 if you need a hard wipe.
@@ -96,15 +96,15 @@ export function DeleteAgentButton({
 
               {referrers.length > 0 && (
                 <div className="border border-warn-border bg-warn-bg/20 px-3 py-2">
-                  <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-warn-fg mb-1">
+                  <div className="font-mono text-[12px] uppercase tracking-[0.14em] text-warn-fg mb-1">
                     Blocked — referenced by
                   </div>
-                  <ul className="font-mono text-[11px] text-fg-default list-disc pl-4">
+                  <ul className="font-mono text-[13px] text-fg-default list-disc pl-4">
                     {referrers.map((r) => (
                       <li key={r}>{r}</li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-[10px] text-fg-faint italic">
+                  <p className="mt-2 text-[12px] text-fg-faint italic">
                     Edit those agents&rsquo; <span className="font-mono">knows</span>{" "}
                     graph first, then retry.
                   </p>
@@ -112,7 +112,7 @@ export function DeleteAgentButton({
               )}
 
               {error && referrers.length === 0 && (
-                <div className="border border-fail-border bg-fail-bg/40 px-3 py-2 text-fail-fg text-[11px] font-mono">
+                <div className="border border-fail-border bg-fail-bg/40 px-3 py-2 text-fail-fg text-[13px] font-mono">
                   {error}
                 </div>
               )}
@@ -122,14 +122,14 @@ export function DeleteAgentButton({
               <button
                 onClick={() => setOpen(false)}
                 disabled={busy}
-                className="px-3 py-1 font-mono text-[11px] uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default disabled:opacity-30"
+                className="px-3 py-1 font-mono text-[13px] uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default disabled:opacity-30"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={busy}
-                className="border border-fail-border bg-fail-bg/60 hover:bg-fail-bg px-4 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-fail-fg disabled:opacity-40 disabled:cursor-not-allowed"
+                className="border border-fail-border bg-fail-bg/60 hover:bg-fail-bg px-4 py-1 font-mono text-[13px] uppercase tracking-[0.16em] text-fail-fg disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {busy ? "Deleting…" : "Delete agent"}
               </button>
