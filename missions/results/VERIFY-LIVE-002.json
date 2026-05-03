@@ -1,0 +1,184 @@
+{
+  "mission_id": "VERIFY-LIVE-002",
+  "operator": "J2-INSCOM-Demo",
+  "status": "completed",
+  "started_at": "2026-05-03T05:40:04+00:00",
+  "finished_at": "2026-05-03T05:40:07+00:00",
+  "stages": [
+    {
+      "stage": "validated",
+      "status": "ok",
+      "ts": "2026-05-03T05:40:04+00:00",
+      "detail": {
+        "authority": "title-10",
+        "target_class": "foreign",
+        "channel": "https://t.me/+2la3xpus5vRmYmIx"
+      }
+    },
+    {
+      "stage": "persona_generated",
+      "status": "ok",
+      "ts": "2026-05-03T05:40:04+00:00",
+      "detail": {
+        "persona_id": "aggregator-c274f0",
+        "archetype": "aggregator",
+        "name_seed": "anton_kh",
+        "avatar_path": null
+      }
+    },
+    {
+      "stage": "artifact_selected",
+      "status": "ok",
+      "ts": "2026-05-03T05:40:04+00:00",
+      "detail": {
+        "mode": "fixture",
+        "source_fixture": "/Users/nicolasdossantos/Mendacity/assets/IMG_4213.JPG",
+        "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-002/artifact_source.jpg",
+        "sha256": "63ef257caaf77118898d981fc9373905b63720e752df340e8af72c73cfb33399",
+        "prompt": "verify image-attachment fixture"
+      }
+    },
+    {
+      "stage": "watermark_strip",
+      "status": "ok",
+      "ts": "2026-05-03T05:40:06+00:00",
+      "detail": {
+        "tool": "synthidbye",
+        "before_sha": "63ef257caaf77118898d981fc9373905b63720e752df340e8af72c73cfb33399",
+        "after_sha": "4fdea3b11f5eb133e28308707f02dacb90d345f2dc543681830ba20c31f44c0e",
+        "stderr_tail": [
+          "SynthIDBye seed (save if you need reversibility notes): y9kaczow6pqt0ebw71wmdmopcd26q",
+          "Wrote /Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-002/artifact_stripped.jpg"
+        ]
+      }
+    },
+    {
+      "stage": "exif_transplant",
+      "status": "ok",
+      "ts": "2026-05-03T05:40:06+00:00",
+      "detail": {
+        "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+        "before_sha": "4fdea3b11f5eb133e28308707f02dacb90d345f2dc543681830ba20c31f44c0e",
+        "after_sha": "e6a594d30d6a90b12016f52f0d57fa342a28c6a4d86f445c8d7afd26c68f6789"
+      }
+    },
+    {
+      "stage": "provenance_check",
+      "status": "ok",
+      "ts": "2026-05-03T05:40:06+00:00",
+      "detail": {
+        "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-002/artifact_clean.jpg",
+        "passed": {
+          "per_detector": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "required": {
+            "synthid": true,
+            "c2pa": true,
+            "titan": true
+          },
+          "all_passed": true,
+          "ran_titan": false,
+          "ran_google": false
+        },
+        "report": {
+          "meta": {
+            "sha256": "e6a594d30d6a90b12016f52f0d57fa342a28c6a4d86f445c8d7afd26c68f6789",
+            "mime_inferred": "image/jpeg",
+            "size_bytes": 237364,
+            "path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-002/artifact_clean.jpg"
+          },
+          "c2pa": {
+            "status": "manifest_not_found",
+            "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+          },
+          "titan_watermark": {
+            "status": "skipped",
+            "reason": "Pass run_titan=True or use CLI --titan"
+          },
+          "google_synthid": {
+            "status": "skipped",
+            "reason": "Pass run_google=True or use CLI --google"
+          }
+        }
+      }
+    },
+    {
+      "stage": "delivered",
+      "status": "ok",
+      "ts": "2026-05-03T05:40:07+00:00",
+      "detail": {
+        "telegram_message_id": 4,
+        "posted_at": "2026-05-03T05:40:07.676884+00:00",
+        "persona_id": "anton_kh",
+        "channel": "https://t.me/+2la3xpus5vRmYmIx",
+        "image_attached": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-002/artifact_clean.jpg",
+        "caption": "[mendacity verify-live-002] image attachment probe"
+      }
+    }
+  ],
+  "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-002/artifact_clean.jpg",
+  "final_provenance_report": {
+    "meta": {
+      "sha256": "e6a594d30d6a90b12016f52f0d57fa342a28c6a4d86f445c8d7afd26c68f6789",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 237364,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-002/artifact_clean.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "error": null,
+  "spec": {
+    "mission_id": "VERIFY-LIVE-002",
+    "operator": "J2-INSCOM-Demo",
+    "authorization": {
+      "authority": "title-10",
+      "target_class": "foreign",
+      "approval_chain": [
+        "J2"
+      ]
+    },
+    "target": {
+      "platform": "telegram",
+      "channel": "https://t.me/+2la3xpus5vRmYmIx",
+      "audience_profile": "internal sandbox"
+    },
+    "persona": {
+      "archetype": "aggregator",
+      "name_seed": "anton_kh",
+      "generate_avatar": false
+    },
+    "artifact": {
+      "type": "image",
+      "prompt": "verify image-attachment fixture",
+      "source": "fixture:assets/IMG_4213.JPG",
+      "exif_template": "fixtures/koze_iphonex_gist.json",
+      "must_pass": [
+        "c2pa",
+        "titan",
+        "synthid"
+      ],
+      "strip_watermarks": true
+    },
+    "delivery": {
+      "schedule": "immediate",
+      "thread_strategy": "cold_post",
+      "caption": "[mendacity verify-live-002] image attachment probe",
+      "dry_run": false,
+      "persona_id": "anton_kh"
+    }
+  }
+}

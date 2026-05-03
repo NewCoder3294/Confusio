@@ -1,0 +1,188 @@
+{
+  "mission_id": "AVATAR-TEST-001",
+  "operator": "J2-INSCOM-Demo",
+  "status": "completed",
+  "started_at": "2026-05-03T05:41:40+00:00",
+  "finished_at": "2026-05-03T05:41:55+00:00",
+  "stages": [
+    {
+      "stage": "validated",
+      "status": "ok",
+      "ts": "2026-05-03T05:41:40+00:00",
+      "detail": {
+        "authority": "title-10",
+        "target_class": "foreign",
+        "channel": "@mendacity_sandbox_demo"
+      }
+    },
+    {
+      "stage": "preflight",
+      "status": "skipped",
+      "ts": "2026-05-03T05:41:40+00:00",
+      "detail": {
+        "reason": "delivery.dry_run=true; no live session needed"
+      }
+    },
+    {
+      "stage": "persona_generated",
+      "status": "ok",
+      "ts": "2026-05-03T05:41:54+00:00",
+      "detail": {
+        "persona_id": "battalion-quartermaster-frustrated-502647",
+        "archetype": "battalion-quartermaster-frustrated",
+        "name_seed": "Sasha P.",
+        "avatar_path": "/Users/nicolasdossantos/Mendacity/missions/work/AVATAR-TEST-001/avatar.jpg",
+        "avatar_prompt": "casual cropped selfie style profile photo, battalion quartermaster frustrated, phone camera quality, soft indoor lighting, neutral background, no text, no watermark, no studio look, candid expression, subject hint: Sasha P.",
+        "avatar_revised_prompt": "Create a casual, cropped selfie-style profile photo that features a battalion quartermaster who looks frustrated. The image should have the quality of a picture taken with a phone camera. Ensure the scenery is lit by soft indoor lighting and has a neutral background. The photo shouldn't look professionally taken, with no signs of a studio look, text, or watermark. The quartermaster should strike a candid expression. The person should have physical traits that are similar to a random person named Sasha P., but they are not to be identifiable."
+      }
+    },
+    {
+      "stage": "artifact_selected",
+      "status": "ok",
+      "ts": "2026-05-03T05:41:54+00:00",
+      "detail": {
+        "mode": "fixture",
+        "source_fixture": "/Users/nicolasdossantos/Mendacity/assets/IMG_8550.JPG",
+        "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/AVATAR-TEST-001/artifact_source.jpg",
+        "sha256": "cbe07e97613b62a437b26c80796cbfbaaf3028a83eeca7b667c912abec5f5103",
+        "prompt": "low-light phone photo of a paper supply manifest receipt"
+      }
+    },
+    {
+      "stage": "watermark_strip",
+      "status": "ok",
+      "ts": "2026-05-03T05:41:55+00:00",
+      "detail": {
+        "tool": "synthidbye",
+        "before_sha": "cbe07e97613b62a437b26c80796cbfbaaf3028a83eeca7b667c912abec5f5103",
+        "after_sha": "e05e63e265504335e007ce90c8106ff6827864ef4d0ed21b641d40251f5f2629",
+        "stderr_tail": [
+          "SynthIDBye seed (save if you need reversibility notes): w7c8xe1ac6mf9skovzfo9imopcfeko",
+          "Wrote /Users/nicolasdossantos/Mendacity/missions/work/AVATAR-TEST-001/artifact_stripped.jpg"
+        ]
+      }
+    },
+    {
+      "stage": "exif_transplant",
+      "status": "ok",
+      "ts": "2026-05-03T05:41:55+00:00",
+      "detail": {
+        "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+        "before_sha": "e05e63e265504335e007ce90c8106ff6827864ef4d0ed21b641d40251f5f2629",
+        "after_sha": "4d83b5ce8d0c1baafb04d03ccbd90f1d33e6bfb4100b9b2be45ce99cd0d72de0"
+      }
+    },
+    {
+      "stage": "provenance_check",
+      "status": "ok",
+      "ts": "2026-05-03T05:41:55+00:00",
+      "detail": {
+        "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/AVATAR-TEST-001/artifact_clean.jpg",
+        "passed": {
+          "per_detector": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "required": {
+            "titan": true,
+            "synthid": true,
+            "c2pa": true
+          },
+          "all_passed": true,
+          "ran_titan": false,
+          "ran_google": false
+        },
+        "report": {
+          "meta": {
+            "sha256": "4d83b5ce8d0c1baafb04d03ccbd90f1d33e6bfb4100b9b2be45ce99cd0d72de0",
+            "mime_inferred": "image/jpeg",
+            "size_bytes": 275769,
+            "path": "/Users/nicolasdossantos/Mendacity/missions/work/AVATAR-TEST-001/artifact_clean.jpg"
+          },
+          "c2pa": {
+            "status": "manifest_not_found",
+            "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+          },
+          "titan_watermark": {
+            "status": "skipped",
+            "reason": "Pass run_titan=True or use CLI --titan"
+          },
+          "google_synthid": {
+            "status": "skipped",
+            "reason": "Pass run_google=True or use CLI --google"
+          }
+        }
+      }
+    },
+    {
+      "stage": "delivered",
+      "status": "skipped",
+      "ts": "2026-05-03T05:41:55+00:00",
+      "detail": {
+        "reason": "delivery.dry_run=true (no live Telegram post)",
+        "would_post_to": "@mendacity_sandbox_demo",
+        "caption_preview": "test"
+      }
+    }
+  ],
+  "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/AVATAR-TEST-001/artifact_clean.jpg",
+  "final_provenance_report": {
+    "meta": {
+      "sha256": "4d83b5ce8d0c1baafb04d03ccbd90f1d33e6bfb4100b9b2be45ce99cd0d72de0",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 275769,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/work/AVATAR-TEST-001/artifact_clean.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "error": null,
+  "spec": {
+    "mission_id": "AVATAR-TEST-001",
+    "operator": "J2-INSCOM-Demo",
+    "authorization": {
+      "authority": "title-10",
+      "target_class": "foreign",
+      "approval_chain": [
+        "J2"
+      ]
+    },
+    "target": {
+      "platform": "telegram",
+      "channel": "@mendacity_sandbox_demo",
+      "audience_profile": "test"
+    },
+    "persona": {
+      "archetype": "battalion-quartermaster-frustrated",
+      "name_seed": "Sasha P.",
+      "generate_avatar": true
+    },
+    "artifact": {
+      "type": "image",
+      "prompt": "low-light phone photo of a paper supply manifest receipt",
+      "source": "fixture:assets/IMG_8550.JPG",
+      "exif_template": "fixtures/koze_iphonex_gist.json",
+      "must_pass": [
+        "c2pa",
+        "titan",
+        "synthid"
+      ],
+      "strip_watermarks": true
+    },
+    "delivery": {
+      "dry_run": true,
+      "caption": "test"
+    }
+  }
+}

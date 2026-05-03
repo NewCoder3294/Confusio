@@ -179,6 +179,27 @@ class PersonaTelegramClient:
         except AuthKeyError as exc:
             raise SessionExpiredError(str(exc)) from exc
 
+    async def send_image(
+        self,
+        channel: str,
+        image_path: str | Path,
+        caption: str = "",
+    ) -> PostResult:
+        """Post an image with optional text caption. Returns the same PostResult
+        shape as send_message so callers can swap freely."""
+        await self.start()
+        target = self._invite_to_channel_id.get(channel, channel)
+        try:
+            msg = await self._client.send_file(target, file=str(image_path), caption=caption)
+            return PostResult(
+                telegram_message_id=msg.id,
+                posted_at=datetime.now(timezone.utc).isoformat(),
+            )
+        except FloodWaitError as exc:
+            raise RateLimitedError(exc.seconds) from exc
+        except AuthKeyError as exc:
+            raise SessionExpiredError(str(exc)) from exc
+
     async def read_recent(self, channel: str, limit: int = 20) -> list[RecentMessage]:
         await self.start()
         target = self._invite_to_channel_id.get(channel, channel)

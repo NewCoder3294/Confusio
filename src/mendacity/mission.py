@@ -204,14 +204,149 @@ def validate_spec(spec: MissionSpec) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _stage_preflight(spec: MissionSpec) -> StageRecord:
+    """Pre-flight checks that fail fast BEFORE expensive stages run.
+
+    Currently checks: when ``delivery.dry_run=false``, the chosen persona's
+    Telethon session is alive. An expired session crashes the delivery stage
+    *after* image generation, watermark strip, and EXIF transplant have all
+    burned cycles + DALL-E credits. We catch it here.
+    """
+    delivery = spec.delivery
+    if delivery.get("dry_run", True):
+        return StageRecord(
+            stage="preflight",
+            status="skipped",
+            ts=_now_iso(),
+            detail={"reason": "delivery.dry_run=true; no live session needed"},
+        )
+
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    try:
+        from social.personas import load_personas
+        from social.telegram_client import (
+            PersonaTelegramClient,
+            SessionExpiredError,
+        )
+    except Exception as exc:
+        raise MissionExecutionError(
+            f"social/ stack not importable: {exc}",
+            code="delivery_failed",
+            stage="preflight",
+        ) from exc
+
+    personas_dir = REPO_ROOT / "social" / "personas"
+    try:
+        personas = load_personas(
+            personas_dir=personas_dir, require_sessions=True
+        )
+    except Exception as exc:
+        raise MissionExecutionError(
+            f"persona load failed: {exc}",
+            code="delivery_failed",
+            stage="preflight",
+        ) from exc
+
+    persona_id = delivery.get("persona_id")
+    if persona_id:
+        if persona_id not in personas:
+            raise MissionExecutionError(
+                f"delivery.persona_id {persona_id!r} not in loaded personas: "
+                f"{sorted(personas)}",
+                code="delivery_failed",
+                stage="preflight",
+            )
+        persona = personas[persona_id]
+    else:
+        persona = next(iter(personas.values()))
+
+    async def _probe() -> None:
+        client = PersonaTelegramClient(persona.resolved_session_path())
+        try:
+            await client.start()
+        finally:
+            await client.stop()
+
+    try:
+        asyncio.run(_probe())
+    except SessionExpiredError as exc:
+        raise MissionExecutionError(
+            f"persona '{persona.id}' session expired or unauthorized: {exc}",
+            code="delivery_failed",
+            stage="preflight",
+        ) from exc
+    except Exception as exc:
+        raise MissionExecutionError(
+            f"persona '{persona.id}' connectivity check failed: "
+            f"{type(exc).__name__}: {exc}",
+            code="delivery_failed",
+            stage="preflight",
+        ) from exc
+
+    return StageRecord(
+        stage="preflight",
+        status="ok",
+        ts=_now_iso(),
+        detail={
+            "persona_id": persona.id,
+            "session_path": str(persona.resolved_session_path()),
+            "checked": "session_authorized",
+        },
+    )
+
+
+def _avatar_prompt(archetype: str | None, name_seed: str | None) -> str:
+    """Build a DALL-E prompt for a generic profile photo matching the archetype.
+    We aim for low-resolution selfie aesthetics, not studio portraits."""
+    arch = (archetype or "anonymous-profile").replace("-", " ")
+    seed = name_seed or ""
+    return (
+        f"casual cropped selfie style profile photo, {arch}, "
+        "phone camera quality, soft indoor lighting, neutral background, "
+        "no text, no watermark, no studio look, candid expression"
+        + (f", subject hint: {seed}" if seed else "")
+    )
+
+
 def _stage_persona(spec: MissionSpec, work_dir: Path) -> StageRecord:
     persona = spec.persona
     persona_id = f"{persona.get('archetype', 'persona')}-{uuid.uuid4().hex[:6]}"
     avatar_path: str | None = None
+    avatar_prompt: str | None = None
+    avatar_revised: str | None = None
+
     if persona.get("generate_avatar"):
-        # v1 demo: avatar generation is out of scope. Stub a path so Foundry
-        # can render a placeholder. Wire to a real generator post-hackathon.
-        avatar_path = str(work_dir / "avatar_stub.png")
+        try:
+            from mendacity.image_gen import ImageGenError, generate_image
+        except ImportError as exc:
+            raise MissionExecutionError(
+                f"image_gen not importable: {exc}",
+                code="generation_failed",
+                stage="persona_generated",
+            ) from exc
+
+        avatar_out = work_dir / "avatar.jpg"
+        avatar_prompt = _avatar_prompt(
+            persona.get("archetype"), persona.get("name_seed")
+        )
+        try:
+            gen = generate_image(
+                prompt=avatar_prompt,
+                output_path=avatar_out,
+                size=persona.get("avatar_size", "1024x1024"),
+                quality=persona.get("avatar_quality", "standard"),
+                model=persona.get("avatar_model", "dall-e-3"),
+            )
+            avatar_path = str(avatar_out)
+            avatar_revised = gen.revised_prompt
+        except ImageGenError as exc:
+            raise MissionExecutionError(
+                f"avatar generation failed: {exc}",
+                code="generation_failed",
+                stage="persona_generated",
+            ) from exc
+
     return StageRecord(
         stage="persona_generated",
         status="ok",
@@ -221,6 +356,8 @@ def _stage_persona(spec: MissionSpec, work_dir: Path) -> StageRecord:
             "archetype": persona.get("archetype"),
             "name_seed": persona.get("name_seed"),
             "avatar_path": avatar_path,
+            "avatar_prompt": avatar_prompt,
+            "avatar_revised_prompt": avatar_revised,
         },
     )
 
@@ -512,11 +649,82 @@ def _grade_provenance(
     }
 
 
+def _generate_caption(spec: MissionSpec) -> tuple[str, dict[str, Any]]:
+    """Generate a persona-voiced caption from archetype + image prompt + audience.
+
+    Used when ``delivery.caption`` is empty. Returns ``(caption, meta)`` where
+    meta records the generation provenance for the result JSON.
+    """
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
+    try:
+        from social.llm import LLMClient, LLMError
+    except Exception as exc:
+        raise MissionExecutionError(
+            f"social.llm not importable: {exc}",
+            code="generation_failed",
+            stage="delivered",
+        ) from exc
+
+    archetype = spec.persona.get("archetype") or "anonymous"
+    name_seed = spec.persona.get("name_seed") or ""
+    image_prompt = spec.artifact.get("prompt") or ""
+    audience = spec.target.get("audience_profile") or "general"
+    lang_hint = spec.delivery.get("language") or ""
+
+    prompt = (
+        f"You are writing a single Telegram post (caption only) in the voice of "
+        f"a person matching this archetype: {archetype}. "
+        f"Name seed: {name_seed}. Audience: {audience}. "
+        f"The post is sharing this image (described): {image_prompt}. "
+        + (f"Write in language: {lang_hint}. " if lang_hint else
+           "Match the natural language of the audience profile. ")
+        + "Output ONLY the caption text, no quotes, no preamble, no hashtags. "
+        "Keep under 220 characters. The voice should be informal, slightly emotional, "
+        "and consistent with someone who would actually post this image to a private channel."
+    )
+
+    try:
+        client = LLMClient()
+    except LLMError as exc:
+        raise MissionExecutionError(
+            f"LLM client init failed: {exc}",
+            code="generation_failed",
+            stage="delivered",
+        ) from exc
+
+    try:
+        text = asyncio.run(client.generate(prompt, temperature=0.85, max_tokens=200))
+    except LLMError as exc:
+        raise MissionExecutionError(
+            f"caption generation failed: {exc}",
+            code="generation_failed",
+            stage="delivered",
+        ) from exc
+
+    text = (text or "").strip()
+    if text.startswith('"') and text.endswith('"'):
+        text = text[1:-1].strip()
+    return text, {
+        "source": "llm",
+        "model": "gpt-4o",
+        "archetype": archetype,
+        "language_hint": lang_hint or "auto",
+    }
+
+
 def _stage_delivery(spec: MissionSpec, work_dir: Path) -> StageRecord:
     """Telegram delivery. For demo we default to dry_run; live delivery is a
     flip in the spec.
     """
     delivery = spec.delivery
+    # Caption resolution: spec-provided caption wins; otherwise generate one
+    # from archetype + image prompt via LLM.
+    raw_caption = (delivery.get("caption") or "").strip()
+    caption_meta: dict[str, Any] = {"source": "spec"} if raw_caption else {}
+    if not raw_caption:
+        raw_caption, caption_meta = _generate_caption(spec)
+
     if delivery.get("dry_run", True):
         return StageRecord(
             stage="delivered",
@@ -525,7 +733,8 @@ def _stage_delivery(spec: MissionSpec, work_dir: Path) -> StageRecord:
             detail={
                 "reason": "delivery.dry_run=true (no live Telegram post)",
                 "would_post_to": spec.target.get("channel"),
-                "caption_preview": delivery.get("caption", "")[:120],
+                "caption_preview": raw_caption[:220],
+                "caption_source": caption_meta,
             },
         )
 
@@ -569,18 +778,39 @@ def _stage_delivery(spec: MissionSpec, work_dir: Path) -> StageRecord:
     session_file = persona.resolved_session_path()
     client = PersonaTelegramClient(session_file)
 
+    # Resolve the final artifact path (same priority order as execute_mission).
+    final_artifact: Path | None = None
+    for cand in ("artifact_clean.jpg", "artifact_stripped.jpg", "artifact_source.jpg"):
+        if (work_dir / cand).exists():
+            final_artifact = work_dir / cand
+            break
+
+    # Use the caption resolved at the top of this function (spec or LLM-generated).
+    caption = raw_caption
+
     async def _send() -> dict[str, Any]:
         try:
             await client.start()
             await client.join_channel(spec.target["channel"])
-            result = await client.send_message(
-                spec.target["channel"], delivery.get("caption", "")
-            )
+            if final_artifact is not None:
+                result = await client.send_image(
+                    spec.target["channel"], final_artifact, caption=caption
+                )
+                attached = str(final_artifact)
+            else:
+                # No artifact available — fall back to text-only post.
+                result = await client.send_message(
+                    spec.target["channel"], caption
+                )
+                attached = None
             return {
                 "telegram_message_id": result.telegram_message_id,
                 "posted_at": result.posted_at,
                 "persona_id": persona.id,
                 "channel": spec.target["channel"],
+                "image_attached": attached,
+                "caption": caption,
+                "caption_source": caption_meta,
             }
         finally:
             await client.stop()
@@ -631,6 +861,10 @@ def execute_mission(
                 },
             )
         )
+
+        # Pre-flight persona session check — only when we'll actually deliver.
+        # Catches expired sessions BEFORE we burn DALL-E credits.
+        result.stages.append(_stage_preflight(spec))
 
         result.stages.append(_stage_persona(spec, work_dir))
         result.stages.append(_stage_select_artifact(spec, work_dir))
