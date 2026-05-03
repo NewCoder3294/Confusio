@@ -36,7 +36,7 @@ export default async function ChannelsPage() {
               />
             )}
           </div>
-          <aside className="flex flex-col gap-3 min-h-0 overflow-y-auto">
+          <aside className="flex flex-col gap-3 min-h-0">
             <NewChannelForm />
             <Reference />
           </aside>
@@ -62,8 +62,8 @@ function ChannelTable({
     fail: "border-fail-border bg-fail-bg text-fail-fg",
   };
   return (
-    <section>
-      <div className="flex items-baseline justify-between mb-2">
+    <section className="flex flex-col flex-1 min-h-0">
+      <div className="flex items-baseline justify-between mb-2 shrink-0">
         <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
           {title}
         </h2>
@@ -71,7 +71,7 @@ function ChannelTable({
           {subtitle}
         </span>
       </div>
-      <div className="border border-border-subtle bg-bg-panel">
+      <div className="flex-1 min-h-0 overflow-y-auto border border-border-subtle bg-bg-panel">
         {channels.length === 0 ? (
           <div className="px-4 py-6 text-fg-faint italic text-[12px] text-center">
             No channels in this category.
@@ -122,13 +122,13 @@ function ChannelTable({
 
 function Reference() {
   return (
-    <div className="border border-border-subtle bg-bg-panel">
-      <header className="px-4 py-2 border-b border-border-subtle">
+    <div className="flex flex-col flex-1 min-h-0 border border-border-subtle bg-bg-panel">
+      <header className="px-4 py-2 border-b border-border-subtle shrink-0">
         <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
           Reference
         </h2>
       </header>
-      <ul className="px-4 py-3 flex flex-col gap-2 text-[11px] text-fg-muted leading-5">
+      <ul className="px-4 py-3 flex flex-col gap-2 text-[11px] text-fg-muted leading-5 flex-1 min-h-0 overflow-y-auto">
         <li>
           <span className="font-mono text-fg-default">channel_id</span> is the
           PK; immutable once created.

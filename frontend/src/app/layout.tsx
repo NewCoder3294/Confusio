@@ -21,7 +21,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="h-full overflow-hidden flex flex-col">
-        <ClassificationBanner />
         <NavBar />
         <main className="flex-1 min-h-0 flex flex-col">{children}</main>
         <SystemFooter />
@@ -31,17 +30,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
-
-function ClassificationBanner() {
-  return (
-    <div
-      role="banner"
-      className="bg-classified text-white text-[11px] font-mono uppercase tracking-[0.18em] py-1 text-center select-none"
-    >
-      SANDBOX // TITLE 10 §1631 // FOREIGN ACTORS ONLY // OPERATOR EYES
-    </div>
-  );
-}
 
 function NavBar() {
   return (
