@@ -87,3 +87,14 @@ async def verify(
     }
     _artifact_cache[artifact_id] = body
     return body
+
+
+@app.get("/v1/verify/{artifact_id}")
+async def get_verify(artifact_id: str) -> dict:
+    body = _artifact_cache.get(artifact_id)
+    if body is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "artifact_not_found", "artifact_id": artifact_id},
+        )
+    return body
