@@ -600,7 +600,7 @@ function DropZonePanel({
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "12px" }}>
+    <div style={{ display: "flex", flexDirection: "column", flex: "1", minHeight: "0", padding: "12px", gap: "10px" }}>
       {/* Error banner */}
       {error && (
         <div
@@ -612,6 +612,7 @@ function DropZonePanel({
             fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
             fontSize: "11px",
             letterSpacing: "0.1em",
+            flexShrink: 0,
           }}
         >
           <span style={{ textTransform: "uppercase", letterSpacing: "0.14em" }}>
@@ -621,7 +622,62 @@ function DropZonePanel({
         </div>
       )}
 
-      {/* Drop zone */}
+      {/* Sample buttons — shown above the drop zone */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+            fontSize: "9px",
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: "var(--fg-faint, #6b7480)",
+            marginBottom: "2px",
+          }}
+        >
+          TRY:
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {SAMPLES.map((s) => (
+            <button
+              key={s.key}
+              disabled={isLoading}
+              onClick={() => loadSample(s.path, s.mime, s.label)}
+              style={{
+                fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+                fontSize: "10px",
+                letterSpacing: "0.12em",
+                background: "transparent",
+                border: "1px solid var(--border-default, #2c333c)",
+                color: isLoading ? "var(--fg-faint, #6b7480)" : "var(--fg-muted, #9aa3ad)",
+                padding: "4px 10px",
+                cursor: isLoading ? "not-allowed" : "pointer",
+                transition: "color 0.1s, border-color 0.1s",
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-default, #e6e9ec)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#5fb8d6";
+                }
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-muted, #9aa3ad)";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-default, #2c333c)";
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Drop zone — fills remaining vertical space */}
       <div
         role="button"
         tabIndex={0}
@@ -648,7 +704,7 @@ function DropZonePanel({
           cursor: isLoading ? "wait" : "pointer",
           transition: "border-color 0.15s, background 0.15s",
           flex: "1",
-          minHeight: "120px",
+          minHeight: "0",
         }}
       >
         {isLoading ? (
@@ -705,62 +761,6 @@ function DropZonePanel({
         style={{ display: "none" }}
         onChange={handleChange}
       />
-
-      {/* Sample buttons */}
-      <div
-        style={{
-          borderTop: "1px solid var(--border-subtle, #232830)",
-          paddingTop: "10px",
-          display: "flex",
-          flexDirection: "column",
-          gap: "6px",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-            fontSize: "9px",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "var(--fg-faint, #6b7480)",
-            marginBottom: "2px",
-          }}
-        >
-          TRY:
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-          {SAMPLES.map((s) => (
-            <button
-              key={s.key}
-              disabled={isLoading}
-              onClick={() => loadSample(s.path, s.mime, s.label)}
-              style={{
-                fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-                fontSize: "10px",
-                letterSpacing: "0.12em",
-                background: "transparent",
-                border: "1px solid var(--border-default, #2c333c)",
-                color: isLoading ? "var(--fg-faint, #6b7480)" : "var(--fg-muted, #9aa3ad)",
-                padding: "4px 10px",
-                cursor: isLoading ? "not-allowed" : "pointer",
-                transition: "color 0.1s, border-color 0.1s",
-              }}
-              onMouseEnter={(e) => {
-                if (!isLoading) {
-                  (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-default, #e6e9ec)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#5fb8d6";
-                }
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-muted, #9aa3ad)";
-                (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-default, #2c333c)";
-              }}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
@@ -1174,11 +1174,13 @@ export default function VerifyPage() {
           {/* Centre: Drop zone or Dossier */}
           <main
             style={{
-              flex: "1",
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
               minHeight: "0",
-              overflowY: "auto",
               background: "var(--bg-base, #0a0c0e)",
               borderRight: "1px solid var(--border-subtle, #232830)",
+              overflow: "hidden",
             }}
           >
             {showDossier && activeEntry ? (
@@ -1187,6 +1189,9 @@ export default function VerifyPage() {
                   border: "1px solid var(--border-default, #2c333c)",
                   margin: "12px",
                   background: "var(--bg-panel, #111418)",
+                  flex: "1",
+                  minHeight: "0",
+                  overflowY: "auto",
                 }}
               >
                 <Dossier entry={activeEntry} onVerifyAnother={handleVerifyAnother} />
@@ -1200,6 +1205,9 @@ export default function VerifyPage() {
                   fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
                   fontSize: "11px",
                   color: "var(--fg-default, #e6e9ec)",
+                  flex: "1",
+                  minHeight: "0",
+                  overflowY: "auto",
                 }}
               >
                 <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border-subtle, #232830)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
