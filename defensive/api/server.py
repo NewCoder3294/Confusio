@@ -7,11 +7,19 @@ import json
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Annotated, Literal
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 
-from defensive.engine.composite import run as composite_run
+# Load API credentials (OPENAI_API_KEY, GEMINI_API_KEY, …) from the shared
+# config so the visual detectors work whether started by the watchdog or by
+# `python -m defensive.api` directly. Process env still wins on conflicts.
+_CREDS_PATH = Path(__file__).resolve().parent.parent.parent / "social" / "config" / "api_credentials.env"
+load_dotenv(_CREDS_PATH)
+
+from defensive.engine.composite import run as composite_run  # noqa: E402
 from defensive.engine.detectors.ai_classifier import warmup as _warmup_classifier
 from defensive.engine.detectors.gemini_visual import warmup as _warmup_gemini
 from defensive.engine.detectors.openai_visual import warmup as _warmup_openai
