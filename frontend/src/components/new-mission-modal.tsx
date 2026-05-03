@@ -77,11 +77,14 @@ export function NewMissionModal({
       .filter((p): p is PersonaLite => Boolean(p));
   }, [seed, personasById]);
 
-  // When seed changes, default corroborators to all suggested.
+  // When seed changes, default to a single corroborator (the first
+  // suggested). Operator can add more in the cast step. Default cast of
+  // (seed + 1) gives the typical "claim + one supporting witness" cascade
+  // that reads cleanest in the demo; multi-corroborator runs are opt-in.
   useEffect(() => {
     setForm((f) => ({
       ...f,
-      corroboratorPersonaIds: suggested.map((p) => p.id),
+      corroboratorPersonaIds: suggested.slice(0, 1).map((p) => p.id),
     }));
   }, [suggested]);
 
