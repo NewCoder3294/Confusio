@@ -97,3 +97,45 @@ class TestReduceSummary:
         ]
         v = reduce(sigs)
         assert "ai_classifier" in v.summary or "exif" in v.summary
+
+
+# ---------------------------------------------------------------------------
+# TestRun — composite.run() parallel dispatch
+# ---------------------------------------------------------------------------
+
+from unittest.mock import patch
+
+from defensive.engine.composite import run as composite_run
+
+
+class TestRun:
+    def test_returns_one_signal_per_detector(self, tiny_jpeg_bytes):
+        with patch("defensive.engine.detectors.synthid.verify_google_watermark",
+                   return_value={"status": "skipped"}), \
+             patch("defensive.engine.detectors.titan.detect_titan_watermark",
+                   side_effect=RuntimeError("no creds")), \
+             patch("defensive.engine.detectors.ai_classifier._classify",
+                   return_value=0.10), \
+             patch("defensive.engine.detectors.c2pa.read_c2pa",
+                   return_value={"status": "manifest_not_found"}):
+            verdict = composite_run(tiny_jpeg_bytes, mime_type="image/jpeg")
+        names = sorted(s.detector for s in verdict.signals)
+        assert names == sorted(
+            ["c2pa", "synthid", "titan", "ai_classifier", "exif", "ela", "phash"]
+        )
+
+    def test_one_detector_failing_does_not_kill_request(self, tiny_jpeg_bytes):
+        with patch("defensive.engine.detectors.ai_classifier._classify",
+                   side_effect=RuntimeError("model missing")), \
+             patch("defensive.engine.detectors.synthid.verify_google_watermark",
+                   return_value={"status": "skipped"}), \
+             patch("defensive.engine.detectors.titan.detect_titan_watermark",
+                   side_effect=RuntimeError("no creds")), \
+             patch("defensive.engine.detectors.c2pa.read_c2pa",
+                   return_value={"status": "manifest_not_found"}):
+            verdict = composite_run(tiny_jpeg_bytes, mime_type="image/jpeg")
+        ai = next(s for s in verdict.signals if s.detector == "ai_classifier")
+        from defensive.engine.verdict import Severity
+        assert ai.severity is Severity.na
+        # Other six still produced signals.
+        assert len(verdict.signals) == 7

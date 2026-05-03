@@ -89,3 +89,41 @@ def reduce(signals: list[DetectorSignal]) -> Verdict:
         level=level, confidence=round(confidence, 4),
         summary=summary, signals=list(signals),
     )
+
+
+# ---------------------------------------------------------------------------
+# Parallel dispatch
+# ---------------------------------------------------------------------------
+
+from concurrent.futures import ThreadPoolExecutor  # noqa: E402
+
+from defensive.engine.detectors import (  # noqa: E402
+    ai_classifier as _ai,
+    c2pa as _c2pa,
+    ela as _ela,
+    exif as _exif,
+    phash as _phash,
+    synthid as _synthid,
+    titan as _titan,
+)
+from defensive.engine.detectors._shared import safe_run  # noqa: E402
+
+
+def run(image_bytes: bytes, *, mime_type: str = "image/jpeg") -> Verdict:
+    """Dispatch all 7 detectors in parallel; reduce signals to a Verdict.
+
+    Per-detector exceptions never propagate — they become n/a signals.
+    """
+    tasks = [
+        (_c2pa.NAME, lambda b: _c2pa.run(b, mime_type=mime_type)),
+        (_synthid.NAME, _synthid.run),
+        (_titan.NAME, _titan.run),
+        (_ai.NAME, _ai.run),
+        (_exif.NAME, _exif.run),
+        (_ela.NAME, _ela.run),
+        (_phash.NAME, _phash.run),
+    ]
+    with ThreadPoolExecutor(max_workers=len(tasks)) as pool:
+        futures = [pool.submit(safe_run, name, fn, image_bytes) for name, fn in tasks]
+        signals = [f.result() for f in futures]
+    return reduce(signals)
