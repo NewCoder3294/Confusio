@@ -359,6 +359,25 @@ class Storage:
             )
             await db.commit()
 
+    async def upsert_schedule_for_regen(
+        self, campaign_id: str, persona_id: str, role: Role, scheduled_at: str
+    ) -> None:
+        """Reset (or create) a schedule row to generated=0 with new scheduled_at.
+
+        Used when the operator rejects a post and asks to regenerate.
+        """
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                """INSERT INTO schedule
+                       (campaign_id, persona_id, role, scheduled_at, generated)
+                   VALUES (?, ?, ?, ?, 0)
+                   ON CONFLICT(campaign_id, persona_id, role) DO UPDATE SET
+                       scheduled_at = excluded.scheduled_at,
+                       generated = 0""",
+                (campaign_id, persona_id, role, scheduled_at),
+            )
+            await db.commit()
+
     async def list_due_schedule(self, *, now: str) -> list[tuple[str, str, Role, str]]:
         """Return (campaign_id, persona_id, role, scheduled_at) for entries
         where generated=0 AND scheduled_at <= now AND campaign is running."""

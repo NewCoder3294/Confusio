@@ -145,14 +145,9 @@ class Orchestrator:
             extra={"regenerate": regenerate},
         )
         if regenerate:
-            # Drop the schedule's generated flag so the loop will generate again.
-            await self.storage.insert_schedule(
+            await self.storage.upsert_schedule_for_regen(
                 post.campaign_id, post.persona_id, post.role, now_iso()
             )
-            # insert_schedule is INSERT OR IGNORE; if a row already exists with
-            # generated=1 we need to flip it back. Easiest: delete + reinsert.
-            # (Keeping it simple: orchestrator's seed-regenerate path handles
-            # itself in the poll loop by re-detecting the missing seed post.)
 
     async def pause(self, campaign_id: str) -> None:
         await self.storage.update_campaign_status(campaign_id, "paused")
@@ -232,8 +227,9 @@ class Orchestrator:
 
         seed = seed_posts[-1]
         if seed.status == "rejected":
-            # No live seed; regenerate.
-            await self._generate_one(campaign, seed_persona_id, "seed")
+            # Operator's reject(regenerate=True) writes a schedule row that
+            # _generate_due will pick up. Pure reject (regenerate=False) leaves
+            # the campaign stalled until operator acts (per FR-5.5).
             return
         if seed.status != "posted":
             return  # waiting for approval / posting

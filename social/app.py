@@ -324,7 +324,4 @@ def main() -> None:
         st.rerun()
 
 
-if __name__ == "__main__":
-    main()
-else:
-    main()  # Streamlit imports the module
+main()  # Streamlit runs this script as __main__ on every interaction.
