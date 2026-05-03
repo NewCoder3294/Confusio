@@ -9,12 +9,13 @@ from defensive.engine.verdict import (
 )
 
 WEIGHTS: dict[str, float] = {
-    "ai_classifier":  0.20,
-    "gemini_visual":  0.30,
-    "exif":           0.15,
+    "ai_classifier":  0.10,
+    "gemini_visual":  0.25,
+    "openai_visual":  0.25,
+    "exif":           0.10,
     "c2pa":           0.15,
     "titan":          0.05,
-    "ela":            0.10,
+    "ela":            0.05,
     "phash":          0.05,
 }
 
@@ -133,6 +134,7 @@ from defensive.engine.detectors import (  # noqa: E402
     ela as _ela,
     exif as _exif,
     gemini_visual as _gemini,
+    openai_visual as _openai,
     phash as _phash,
     titan as _titan,
 )
@@ -140,13 +142,14 @@ from defensive.engine.detectors._shared import safe_run  # noqa: E402
 
 
 def run(image_bytes: bytes, *, mime_type: str = "image/jpeg") -> Verdict:
-    """Dispatch all 7 detectors in parallel; reduce signals to a Verdict.
+    """Dispatch all 8 detectors in parallel; reduce signals to a Verdict.
 
     Per-detector exceptions never propagate — they become n/a signals.
     """
     tasks = [
         (_c2pa.NAME, lambda b: _c2pa.run(b, mime_type=mime_type)),
         (_gemini.NAME, _gemini.run),
+        (_openai.NAME, lambda b: _openai.run(b, mime_type=mime_type)),
         (_titan.NAME, _titan.run),
         (_ai.NAME, _ai.run),
         (_exif.NAME, _exif.run),

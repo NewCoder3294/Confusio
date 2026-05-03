@@ -33,7 +33,7 @@ class TestHealth:
         assert body["ok"] is True
         assert isinstance(body["classifier_warm"], bool)
         assert "detectors" in body
-        assert len(body["detectors"]) == 7
+        assert len(body["detectors"]) == 8
         assert isinstance(body["audit_count"], int)
 
     def test_audit_count_counts_lines(self, monkeypatch, tmp_path):

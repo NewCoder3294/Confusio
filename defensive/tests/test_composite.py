@@ -19,7 +19,7 @@ def _sig(detector: str, sev: Severity, score: float | None = None) -> DetectorSi
 class TestReduceLevel:
     def test_all_pass_is_authentic(self):
         sigs = [_sig(d, Severity.pass_) for d in
-                ("c2pa", "titan", "ai_classifier", "gemini_visual", "exif", "ela", "phash")]
+                ("c2pa", "titan", "ai_classifier", "gemini_visual", "openai_visual", "exif", "ela", "phash")]
         v = reduce(sigs)
         assert v.level is VerdictLevel.AUTHENTIC
 
@@ -32,7 +32,7 @@ class TestReduceLevel:
         # pass_w (gemini.30 + c2pa.15 + titan.05 + exif.15 + ela.10 + phash.05)
         # = 0.80 minus fail_w (ai_classifier.20) = +0.60 → AUTHENTIC.
         sigs = [_sig(d, Severity.pass_) for d in
-                ("c2pa", "titan", "gemini_visual", "exif", "ela", "phash")]
+                ("c2pa", "titan", "gemini_visual", "openai_visual", "exif", "ela", "phash")]
         sigs.append(_sig("ai_classifier", Severity.fail, 0.94))
         v = reduce(sigs)
         assert v.level is VerdictLevel.AUTHENTIC
@@ -76,7 +76,7 @@ class TestReduceLevel:
         # All detectors unable to check → net 0 → SUSPECT (honest "we
         # could not assess"), not AUTHENTIC by absence-of-evidence.
         sigs = [_sig(d, Severity.na) for d in
-                ("c2pa", "titan", "ai_classifier", "gemini_visual", "exif", "ela", "phash")]
+                ("c2pa", "titan", "ai_classifier", "gemini_visual", "openai_visual", "exif", "ela", "phash")]
         v = reduce(sigs)
         assert v.level is VerdictLevel.SUSPECT
         assert v.confidence == 0.0
@@ -85,26 +85,30 @@ class TestReduceLevel:
 class TestReduceConfidence:
     def test_all_pass_high_confidence(self):
         sigs = [_sig(d, Severity.pass_) for d in
-                ("c2pa", "titan", "ai_classifier", "gemini_visual", "exif", "ela", "phash")]
+                ("c2pa", "titan", "ai_classifier", "gemini_visual", "openai_visual", "exif", "ela", "phash")]
         v = reduce(sigs)
         assert v.confidence == pytest.approx(1.0, abs=0.001)
 
     def test_strong_synthetic_high_confidence(self):
+        # Strong SYNTHETIC: both vision auditors fail, classifier fails,
+        # exif missing. Under the 8-detector weights this lands clearly
+        # negative (gemini.25 + openai.25 + ai.10 + exif.10 = 0.70 fail vs
+        # ela.05 + phash.05 = 0.10 pass).
         sigs = [
-            _sig("c2pa", Severity.warn),
-            _sig("titan", Severity.warn),
+            _sig("c2pa", Severity.na),
+            _sig("titan", Severity.na),
             _sig("ai_classifier", Severity.fail, 0.94),
-            _sig("gemini_visual", Severity.warn),
+            _sig("gemini_visual", Severity.fail, 0.92),
+            _sig("openai_visual", Severity.fail, 0.90),
             _sig("exif", Severity.fail),
             _sig("ela", Severity.pass_),
             _sig("phash", Severity.pass_),
         ]
         v = reduce(sigs)
         assert v.level is VerdictLevel.SYNTHETIC
-        # ai_classifier (0.20) + exif (0.15) back SYNTHETIC level.
-        # ela (0.10) and phash (0.05) back AUTHENTIC ⇒ subtract halves.
-        # 0.35 - (0.10 + 0.05) * 0.5 = 0.275
-        assert 0.15 < v.confidence < 0.5
+        # Confidence reflects strength: fail weights agreeing minus pass
+        # weights disagreeing × 0.5.
+        assert v.confidence > 0.4
 
     def test_confidence_clamped_zero(self):
         # Mostly disagreement should not go negative.
@@ -154,12 +158,15 @@ class TestRun:
              patch("defensive.engine.detectors.gemini_visual._call_gemini",
                    return_value={"verdict": "authentic", "synthid_detected": False,
                                  "confidence": 0.9, "reasoning": "clean"}), \
+             patch("defensive.engine.detectors.openai_visual._call_openai",
+                   return_value={"verdict": "authentic",
+                                 "confidence": 0.9, "reasoning": "clean"}), \
              patch("defensive.engine.detectors.c2pa.read_c2pa",
                    return_value={"status": "manifest_not_found"}):
             verdict = composite_run(tiny_jpeg_bytes, mime_type="image/jpeg")
         names = sorted(s.detector for s in verdict.signals)
         assert names == sorted(
-            ["c2pa", "titan", "ai_classifier", "gemini_visual", "exif", "ela", "phash"]
+            ["c2pa", "titan", "ai_classifier", "gemini_visual", "openai_visual", "exif", "ela", "phash"]
         )
 
     def test_one_detector_failing_does_not_kill_request(self, tiny_jpeg_bytes):
@@ -167,6 +174,9 @@ class TestRun:
                    side_effect=RuntimeError("model missing")), \
              patch("defensive.engine.detectors.gemini_visual._call_gemini",
                    return_value={"verdict": "authentic", "synthid_detected": False,
+                                 "confidence": 0.9, "reasoning": "clean"}), \
+             patch("defensive.engine.detectors.openai_visual._call_openai",
+                   return_value={"verdict": "authentic",
                                  "confidence": 0.9, "reasoning": "clean"}), \
              patch("defensive.engine.detectors.titan.detect_titan_watermark",
                    side_effect=RuntimeError("no creds")), \
@@ -177,4 +187,4 @@ class TestRun:
         from defensive.engine.verdict import Severity
         assert ai.severity is Severity.na
         # Other six still produced signals.
-        assert len(verdict.signals) == 7
+        assert len(verdict.signals) == 8

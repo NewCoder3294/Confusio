@@ -72,6 +72,7 @@ type DetectorState =
 const DETECTOR_LABELS: Record<string, string> = {
   c2pa: "C2PA",
   gemini_visual: "GEMINI",
+  openai_visual: "OPENAI",
   ai_classifier: "AI-GEN",
   exif: "EXIF",
   ela: "ELA",
@@ -79,7 +80,7 @@ const DETECTOR_LABELS: Record<string, string> = {
   titan: "TITAN",
 };
 
-const DETECTOR_ORDER = ["c2pa", "gemini_visual", "ai_classifier", "exif", "ela", "phash", "titan"];
+const DETECTOR_ORDER = ["c2pa", "gemini_visual", "openai_visual", "ai_classifier", "exif", "ela", "phash", "titan"];
 
 /* ─────────────────────────────────────────────────────────────────────── */
 /* Severity / verdict inline styles                                          */
@@ -161,7 +162,7 @@ function StatusBar({
     : "Engine cold";
 
   const detectorCount = health?.detectors.length ?? 0;
-  const detectorsLabel = `${detectorCount}/7 detectors ready`;
+  const detectorsLabel = `${detectorCount}/8 detectors ready`;
 
   return (
     <div
@@ -728,7 +729,7 @@ function DropZonePanel({
                 fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
               }}
             >
-              Running 7 detectors
+              Running 8 detectors
             </span>
           </>
         ) : (
