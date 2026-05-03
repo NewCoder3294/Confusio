@@ -42,7 +42,7 @@ export default async function PersonasPage({
         brief="Stable identities used for the seed post and the corroborating cast that follows. Each persona has a voice profile and a graph of who it knows."
       />
 
-      <div className="max-w-[1400px] w-full mx-auto px-6 py-3 grid grid-cols-[280px_1fr] gap-3 items-start">
+      <div className="w-full mx-auto px-6 py-3 grid grid-cols-[280px_1fr] gap-3 items-start">
         <Card title="Roster" meta={`${personas.length}`}>
           <PersonaList
             personas={personas}

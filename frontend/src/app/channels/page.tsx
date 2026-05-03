@@ -19,7 +19,7 @@ export default async function ChannelsPage() {
         brief="Delivery targets. Missions resolve their channel through this list before the engine accepts them. Sandbox-only from this surface."
       />
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="max-w-[1400px] w-full mx-auto px-6 py-4 grid grid-cols-[1fr_360px] gap-4">
+        <div className="w-full mx-auto px-6 py-4 grid grid-cols-[1fr_360px] gap-4">
           <div className="flex flex-col gap-4">
             <ChannelTable
               title="Sandbox channels"

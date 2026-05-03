@@ -24,7 +24,7 @@ export default async function AuthorizationAndAuditPage() {
         brief={`Foreign-targeted IO under U.S. Army intelligence authority. Live delivery disabled — every mission runs against ${sandboxCount} sandbox endpoints with full audit recording.`}
       />
       <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="max-w-[1400px] w-full mx-auto px-6 py-4 grid grid-cols-[1fr_320px] gap-4">
+        <div className="w-full mx-auto px-6 py-4 grid grid-cols-[1fr_320px] gap-4">
           <div className="flex flex-col gap-4">
             <CountStrip counts={counts} />
             <AuditTrail missions={missions} channelById={snap.channelById} />
@@ -45,7 +45,7 @@ function LegalBanner({ channels }: { channels: Channel[] }) {
   const sandboxCount = channels.filter((c) => c.isSandbox).length;
   return (
     <section className="border-b border-border-subtle bg-bg-panel">
-      <div className="max-w-[1400px] mx-auto px-6 py-5">
+      <div className="mx-auto px-6 py-5">
         <div className="font-mono text-[10px] tracking-[0.18em] text-classified uppercase">
           Authorization Statement — Operator Console
         </div>

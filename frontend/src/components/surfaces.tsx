@@ -143,7 +143,7 @@ export function PageHeader({
 }) {
   return (
     <header className="border-b border-border-subtle bg-bg-panel shrink-0">
-      <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-baseline justify-between gap-6">
+      <div className="px-6 py-3 flex items-baseline justify-between gap-6">
         <div>
           <div className="font-mono text-[10px] tracking-[0.18em] text-classified uppercase">
             {eyebrow}

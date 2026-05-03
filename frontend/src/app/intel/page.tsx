@@ -13,7 +13,7 @@ export default function IntelInboxPage() {
         title="Intel Inbox"
         brief="Same instruments the offensive arm uses to grade itself, pointed at suspect inbound imagery. C2PA + spectral surrogate + EXIF anomalies → composite verdict."
       />
-      <div className="flex-1 min-h-0 max-w-[1400px] w-full mx-auto px-6 py-3">
+      <div className="flex-1 min-h-0 w-full mx-auto px-6 py-3">
         <IntelInbox />
       </div>
     </>

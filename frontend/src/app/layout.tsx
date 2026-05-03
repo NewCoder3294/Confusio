@@ -46,7 +46,7 @@ function ClassificationBanner() {
 function NavBar() {
   return (
     <nav className="border-b border-border-subtle bg-bg-panel">
-      <div className="max-w-[1400px] mx-auto px-6 h-12 flex items-center justify-between">
+      <div className="mx-auto px-6 h-12 flex items-center justify-between">
         <div className="flex items-baseline gap-6">
           <Link href="/" className="font-mono text-fg-default tracking-wider text-sm">
             <span className="text-classified">/</span>MENDACITY
