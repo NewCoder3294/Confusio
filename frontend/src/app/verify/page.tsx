@@ -542,9 +542,9 @@ function DetectorGrid({ states }: { states: Record<string, DetectorState> }) {
 /* ─────────────────────────────────────────────────────────────────────── */
 
 const SAMPLES = [
-  { key: "iphone", label: "iPhone (real)", path: "/samples/iphone.jpg", mime: "image/jpeg" },
-  { key: "dalle", label: "DALL-E (synthetic)", path: "/samples/dalle.jpg", mime: "image/jpeg" },
-  { key: "gemini", label: "Gemini (synthetic)", path: "/samples/gemini.png", mime: "image/png" },
+  { key: "truck-convoy", label: "01 · truck convoy", path: "/samples/01-truck-convoy.png", mime: "image/png" },
+  { key: "shadow-fox-003", label: "02 · SHADOW-FOX-003", path: "/samples/02-shadow-fox-003.jpg", mime: "image/jpeg" },
+  { key: "shadow-fox-004", label: "03 · SHADOW-FOX-004", path: "/samples/03-shadow-fox-004.jpg", mime: "image/jpeg" },
 ];
 
 function DropZonePanel({

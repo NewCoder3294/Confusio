@@ -218,9 +218,18 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   // dispatched missions show up immediately on the Mission Board.
   const localMissions = local.map((l) => l.mission as Mission);
   const localArtifacts = local.map((l) => l.artifact as Artifact);
-  const allMissions = [...localMissions, ...missions].sort((a, b) =>
-    b.createdAt.localeCompare(a.createdAt),
-  );
+  // Demo pins: ordered list of mission IDs to surface at the top of the
+  // board regardless of createdAt. Earlier entries rank higher.
+  const PINNED_MISSIONS = ["SHADOW-FOX-003", "SHADOW-FOX-004"];
+  const pinRank = new Map(PINNED_MISSIONS.map((id, i) => [id, i]));
+  const allMissions = [...localMissions, ...missions].sort((a, b) => {
+    const ra = pinRank.get(a.missionId);
+    const rb = pinRank.get(b.missionId);
+    if (ra !== undefined && rb !== undefined) return ra - rb;
+    if (ra !== undefined) return -1;
+    if (rb !== undefined) return 1;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
 
   const artifactByMission = new Map<string, Artifact>();
   for (const a of artifacts) artifactByMission.set(a.missionId, a);
