@@ -1,0 +1,19 @@
+{
+  "comment": "Example ONLY — synthetic provenance labels for local Mendacity tests; edit tags as needed.",
+  "0th": {
+    "271": "SYNTHETIC MAKE",
+    "272": "SYNTHETIC MODEL X",
+    "305": "fixture-editor 0",
+    "274": 1
+  },
+  "Exif": {
+    "36867": "2026:05:02 12:00:00",
+    "36868": "2026:05:02 12:00:00",
+    "33434": [1, 60],
+    "33437": [9, 5],
+    "34855": [400],
+    "42036": "SYNTHETIC LENS"
+  },
+  "GPS": {},
+  "1st": {}
+}
