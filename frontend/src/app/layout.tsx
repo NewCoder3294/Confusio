@@ -61,6 +61,7 @@ function NavBar() {
           <NavLink href="/personas">Personas</NavLink>
           <NavLink href="/channels">Channels</NavLink>
           <NavLink href="/audit">Authorization &amp; Audit</NavLink>
+          <NavLink href="/runbook">Runbook</NavLink>
         </div>
       </div>
     </nav>
