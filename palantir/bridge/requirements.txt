@@ -1,0 +1,18 @@
+# Mendacity ↔ Foundry bridge dependencies.
+#
+# The Foundry SDK package name has changed over time. The two known-current
+# options are below — uncomment whichever one your tenant + token type expects.
+# When in doubt, install both into a venv and import-test.
+
+# Official Palantir Python SDK (post-2024 unification).
+foundry-platform-sdk>=0.95.0
+
+# Older official SDK (kept here as a fallback in case the new one trips on
+# this particular tenant version):
+# foundry-sdk>=0.50.0
+
+# Used for atomic .env loading; service-user token never goes on the CLI.
+python-dotenv>=1.0.0
+
+# YAML emit — engine's MissionSpec is YAML.
+PyYAML>=6.0.1

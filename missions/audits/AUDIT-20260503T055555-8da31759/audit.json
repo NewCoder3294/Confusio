@@ -1,0 +1,94 @@
+{
+  "audit_id": "AUDIT-20260503T055555-8da31759",
+  "started_at": "2026-05-03T05:55:57+00:00",
+  "input": {
+    "path": "/Users/nicolasdossantos/Mendacity/assets/Gemini_Generated_Image_uzqgniuzqgniuzqg_apple_meta.jpg",
+    "mime": "image/jpeg",
+    "sha256": "8da31759957193fac8cc41768e05d7abedbba54345ae9d8911949013446a7a78",
+    "size_bytes": 258683,
+    "exif": {
+      "present": true,
+      "dimensions": [
+        1024,
+        558
+      ],
+      "format": "JPEG",
+      "make": "Apple",
+      "model": "iPhone X",
+      "software": "11.1",
+      "datetime": "2017:12:01 18:06:58",
+      "gps_present": true
+    }
+  },
+  "output": {
+    "path": "/Users/nicolasdossantos/Mendacity/missions/audits/AUDIT-20260503T055555-8da31759/after.jpg",
+    "mime": "image/jpeg",
+    "sha256": "c197f1da02d20c68a3ad619f76edfbf78b701326b079e1863b6e6030340b751c",
+    "size_bytes": 274909,
+    "exif": {
+      "present": true,
+      "dimensions": [
+        1024,
+        558
+      ],
+      "format": "JPEG",
+      "make": "Apple",
+      "model": "iPhone X",
+      "software": "11.1",
+      "datetime": "2025:12:01 18:06:58",
+      "gps_present": false
+    }
+  },
+  "transform": {
+    "synthidbye_seed_log": "SynthIDBye seed (save if you need reversibility notes): 9ima1vezf2w06i13p6icxqhmopcxg07",
+    "exif_template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+    "pixel_diff": {
+      "pct_modified": 99.38,
+      "mean_delta": 20.137,
+      "method": "PIL RGB sum-abs-delta",
+      "pixels_total": 571392
+    }
+  },
+  "provenance_before": {
+    "meta": {
+      "sha256": "8da31759957193fac8cc41768e05d7abedbba54345ae9d8911949013446a7a78",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 258683,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/audits/AUDIT-20260503T055555-8da31759/before.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "provenance_after": {
+    "meta": {
+      "sha256": "c197f1da02d20c68a3ad619f76edfbf78b701326b079e1863b6e6030340b751c",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 274909,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/audits/AUDIT-20260503T055555-8da31759/after.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "comparison_image_path": "/Users/nicolasdossantos/Mendacity/missions/audits/AUDIT-20260503T055555-8da31759/comparison.png",
+  "verdict": "EXIF: Apple/11.1 -> Apple/11.1 | C2PA: manifest_not_found -> manifest_not_found | Pixels modified: 99.38% (mean RGB delta: 20.137)"
+}
