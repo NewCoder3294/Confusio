@@ -12,6 +12,8 @@ import { DetectorPill } from "@/components/detector-pill";
 import { StatTile } from "@/components/stat-tile";
 import { StageTimeline } from "@/components/stage-timeline";
 
+type ArtifactVariant = "source" | "stripped" | "clean";
+
 export default async function MissionBoardPage({
   searchParams,
 }: {
@@ -19,6 +21,11 @@ export default async function MissionBoardPage({
 }) {
   const sp = await searchParams;
   const selectedId = typeof sp.m === "string" ? sp.m : undefined;
+  const variantParam = typeof sp.v === "string" ? sp.v : undefined;
+  const variant: ArtifactVariant =
+    variantParam === "source" || variantParam === "stripped"
+      ? variantParam
+      : "clean";
 
   const snap = await getDashboardSnapshot();
   const selected =
@@ -283,19 +290,51 @@ function MissionDetail({
 function ArtifactCard({
   artifact,
   mission,
+  variant,
 }: {
   artifact: Artifact;
   mission: Mission;
+  variant: "clean" | "source" | "stripped";
 }) {
+  const VARIANT_COPY: Record<typeof variant, { label: string; sub: string }> = {
+    source: {
+      label: "SOURCE",
+      sub: "Generator output — synthid + maker watermarks intact",
+    },
+    stripped: {
+      label: "STRIPPED",
+      sub: "Watermarks removed, EXIF cleared",
+    },
+    clean: {
+      label: "CLEAN",
+      sub: "EXIF transplanted, persona-consistent, ships",
+    },
+  };
+  const copy = VARIANT_COPY[variant];
+
   return (
     <div className="border border-border-subtle bg-bg-panel">
-      <div className="aspect-video bg-bg-base flex items-center justify-center text-fg-faint border-b border-border-subtle">
-        <div className="font-mono text-[11px] uppercase tracking-[0.14em] text-center px-6">
-          <div>artifact preview unavailable in browser</div>
-          <div className="mt-1 text-fg-faint/70 normal-case tracking-normal text-[10px]">
-            (local file path — see record below)
+      <div className="aspect-video bg-bg-base flex items-center justify-center border-b border-border-subtle overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/api/artifact/${encodeURIComponent(artifact.artifactId)}?variant=${variant}`}
+          alt={`Mission ${mission.missionId} artifact (${variant})`}
+          className="max-h-full max-w-full object-contain"
+        />
+      </div>
+      <div className="px-3 py-2 border-b border-border-subtle flex items-baseline justify-between gap-3">
+        <div>
+          <div className="font-mono text-[10px] tracking-[0.16em] text-fg-default">
+            {copy.label}
+          </div>
+          <div className="text-[10px] text-fg-faint italic mt-[1px]">
+            {copy.sub}
           </div>
         </div>
+        <ArtifactVariantSwitcher
+          missionId={mission.missionId}
+          current={variant}
+        />
       </div>
       <dl className="text-[11px] divide-y divide-border-subtle">
         <KV k="prompt" v={artifact.prompt} />
@@ -307,6 +346,45 @@ function ArtifactCard({
           v={mission.audienceProfile || "—"}
         />
       </dl>
+    </div>
+  );
+}
+
+function ArtifactVariantSwitcher({
+  missionId,
+  current,
+}: {
+  missionId: string;
+  current: "clean" | "source" | "stripped";
+}) {
+  const variants: Array<"source" | "stripped" | "clean"> = [
+    "source",
+    "stripped",
+    "clean",
+  ];
+  return (
+    <div className="flex">
+      {variants.map((v, i) => {
+        const isActive = v === current;
+        return (
+          <Link
+            key={v}
+            href={{ pathname: "/", query: { m: missionId, v } }}
+            scroll={false}
+            replace
+            prefetch={false}
+            className={`px-2 py-[2px] font-mono text-[10px] uppercase tracking-[0.14em] border ${
+              i > 0 ? "border-l-0" : ""
+            } ${
+              isActive
+                ? "border-info-border bg-info-bg text-info-fg"
+                : "border-border-default text-fg-muted hover:bg-bg-hover"
+            }`}
+          >
+            {v}
+          </Link>
+        );
+      })}
     </div>
   );
 }
