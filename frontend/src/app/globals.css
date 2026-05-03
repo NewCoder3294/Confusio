@@ -1,51 +1,61 @@
 @import "tailwindcss";
 
 /*
- * Mendacity Operator Console — design tokens.
+ * Confusio Operator Console — design tokens.
  *
- * Aesthetic lane (PRODUCT.md): Palantir Foundry / Gotham + declassified
- * dossier. Dark surfaces, restrained accents, editorial typography,
- * monospace identifiers. WCAG 2.1 AA contrast on all text — projector
- * glare in row 5 is the worst-case viewing condition.
+ * Aesthetic: Palantir Foundry. Dark slate surfaces, blue accent reserved
+ * for actionable elements, red reserved for genuine errors. Mono
+ * identifiers, sans body. WCAG 2.1 AA contrast — projector glare in row 5
+ * is the worst-case viewing condition.
  */
 
 :root {
-  --bg-base: #0a0c0e;
-  --bg-panel: #111418;
-  --bg-elevated: #181c21;
-  --bg-hover: #1f242a;
-  --border-subtle: #232830;
-  --border-default: #2c333c;
-  --border-strong: #3a424c;
+  /* Surfaces — cool slate, slightly bluer than warm grey to read as
+     "infrastructure" rather than "terminal". */
+  --bg-base: #0b0e13;
+  --bg-panel: #131720;
+  --bg-elevated: #1a1f29;
+  --bg-hover: #222836;
+  --border-subtle: #1f2531;
+  --border-default: #2a3140;
+  --border-strong: #3a4254;
 
-  --fg-default: #e6e9ec;
-  --fg-muted: #9aa3ad;
-  --fg-faint: #6b7480;
-  --fg-mono: #c4cad1;
+  /* Foreground — high-contrast white with a hint of blue, then
+     progressively muted slate for hierarchy. */
+  --fg-default: #e8ecf2;
+  --fg-muted: #98a2b3;
+  --fg-faint: #6a7689;
+  --fg-mono: #c4cbd6;
 
-  /* Status palette — saturated enough to read from row 5,
-     restrained enough not to look like a SOC. */
-  --pass-fg: #6cd690;
-  --pass-bg: #0e2818;
-  --pass-border: #1a4f30;
+  /* Status palette — pass/info/warn are muted, fail is the only saturated
+     tone so genuine errors actually grab the eye. */
+  --pass-fg: #7fc99a;
+  --pass-bg: #102619;
+  --pass-border: #1d4a30;
 
-  --warn-fg: #e3b14a;
-  --warn-bg: #2a2010;
-  --warn-border: #4a3a1a;
+  --warn-fg: #d9b15a;
+  --warn-bg: #281f10;
+  --warn-border: #45371a;
 
-  --fail-fg: #e36b6b;
-  --fail-bg: #2a1212;
+  --fail-fg: #e16868;
+  --fail-bg: #2a1313;
   --fail-border: #4a1f1f;
 
-  --info-fg: #5fb8d6;
-  --info-bg: #0e2530;
-  --info-border: #1f4a5f;
+  /* Info / accent — Foundry blue. Used for interactive states (focus,
+     selection, primary action, brand mark). Keep this as the only
+     vibrant chrome on the page. */
+  --info-fg: #6aa0ee;
+  --info-bg: #14213a;
+  --info-border: #2a4477;
 
   --neutral-fg: #adb4bd;
-  --neutral-bg: #1a1d22;
-  --neutral-border: #2c333c;
+  --neutral-bg: #181d27;
+  --neutral-border: #2a3140;
 
-  --accent-classified: #e36b6b;
+  /* Brand mark accent — Foundry-style muted blue, no longer the
+     "classified-red" of the ops-shop tradition. The variable name is kept
+     for back-compat with existing class references. */
+  --accent-classified: #6aa0ee;
 }
 
 @theme inline {

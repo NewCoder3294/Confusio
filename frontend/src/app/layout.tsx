@@ -34,16 +34,26 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 function NavBar() {
   return (
     <nav className="border-b border-border-subtle bg-bg-panel">
-      <div className="mx-auto px-6 h-12 flex items-center justify-between">
-        <div className="flex items-baseline gap-6">
-          <Link href="/" className="font-mono text-fg-default tracking-wider text-sm">
-            <span className="text-classified">/</span>CONFUSIO
+      <div className="mx-auto px-6 h-11 flex items-center justify-between">
+        <div className="flex items-center gap-5">
+          <Link
+            href="/"
+            className="flex items-center gap-2 group"
+            aria-label="Confusio — Operator Console"
+          >
+            <span
+              className="block w-[8px] h-[8px] bg-classified shrink-0"
+              aria-hidden="true"
+            />
+            <span className="font-sans font-medium text-fg-default tracking-tight text-[13px]">
+              Confusio
+            </span>
           </Link>
-          <span className="text-fg-faint text-[11px] font-mono uppercase tracking-widest">
-            Operator Console
+          <span className="text-fg-faint text-[10px] font-mono uppercase tracking-[0.18em]">
+            Operator&nbsp;Console
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <NavLink href="/">Mission Board</NavLink>
           <NavLink href="/personas">Agents</NavLink>
           <NavLink href="/channels">Channels</NavLink>
