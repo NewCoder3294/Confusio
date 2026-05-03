@@ -6,11 +6,11 @@ import {
   type Channel,
   type Artifact,
   type DetectionResult,
+  type Stage,
 } from "@/lib/foundry";
 import { StatusPill } from "@/components/status-pill";
 import { DetectorPill } from "@/components/detector-pill";
-import { StatTile } from "@/components/stat-tile";
-import { StageTimeline } from "@/components/stage-timeline";
+import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
 
 type ArtifactVariant = "source" | "stripped" | "clean";
 
@@ -34,56 +34,47 @@ export default async function MissionBoardPage({
   const counts = computeCounts(snap.missions);
 
   return (
-    <div className="flex-1 flex flex-col">
-      <section className="border-b border-border-subtle bg-bg-base">
-        <div className="max-w-[1400px] mx-auto px-6 py-4 flex items-stretch gap-3">
-          <div className="grid grid-cols-3 gap-3 flex-1">
-            <StatTile
-              label="Active missions"
-              value={counts.active}
-              tone={counts.active > 0 ? "info" : "default"}
-              hint="Status: executing"
-            />
-            <StatTile
-              label="Completed missions"
-              value={counts.completed}
-              hint="Last 24h on this console"
-            />
-            <StatTile
-              label="Recent pass rate"
+    <>
+      <PageHeader
+        eyebrow="Offensive — Mission ledger"
+        title="Mission Board"
+        brief="Live record of every dispatched attack chain. Pick a mission to inspect its artifact, detector verdicts, and stage timeline."
+        actions={
+          <div className="flex items-stretch gap-2">
+            <MiniStat label="Active" value={counts.active} tone="info" />
+            <MiniStat label="Done 24h" value={counts.completed} tone="pass" />
+            <MiniStat
+              label="Pass rate"
               value={
                 counts.recentPassRate === null
                   ? "—"
                   : `${Math.round(counts.recentPassRate * 100)}%`
               }
-              tone={
-                counts.recentPassRate !== null && counts.recentPassRate >= 0.8
-                  ? "info"
-                  : "warn"
-              }
-              hint="Avg of last 5 completed"
             />
+            <Link
+              href="/missions/new"
+              className="flex flex-col justify-center px-4 border border-info-border bg-info-bg/40 hover:bg-info-bg text-info-fg transition-colors"
+            >
+              <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-80">
+                Dispatch
+              </span>
+              <span className="font-mono text-[12px] tracking-wide">
+                + New mission
+              </span>
+            </Link>
           </div>
-          <Link
-            href="/missions/new"
-            className="flex flex-col justify-center items-center w-[180px] border border-info-border bg-info-bg/40 hover:bg-info-bg text-info-fg transition-colors"
-          >
-            <span className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-80">
-              Dispatch
-            </span>
-            <span className="mt-1 font-mono text-base tracking-wide">
-              + New Mission
-            </span>
-          </Link>
-        </div>
-      </section>
+        }
+      />
 
-      <section className="flex-1 grid grid-cols-[420px_1fr] min-h-0">
-        <MissionList
-          missions={snap.missions}
-          selectedId={selected?.missionId}
-          channelById={snap.channelById}
-        />
+      <div className="flex-1 min-h-0 max-w-[1400px] w-full mx-auto px-6 py-3 grid grid-cols-[280px_1fr] gap-3">
+        <Card title="Missions" meta={`${snap.missions.length}`}>
+          <MissionList
+            missions={snap.missions}
+            selectedId={selected?.missionId}
+            channelById={snap.channelById}
+          />
+        </Card>
+
         {selected ? (
           <MissionDetail
             mission={selected}
@@ -92,17 +83,21 @@ export default async function MissionBoardPage({
             detections={
               snap.artifactByMission.get(selected.missionId)
                 ? snap.detectionsByArtifact.get(
-                    snap.artifactByMission.get(selected.missionId)!.artifactId
+                    snap.artifactByMission.get(selected.missionId)!.artifactId,
                   ) ?? []
                 : []
             }
             variant={variant}
           />
         ) : (
-          <EmptyDetail />
+          <Card title="No mission selected">
+            <div className="px-4 py-8 text-fg-faint italic text-[12px] text-center">
+              Pick a mission from the left.
+            </div>
+          </Card>
         )}
-      </section>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -112,13 +107,12 @@ function computeCounts(missions: Mission[]) {
   const now = Date.now();
   const active = missions.filter((m) => m.status === "executing").length;
   const dayAgo = now - 24 * 60 * 60 * 1000;
-  const completedRecent = missions.filter(
+  const completed = missions.filter(
     (m) =>
       m.status === "completed" &&
       m.finishedAt &&
-      Date.parse(m.finishedAt) >= dayAgo
-  );
-  const completed = completedRecent.length;
+      Date.parse(m.finishedAt) >= dayAgo,
+  ).length;
   const lastFive = missions
     .filter((m) => m.status === "completed" && m.provenancePassRate !== null)
     .slice(0, 5);
@@ -139,54 +133,43 @@ function MissionList({
   selectedId: string | undefined;
   channelById: Map<string, Channel>;
 }) {
-  return (
-    <aside className="border-r border-border-subtle bg-bg-panel overflow-y-auto">
-      <div className="px-4 py-3 border-b border-border-subtle">
-        <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
-          Missions ({missions.length})
-        </h2>
+  if (missions.length === 0) {
+    return (
+      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+        No missions yet.
       </div>
-      <ol>
-        {missions.map((m) => {
-          const channel = channelById.get(m.targetChannelId);
-          const isSelected = m.missionId === selectedId;
-          return (
-            <li key={m.missionId}>
-              <Link
-                href={{ pathname: "/", query: { m: m.missionId } }}
-                scroll={false}
-                className={`block px-4 py-3 border-b border-border-subtle hover:bg-bg-hover transition-colors ${
-                  isSelected
-                    ? "bg-bg-elevated border-l-2 border-l-info-fg"
-                    : "border-l-2 border-l-transparent"
-                }`}
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="font-mono text-[12px] text-fg-default">
-                    {m.missionId}
-                  </span>
-                  <StatusPill status={m.status} />
-                </div>
-                <div className="mt-1 text-[11px] text-fg-muted truncate">
-                  {channel?.displayName ?? m.targetChannelId}
-                </div>
-                <div className="mt-[2px] text-[10px] text-fg-faint truncate font-mono">
-                  {formatRelative(m.createdAt)}
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
-    </aside>
-  );
-}
-
-function EmptyDetail() {
+    );
+  }
   return (
-    <div className="flex items-center justify-center text-fg-faint">
-      <p className="italic">Select a mission from the list to view its record.</p>
-    </div>
+    <ol>
+      {missions.map((m) => {
+        const channel = channelById.get(m.targetChannelId);
+        const isSelected = m.missionId === selectedId;
+        return (
+          <li key={m.missionId}>
+            <Link
+              href={{ pathname: "/", query: { m: m.missionId } }}
+              scroll={false}
+              className={`block px-3 py-2 border-b border-border-subtle hover:bg-bg-hover transition-colors ${
+                isSelected
+                  ? "bg-bg-elevated border-l-2 border-l-info-fg"
+                  : "border-l-2 border-l-transparent"
+              }`}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="font-mono text-[11px] text-fg-default truncate">
+                  {m.missionId}
+                </span>
+                <StatusPill status={m.status} />
+              </div>
+              <div className="mt-1 text-[10px] text-fg-faint truncate">
+                {channel?.displayName ?? m.targetChannelId}
+              </div>
+            </Link>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -205,136 +188,225 @@ function MissionDetail({
 }) {
   const stages = parseStages(mission.stagesJson);
 
+  const meta = (
+    <span className="flex items-baseline gap-3">
+      <StatusPill status={mission.status} />
+      {mission.dryRun && (
+        <span className="font-mono text-[9px] tracking-[0.16em] text-fg-faint border border-border-default px-2 py-[1px]">
+          DRY RUN
+        </span>
+      )}
+    </span>
+  );
+
   return (
-    <article className="overflow-y-auto">
-      <header className="border-b border-border-subtle bg-bg-panel px-6 py-4">
-        <div className="flex items-baseline justify-between gap-4">
-          <div className="flex items-baseline gap-3">
-            <h1 className="font-mono text-lg text-fg-default tracking-wide">
-              {mission.missionId}
-            </h1>
-            <StatusPill status={mission.status} size="md" />
-            {mission.dryRun && (
-              <span className="font-mono text-[10px] tracking-[0.16em] text-fg-faint border border-border-default px-2 py-[1px]">
-                DRY RUN
-              </span>
-            )}
-          </div>
-          <span className="font-mono text-[10px] text-fg-faint">
-            {mission.dispatchedAt ? `dispatched ${mission.dispatchedAt}` : ""}
-          </span>
-        </div>
-        <dl className="mt-3 grid grid-cols-[120px_1fr] gap-x-4 gap-y-1 text-[12px]">
-          <Field label="Operator" value={mission.operator} mono />
-          <Field
-            label="Target"
-            value={`${channel?.displayName ?? mission.targetChannelId} — ${
-              mission.audienceProfile ||
-              channel?.audienceProfile ||
-              "(no profile)"
-            }`}
-          />
-          <Field
-            label="Persona"
-            value={
-              mission.personaArchetype
-                ? `${mission.personaArchetype} (${mission.personaNameSeed || "—"})`
-                : "—"
-            }
-          />
-          <Field
-            label="Created"
-            value={`${mission.createdAt}${
-              mission.finishedAt ? ` → ${mission.finishedAt}` : ""
-            }`}
-            mono
-          />
-        </dl>
-      </header>
-
-      <div className="max-w-[1100px] mx-auto px-6 py-6 flex flex-col gap-6">
-        {artifact && (
-          <Section title="Operator brief">
-            <p className="text-[13px] leading-6 text-fg-default">
-              {summarizeArtifact(artifact)}
-            </p>
-          </Section>
-        )}
-
-        {detections.length > 0 && (
-          <Section title="Provenance grade">
-            <div className="grid grid-cols-3 gap-2">
-              {detections.map((d) => (
-                <DetectorPill key={d.resultId} d={d} />
-              ))}
-            </div>
-            <p className="mt-2 text-[10px] text-fg-faint font-mono uppercase tracking-[0.14em]">
-              Tool grades itself with the same instruments an adversary&apos;s
-              vetting pipeline would deploy.
-            </p>
-          </Section>
-        )}
-
-        {artifact && (
-          <Section
-            title="Artifact"
-            subtitle={`sha256:${artifact.finalSha256.slice(0, 16)}…`}
-          >
-            <ArtifactCard
-              artifact={artifact}
-              mission={mission}
-              variant={variant}
-            />
-          </Section>
-        )}
-
-        <Section title="Audit timeline">
-          <StageTimeline stages={stages} />
-        </Section>
-
-        {artifact && <ProvenanceDrawer json={artifact.finalProvenanceJson} />}
-
-        {mission.status === "failed" && mission.failureCode && (
-          <div className="border border-fail-border bg-fail-bg px-4 py-3 text-fail-fg text-[12px]">
-            <div className="font-mono uppercase tracking-[0.14em] text-[10px] mb-1">
-              Failure
-            </div>
-            <div className="font-mono text-[12px]">{mission.failureCode}</div>
-          </div>
-        )}
+    <Card title={mission.missionId} meta="">
+      {/* meta is rendered below as a header strip; Card's meta slot is small */}
+      <div className="px-4 py-2 border-b border-border-subtle bg-bg-base flex items-baseline justify-between gap-3">
+        <div className="flex items-baseline gap-3">{meta}</div>
+        <span className="font-mono text-[10px] text-fg-faint">
+          {mission.dispatchedAt ? `dispatched ${formatRelative(mission.dispatchedAt)}` : ""}
+        </span>
       </div>
-    </article>
+
+      <Tabs
+        tabs={[
+          {
+            id: "summary",
+            label: "Summary",
+            panel: (
+              <SummaryPanel
+                mission={mission}
+                channel={channel}
+                artifact={artifact}
+              />
+            ),
+          },
+          {
+            id: "provenance",
+            label: "Provenance",
+            count: detections.length,
+            panel: <ProvenancePanel detections={detections} artifact={artifact} />,
+          },
+          {
+            id: "artifact",
+            label: "Artifact",
+            panel: (
+              <ArtifactPanel
+                artifact={artifact}
+                mission={mission}
+                variant={variant}
+              />
+            ),
+          },
+          {
+            id: "timeline",
+            label: "Timeline",
+            count: stages.length,
+            panel: <TimelinePanel stages={stages} />,
+          },
+          {
+            id: "raw",
+            label: "Raw",
+            panel: <RawPanel artifact={artifact} mission={mission} />,
+          },
+        ]}
+      />
+    </Card>
   );
 }
 
-function ArtifactCard({
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Panels                                                                    */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function SummaryPanel({
+  mission,
+  channel,
+  artifact,
+}: {
+  mission: Mission;
+  channel: Channel | undefined;
+  artifact: Artifact | undefined;
+}) {
+  return (
+    <>
+      <Block label="Target">
+        <dl>
+          <Row
+            label="Channel"
+            value={channel?.displayName ?? mission.targetChannelId}
+            mono
+          />
+          <Row
+            label="Audience"
+            value={
+              mission.audienceProfile ||
+              channel?.audienceProfile ||
+              "(no profile)"
+            }
+          />
+          <Row label="Operator" value={mission.operator} mono />
+        </dl>
+      </Block>
+      <Block label="Persona">
+        <dl>
+          <Row
+            label="Archetype"
+            value={mission.personaArchetype || "—"}
+          />
+          <Row label="Name seed" value={mission.personaNameSeed || "—"} />
+        </dl>
+      </Block>
+      {artifact && (
+        <Block label="Brief">
+          <p className="text-[12px] leading-6 text-fg-default">
+            {summarizeArtifact(artifact)}
+          </p>
+        </Block>
+      )}
+      {mission.status === "failed" && mission.failureCode && (
+        <Block label="Failure">
+          <div className="font-mono text-[12px] text-fail-fg">
+            {mission.failureCode}
+          </div>
+        </Block>
+      )}
+    </>
+  );
+}
+
+function ProvenancePanel({
+  detections,
+  artifact,
+}: {
+  detections: DetectionResult[];
+  artifact: Artifact | undefined;
+}) {
+  if (detections.length === 0) {
+    return (
+      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+        No detector results recorded.
+      </div>
+    );
+  }
+  return (
+    <>
+      <Block label="Detector verdicts">
+        <div className="grid grid-cols-3 gap-2">
+          {detections.map((d) => (
+            <DetectorPill key={d.resultId} d={d} />
+          ))}
+        </div>
+      </Block>
+      {artifact && (
+        <Block label="Composite">
+          <Row
+            label="All passed"
+            value={
+              <span
+                className={
+                  artifact.passedAll ? "text-pass-fg" : "text-fail-fg"
+                }
+              >
+                {artifact.passedAll ? "yes" : "no"}
+              </span>
+            }
+            mono
+          />
+          <Row
+            label="C2PA"
+            value={artifact.passedC2pa ? "pass" : "fail"}
+            mono
+          />
+          <Row
+            label="Titan"
+            value={artifact.passedTitan ? "pass" : "fail"}
+            mono
+          />
+          <Row
+            label="SynthID"
+            value={artifact.passedSynthid ? "pass" : "fail"}
+            mono
+          />
+        </Block>
+      )}
+      <Block>
+        <p className="text-[10px] text-fg-faint italic">
+          Detectors are run on the offensive side as self-grading: artifacts
+          that flag here would not survive an adversary&apos;s vetting pipeline.
+        </p>
+      </Block>
+    </>
+  );
+}
+
+function ArtifactPanel({
   artifact,
   mission,
   variant,
 }: {
-  artifact: Artifact;
+  artifact: Artifact | undefined;
   mission: Mission;
-  variant: "clean" | "source" | "stripped";
+  variant: ArtifactVariant;
 }) {
-  const VARIANT_COPY: Record<typeof variant, { label: string; sub: string }> = {
-    source: {
-      label: "SOURCE",
-      sub: "Generator output — synthid + maker watermarks intact",
-    },
-    stripped: {
-      label: "STRIPPED",
-      sub: "Watermarks removed, EXIF cleared",
-    },
-    clean: {
-      label: "CLEAN",
-      sub: "EXIF transplanted, persona-consistent, ships",
-    },
+  if (!artifact) {
+    return (
+      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+        No artifact recorded for this mission.
+      </div>
+    );
+  }
+  const VARIANT_COPY: Record<ArtifactVariant, { label: string; sub: string }> = {
+    source: { label: "SOURCE", sub: "Generator output, watermarks intact" },
+    stripped: { label: "STRIPPED", sub: "Watermarks removed" },
+    clean: { label: "CLEAN", sub: "EXIF transplanted, ships" },
   };
   const copy = VARIANT_COPY[variant];
 
   return (
-    <div className="border border-border-subtle bg-bg-panel">
-      <div className="aspect-video bg-bg-base flex items-center justify-center border-b border-border-subtle overflow-hidden">
+    <>
+      <div className="bg-bg-base flex items-center justify-center overflow-hidden border-b border-border-subtle h-[320px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={`/api/artifact/${encodeURIComponent(artifact.artifactId)}?variant=${variant}`}
@@ -342,46 +414,141 @@ function ArtifactCard({
           className="max-h-full max-w-full object-contain"
         />
       </div>
-      <div className="px-3 py-2 border-b border-border-subtle flex items-baseline justify-between gap-3">
-        <div>
-          <div className="font-mono text-[10px] tracking-[0.16em] text-fg-default">
-            {copy.label}
+      <Block>
+        <div className="flex items-baseline justify-between gap-3">
+          <div>
+            <div className="font-mono text-[11px] tracking-[0.16em] text-fg-default">
+              {copy.label}
+            </div>
+            <div className="text-[10px] text-fg-faint italic mt-[1px]">
+              {copy.sub}
+            </div>
           </div>
-          <div className="text-[10px] text-fg-faint italic mt-[1px]">
-            {copy.sub}
-          </div>
+          <ArtifactVariantSwitcher
+            missionId={mission.missionId}
+            current={variant}
+          />
         </div>
-        <ArtifactVariantSwitcher
-          missionId={mission.missionId}
-          current={variant}
-        />
-      </div>
-      <dl className="text-[11px] divide-y divide-border-subtle">
-        <KV k="prompt" v={artifact.prompt} />
-        <KV k="path" v={artifact.finalPath} mono />
-        <KV k="sha-256" v={artifact.finalSha256} mono />
-        <KV k="all detectors passed" v={artifact.passedAll ? "yes" : "no"} mono />
-        <KV
-          k="caption (operator language)"
-          v={mission.audienceProfile || "—"}
-        />
-      </dl>
-    </div>
+      </Block>
+      <Block label="Metadata">
+        <dl>
+          <Row label="Prompt" value={artifact.prompt} />
+          <Row label="Path" value={artifact.finalPath} mono />
+          <Row
+            label="SHA-256"
+            value={artifact.finalSha256.slice(0, 32) + "…"}
+            mono
+          />
+        </dl>
+      </Block>
+    </>
   );
 }
+
+function TimelinePanel({ stages }: { stages: Stage[] }) {
+  if (stages.length === 0) {
+    return (
+      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+        No stage events recorded.
+      </div>
+    );
+  }
+  const ICON: Record<string, string> = { ok: "✓", skipped: "·", error: "✗" };
+  const TONE: Record<string, string> = {
+    ok: "text-pass-fg",
+    skipped: "text-fg-faint",
+    error: "text-fail-fg",
+  };
+  const STAGE_LABEL: Record<string, string> = {
+    validated: "VALIDATED",
+    persona_generated: "PERSONA FORGED",
+    artifact_selected: "ARTIFACT SELECTED",
+    watermark_strip: "WATERMARK STRIPPED",
+    exif_transplant: "EXIF TRANSPLANTED",
+    provenance_check: "PROVENANCE GRADED",
+    delivered: "DELIVERY",
+  };
+  return (
+    <ol>
+      {stages.map((s, i) => {
+        const tone = s.status ?? "ok";
+        return (
+          <li
+            key={`${s.stage}-${i}`}
+            className="grid grid-cols-[24px_140px_72px_1fr] items-baseline gap-3 px-4 py-2 border-b border-border-subtle last:border-b-0"
+          >
+            <span className={`font-mono text-base ${TONE[tone] ?? "text-fg-muted"}`}>
+              {ICON[tone] ?? "·"}
+            </span>
+            <span className="font-mono text-[11px] tracking-[0.12em] text-fg-default">
+              {STAGE_LABEL[s.stage] ?? s.stage.toUpperCase()}
+            </span>
+            <span className="font-mono text-[10px] text-fg-faint tabular-nums">
+              {s.ts ? new Date(s.ts).toISOString().slice(11, 19) + "Z" : "—"}
+            </span>
+            <span className="text-[12px] text-fg-muted italic">
+              {s.summary ?? "—"}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function RawPanel({
+  artifact,
+  mission,
+}: {
+  artifact: Artifact | undefined;
+  mission: Mission;
+}) {
+  let provenancePretty = "(none)";
+  if (artifact) {
+    try {
+      provenancePretty = JSON.stringify(
+        JSON.parse(artifact.finalProvenanceJson),
+        null,
+        2,
+      );
+    } catch {
+      provenancePretty = artifact.finalProvenanceJson;
+    }
+  }
+  let stagesPretty = "(none)";
+  try {
+    stagesPretty = JSON.stringify(JSON.parse(mission.stagesJson), null, 2);
+  } catch {
+    stagesPretty = mission.stagesJson;
+  }
+  return (
+    <>
+      <Block label="Provenance report (audit-source)">
+        <pre className="text-[11px] overflow-x-auto text-fg-mono whitespace-pre">
+          {provenancePretty}
+        </pre>
+      </Block>
+      <Block label="Stages JSON">
+        <pre className="text-[11px] overflow-x-auto text-fg-mono whitespace-pre">
+          {stagesPretty}
+        </pre>
+      </Block>
+    </>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Atoms                                                                     */
+/* ─────────────────────────────────────────────────────────────────────── */
 
 function ArtifactVariantSwitcher({
   missionId,
   current,
 }: {
   missionId: string;
-  current: "clean" | "source" | "stripped";
+  current: ArtifactVariant;
 }) {
-  const variants: Array<"source" | "stripped" | "clean"> = [
-    "source",
-    "stripped",
-    "clean",
-  ];
+  const variants: ArtifactVariant[] = ["source", "stripped", "clean"];
   return (
     <div className="flex">
       {variants.map((v, i) => {
@@ -409,98 +576,47 @@ function ArtifactVariantSwitcher({
   );
 }
 
-function KV({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
+function MiniStat({
+  label,
+  value,
+  tone = "default",
+}: {
+  label: string;
+  value: string | number;
+  tone?: "default" | "info" | "pass" | "warn";
+}) {
+  const valueColor =
+    tone === "info"
+      ? "text-info-fg"
+      : tone === "pass"
+        ? "text-pass-fg"
+        : tone === "warn"
+          ? "text-warn-fg"
+          : "text-fg-default";
   return (
-    <div className="grid grid-cols-[180px_1fr] gap-3 px-3 py-2">
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
-        {k}
-      </dt>
-      <dd className={`text-fg-muted ${mono ? "font-mono text-[11px]" : ""} truncate`}>
-        {v}
-      </dd>
+    <div className="border border-border-subtle bg-bg-panel px-3 py-1 flex flex-col justify-center">
+      <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-fg-faint">
+        {label}
+      </div>
+      <div className={`text-[14px] font-medium tabular-nums ${valueColor}`}>
+        {value}
+      </div>
     </div>
   );
 }
 
-function Section({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <div className="flex items-baseline justify-between mb-2">
-        <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
-          {title}
-        </h2>
-        {subtitle && (
-          <span className="font-mono text-[10px] text-fg-faint/80">
-            {subtitle}
-          </span>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function Field({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <>
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
-        {label}
-      </dt>
-      <dd className={`text-fg-muted ${mono ? "font-mono" : ""}`}>{value}</dd>
-    </>
-  );
-}
-
-function ProvenanceDrawer({ json }: { json: string }) {
-  let pretty = json;
-  try {
-    pretty = JSON.stringify(JSON.parse(json), null, 2);
-  } catch {
-    /* keep raw */
-  }
-  return (
-    <details className="border border-border-subtle bg-bg-panel">
-      <summary className="px-4 py-2 cursor-pointer text-[11px] font-mono uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default hover:bg-bg-hover">
-        Raw provenance report (audit-source)
-      </summary>
-      <pre className="px-4 py-3 text-[11px] overflow-x-auto text-fg-mono whitespace-pre">
-        {pretty}
-      </pre>
-    </details>
-  );
-}
-
 function summarizeArtifact(a: Artifact): string {
-  const treatment =
-    a.passedC2pa && a.passedTitan && a.passedSynthid
-      ? "would not be flagged by any of the three provenance layers an adversary is likely to deploy"
-      : a.passedAll
-        ? "passes the configured provenance bar"
-        : "is flagged by at least one configured provenance check";
-  return `Artifact ${a.artifactId} ${treatment}. Suitable for delivery on the targeted channel; operator should still verify caption and posting cadence match the persona's prior behavior.`;
+  if (a.passedC2pa && a.passedTitan && a.passedSynthid) {
+    return `${a.artifactId} would not be flagged by any of the three provenance layers.`;
+  }
+  if (a.passedAll) return `${a.artifactId} passes the configured provenance bar.`;
+  return `${a.artifactId} is flagged by at least one provenance check.`;
 }
 
 function formatRelative(iso: string): string {
   if (!iso) return "—";
   try {
-    const d = new Date(iso);
-    return d.toISOString().replace("T", " ").slice(0, 19) + "Z";
+    return new Date(iso).toISOString().replace("T", " ").slice(0, 19) + "Z";
   } catch {
     return iso;
   }

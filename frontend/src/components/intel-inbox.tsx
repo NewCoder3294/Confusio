@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Card, Tabs, Block, Row } from "@/components/surfaces";
 
 type TriageVerdict = {
   label: "SUSPECTED_SYNTHETIC" | "INCONCLUSIVE" | "SUSPECTED_AUTHENTIC";
@@ -46,9 +47,9 @@ type TriageResponse = {
 };
 
 const VERDICT_TONE: Record<TriageVerdict["label"], string> = {
-  SUSPECTED_SYNTHETIC: "bg-fail-bg text-fail-fg border-fail-border",
-  INCONCLUSIVE: "bg-warn-bg text-warn-fg border-warn-border",
-  SUSPECTED_AUTHENTIC: "bg-pass-bg text-pass-fg border-pass-border",
+  SUSPECTED_SYNTHETIC: "border-fail-border bg-fail-bg/40 text-fail-fg",
+  INCONCLUSIVE: "border-warn-border bg-warn-bg/40 text-warn-fg",
+  SUSPECTED_AUTHENTIC: "border-pass-border bg-pass-bg/40 text-pass-fg",
 };
 
 const VERDICT_COPY: Record<TriageVerdict["label"], string> = {
@@ -88,242 +89,252 @@ export function IntelInbox() {
     }
   }
 
-  function onPick() {
-    inputRef.current?.click();
-  }
-
   return (
-    <div className="grid grid-cols-[420px_1fr] gap-6 min-h-[600px]">
-      {/* Submit panel */}
-      <aside className="flex flex-col gap-4">
-        <div className="border border-border-subtle bg-bg-panel">
-          <header className="px-4 py-2 border-b border-border-subtle">
-            <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
-              Submit for triage
-            </h2>
-          </header>
-          <div className="p-4 flex flex-col gap-3">
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              hidden
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) submit(f);
-              }}
-            />
-            <button
-              onClick={onPick}
-              disabled={busy}
-              className="border border-border-default bg-bg-elevated hover:bg-bg-hover px-4 py-3 font-mono text-[12px] uppercase tracking-[0.16em] text-fg-default disabled:opacity-50 disabled:cursor-wait"
-            >
-              {busy ? "Triaging…" : "Select image file"}
-            </button>
-            <p className="text-[11px] text-fg-faint italic">
-              JPEG, PNG, WebP, or GIF — up to 25 MB. File never leaves the host;
-              triage runs locally against C2PA, Titan, SynthID, the
-              spectral-surrogate classifier, and EXIF anomaly checks.
-            </p>
-          </div>
+    <div className="grid grid-cols-[320px_1fr] gap-3 h-full min-h-0">
+      <Card title="Submit">
+        <div className="p-4 flex flex-col gap-3">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) submit(f);
+            }}
+          />
+          <button
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
+            className="border border-info-border bg-info-bg/40 hover:bg-info-bg px-4 py-3 font-mono text-[12px] uppercase tracking-[0.16em] text-info-fg disabled:opacity-50 disabled:cursor-wait"
+          >
+            {busy ? "Triaging…" : "Select image"}
+          </button>
+          <p className="text-[11px] text-fg-faint italic leading-5">
+            JPEG, PNG, WebP, GIF · ≤25 MB. Triage runs locally — no upload
+            to third parties.
+          </p>
         </div>
-
         {previewUrl && (
-          <div className="border border-border-subtle bg-bg-panel">
-            <header className="px-4 py-2 border-b border-border-subtle">
-              <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
-                Submitted artifact
-              </h2>
-            </header>
-            <div className="aspect-video bg-bg-base flex items-center justify-center overflow-hidden">
+          <Block label="Preview">
+            <div className="aspect-video bg-bg-base flex items-center justify-center overflow-hidden border border-border-subtle">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
-                alt="Submitted artifact preview"
+                alt="Submitted artifact"
                 className="max-h-full max-w-full object-contain"
               />
             </div>
-            {result && (
-              <dl className="text-[11px] divide-y divide-border-subtle">
-                <KV k="filename" v={result.filename} />
-                <KV
-                  k="sha-256"
-                  v={result.report.meta.sha256 ?? "—"}
-                  mono
-                />
-                <KV
-                  k="bytes"
-                  v={String(result.report.meta.size_bytes ?? "—")}
-                  mono
-                />
-                <KV
-                  k="mime"
-                  v={result.report.meta.mime_inferred ?? "—"}
-                  mono
-                />
-                <KV k="received" v={result.uploadedAt} mono />
-              </dl>
-            )}
-          </div>
+          </Block>
         )}
-      </aside>
+        {result && (
+          <Block label="Submission">
+            <dl>
+              <Row label="File" value={result.filename} />
+              <Row
+                label="Mime"
+                value={result.report.meta.mime_inferred ?? "—"}
+                mono
+              />
+              <Row
+                label="Bytes"
+                value={String(result.report.meta.size_bytes ?? "—")}
+                mono
+              />
+              <Row
+                label="SHA-256"
+                value={(result.report.meta.sha256 ?? "—").slice(0, 32) + "…"}
+                mono
+              />
+              <Row label="Received" value={result.uploadedAt} mono />
+            </dl>
+          </Block>
+        )}
+      </Card>
 
-      {/* Report panel */}
-      <section className="flex flex-col gap-6">
-        {error && (
-          <div className="border border-fail-border bg-fail-bg px-4 py-3 text-fail-fg text-[12px]">
-            <div className="font-mono uppercase tracking-[0.14em] text-[10px] mb-1">
-              Triage error
+      {/* Right column */}
+      {error ? (
+        <Card title="Triage error">
+          <Block>
+            <div className="border border-fail-border bg-fail-bg/40 p-4 text-fail-fg text-[12px] font-mono">
+              {error}
             </div>
-            <div className="font-mono text-[12px]">{error}</div>
-          </div>
-        )}
-
-        {!result && !busy && !error && <EmptyReport />}
-        {busy && <BusyReport />}
-        {result && <ReportView report={result.report} />}
-      </section>
+          </Block>
+        </Card>
+      ) : busy ? (
+        <Card title="Triage in progress">
+          <Block>
+            <p className="text-[12px] text-fg-muted leading-6">
+              Reading C2PA manifest, scoring against the spectral surrogate,
+              parsing EXIF, computing composite verdict.
+            </p>
+          </Block>
+        </Card>
+      ) : result ? (
+        <ReportCard report={result.report} />
+      ) : (
+        <Card title="No artifact under triage">
+          <Block>
+            <p className="text-[12px] text-fg-muted leading-6">
+              Submit an image at left. Triage runs four detectors plus EXIF
+              anomaly checks and produces a composite verdict with cited
+              drivers. The same instruments the offensive arm uses to grade
+              its own output, inverted.
+            </p>
+          </Block>
+        </Card>
+      )}
     </div>
   );
 }
 
-function EmptyReport() {
-  return (
-    <div className="border border-border-subtle bg-bg-panel flex-1 flex items-center justify-center">
-      <div className="px-8 py-12 text-center max-w-md">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-faint">
-          No artifact under triage
-        </div>
-        <p className="mt-3 text-[13px] text-fg-muted leading-6">
-          Submit an image at left. The defensive triage runs four detectors plus
-          a metadata anomaly check and produces a verdict with cited drivers.
-          Reports are append-only and review the same instruments the offensive
-          arm uses to grade its own output.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function BusyReport() {
-  return (
-    <div className="border border-border-subtle bg-bg-panel flex-1 flex items-center justify-center">
-      <div className="px-8 py-12 text-center max-w-md">
-        <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-fg-faint">
-          Triage in progress
-        </div>
-        <p className="mt-3 text-[13px] text-fg-muted leading-6">
-          Reading C2PA manifest, scoring against the spectral surrogate, parsing
-          EXIF, computing composite verdict. Local execution — no upload to
-          third parties.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function ReportView({ report }: { report: TriageReport }) {
+function ReportCard({ report }: { report: TriageReport }) {
   const v = report.verdict;
   return (
-    <>
-      <div className={`border ${VERDICT_TONE[v.label]} px-5 py-4`}>
-        <div className="flex items-baseline justify-between gap-4">
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-80">
-              Composite verdict
-            </div>
-            <div className="font-mono text-2xl mt-1 tracking-wide">
-              {VERDICT_COPY[v.label]}
-            </div>
+    <Card title="Triage report">
+      <div className={`border-b ${VERDICT_TONE[v.label]} px-5 py-3 flex items-baseline justify-between gap-4`}>
+        <div>
+          <div className="font-mono text-[10px] uppercase tracking-[0.16em] opacity-80">
+            Composite verdict
           </div>
-          <div className="text-right">
-            <div className="font-mono text-[10px] uppercase tracking-[0.16em] opacity-80">
-              Confidence
-            </div>
-            <div className="font-mono text-base mt-1 uppercase tracking-wide">
-              {v.confidence}
-            </div>
-            <div className="font-mono text-[10px] mt-[2px] opacity-70">
-              score {v.score}
-            </div>
+          <div className="font-mono text-xl mt-[2px] tracking-wide">
+            {VERDICT_COPY[v.label]}
           </div>
         </div>
-        {v.drivers.length > 0 && (
-          <ol className="mt-4 flex flex-col gap-1">
-            {v.drivers.map((d, i) => (
-              <li key={i} className="text-[12px] leading-5">
-                <span className="font-mono opacity-60 mr-2">
-                  {String(i + 1).padStart(2, "0")}.
-                </span>
-                {d}
+        <div className="text-right">
+          <div className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-80">
+            {v.confidence}
+          </div>
+          <div className="font-mono text-[11px] opacity-70 tabular-nums">
+            score {v.score >= 0 ? "+" : ""}
+            {v.score}
+          </div>
+        </div>
+      </div>
+      <Tabs
+        tabs={[
+          {
+            id: "drivers",
+            label: "Drivers",
+            count: v.drivers.length,
+            panel: <DriversPanel drivers={v.drivers} />,
+          },
+          {
+            id: "detectors",
+            label: "Detectors",
+            panel: <DetectorsPanel report={report} />,
+          },
+          {
+            id: "exif",
+            label: "EXIF",
+            count: report.exif.anomalies.length,
+            panel: <ExifPanel exif={report.exif} />,
+          },
+          {
+            id: "raw",
+            label: "Raw",
+            panel: <RawPanel report={report} />,
+          },
+        ]}
+      />
+    </Card>
+  );
+}
+
+function DriversPanel({ drivers }: { drivers: string[] }) {
+  if (drivers.length === 0) {
+    return (
+      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+        No drivers cited.
+      </div>
+    );
+  }
+  return (
+    <ol>
+      {drivers.map((d, i) => (
+        <li
+          key={i}
+          className="grid grid-cols-[40px_1fr] gap-3 px-4 py-2 border-b border-border-subtle last:border-b-0"
+        >
+          <span className="font-mono text-[11px] text-fg-faint tabular-nums">
+            {String(i + 1).padStart(2, "0")}.
+          </span>
+          <span className="text-[12px] leading-5 text-fg-default">{d}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function DetectorsPanel({ report }: { report: TriageReport }) {
+  return (
+    <Block>
+      <div className="grid grid-cols-2 gap-2">
+        <DetectorTile
+          name="C2PA"
+          sub="Content Credentials"
+          status={c2paStatusText(report.provenance.c2pa)}
+          tone={c2paTone(report.provenance.c2pa)}
+        />
+        <DetectorTile
+          name="Spectral"
+          sub={report.ai_surrogate.note ?? report.ai_surrogate.model}
+          status={`p(synthetic) = ${report.ai_surrogate.p_ai.toFixed(3)}`}
+          tone={
+            report.ai_surrogate.p_ai >= 0.7
+              ? "fail"
+              : report.ai_surrogate.p_ai >= 0.5
+                ? "warn"
+                : "pass"
+          }
+        />
+      </div>
+    </Block>
+  );
+}
+
+function ExifPanel({ exif }: { exif: TriageReport["exif"] }) {
+  if (exif.error) {
+    return (
+      <Block>
+        <div className="text-fail-fg text-[12px] font-mono">{exif.error}</div>
+      </Block>
+    );
+  }
+  return (
+    <>
+      <Block label="Fields">
+        <dl>
+          {Object.entries(exif.fields).map(([k, v]) => (
+            <Row key={k} label={k} value={String(v)} mono />
+          ))}
+        </dl>
+      </Block>
+      {exif.anomalies.length > 0 && (
+        <Block label="Anomalies">
+          <ul className="flex flex-col gap-1">
+            {exif.anomalies.map((a, i) => (
+              <li
+                key={i}
+                className="text-[12px] text-warn-fg leading-5 border-l-2 border-warn-border pl-3"
+              >
+                {a}
               </li>
             ))}
-          </ol>
-        )}
-      </div>
-
-      <Section title="Detector breakdown">
-        <div className="grid grid-cols-2 gap-2">
-          <DetectorTile
-            name="C2PA"
-            sub="Content Credentials manifest"
-            status={c2paStatusText(report.provenance.c2pa)}
-            tone={c2paTone(report.provenance.c2pa)}
-          />
-          <DetectorTile
-            name="Spectral surrogate"
-            sub={report.ai_surrogate.note ?? report.ai_surrogate.model}
-            status={`p(synthetic) = ${report.ai_surrogate.p_ai.toFixed(3)}`}
-            tone={
-              report.ai_surrogate.p_ai >= 0.7
-                ? "fail"
-                : report.ai_surrogate.p_ai >= 0.5
-                  ? "warn"
-                  : "pass"
-            }
-          />
-        </div>
-      </Section>
-
-      <Section title="EXIF / metadata">
-        {report.exif.error ? (
-          <div className="text-fail-fg text-[12px] font-mono">
-            {report.exif.error}
-          </div>
-        ) : (
-          <div className="border border-border-subtle bg-bg-panel">
-            <dl className="text-[11px] divide-y divide-border-subtle">
-              {Object.entries(report.exif.fields).map(([k, val]) => (
-                <KV key={k} k={k} v={String(val)} mono />
-              ))}
-            </dl>
-            {report.exif.anomalies.length > 0 && (
-              <div className="border-t border-border-subtle bg-warn-bg/40 px-4 py-3">
-                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-warn-fg mb-1">
-                  Anomalies
-                </div>
-                <ul className="flex flex-col gap-1">
-                  {report.exif.anomalies.map((a, i) => (
-                    <li key={i} className="text-[12px] text-warn-fg">
-                      {a}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-      </Section>
-
-      <details className="border border-border-subtle bg-bg-panel">
-        <summary className="px-4 py-2 cursor-pointer text-[11px] font-mono uppercase tracking-[0.14em] text-fg-muted hover:text-fg-default hover:bg-bg-hover">
-          Raw triage report (audit-source)
-        </summary>
-        <pre className="px-4 py-3 text-[11px] overflow-x-auto text-fg-mono whitespace-pre">
-          {JSON.stringify(report, null, 2)}
-        </pre>
-      </details>
+          </ul>
+        </Block>
+      )}
     </>
+  );
+}
+
+function RawPanel({ report }: { report: TriageReport }) {
+  return (
+    <Block label="Audit-source JSON">
+      <pre className="text-[11px] overflow-x-auto text-fg-mono whitespace-pre">
+        {JSON.stringify(report, null, 2)}
+      </pre>
+    </Block>
   );
 }
 
@@ -332,21 +343,21 @@ function c2paStatusText(c2pa: TriageReport["provenance"]["c2pa"]): string {
   if (c2pa.status === "ok") {
     const gens = c2pa.summary?.claim_generator_info ?? [];
     if (gens.length > 0 && gens[0].name) {
-      return `Manifest valid — generator: ${gens[0].name}`;
+      return `Manifest valid — ${gens[0].name}`;
     }
     return "Manifest valid";
   }
-  if (c2pa.status === "manifest_not_found") {
-    return "No manifest";
-  }
+  if (c2pa.status === "manifest_not_found") return "No manifest";
   return c2pa.status;
 }
 
-function c2paTone(c2pa: TriageReport["provenance"]["c2pa"]): "pass" | "warn" | "fail" {
+function c2paTone(
+  c2pa: TriageReport["provenance"]["c2pa"],
+): "pass" | "warn" | "fail" {
   if (!c2pa) return "warn";
   if (c2pa.status === "ok") {
     const gens = c2pa.summary?.claim_generator_info ?? [];
-    if (gens.length > 0) return "fail"; // generator declared = synthetic
+    if (gens.length > 0) return "fail";
     return "warn";
   }
   return "warn";
@@ -364,9 +375,9 @@ function DetectorTile({
   tone: "pass" | "warn" | "fail";
 }) {
   const TONE: Record<typeof tone, string> = {
-    pass: "border-pass-border bg-pass-bg text-pass-fg",
-    warn: "border-warn-border bg-warn-bg text-warn-fg",
-    fail: "border-fail-border bg-fail-bg text-fail-fg",
+    pass: "border-pass-border bg-pass-bg/30 text-pass-fg",
+    warn: "border-warn-border bg-warn-bg/30 text-warn-fg",
+    fail: "border-fail-border bg-fail-bg/30 text-fail-fg",
   };
   return (
     <div className={`border ${TONE[tone]} px-3 py-2`}>
@@ -380,38 +391,6 @@ function DetectorTile({
       </div>
       <div className="mt-1 text-[11px] font-mono">{status}</div>
       <div className="mt-[2px] text-[10px] opacity-70 italic">{sub}</div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <div className="flex items-baseline justify-between mb-2">
-        <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
-          {title}
-        </h2>
-      </div>
-      {children}
-    </section>
-  );
-}
-
-function KV({ k, v, mono }: { k: string; v: string; mono?: boolean }) {
-  return (
-    <div className="grid grid-cols-[180px_1fr] gap-3 px-3 py-2">
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
-        {k}
-      </dt>
-      <dd className={`text-fg-muted ${mono ? "font-mono text-[11px]" : ""} truncate`}>
-        {v}
-      </dd>
     </div>
   );
 }
