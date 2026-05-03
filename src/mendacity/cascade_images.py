@@ -24,8 +24,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from PIL import Image
+from dotenv import load_dotenv
 
 log = logging.getLogger(__name__)
+
+# Load credentials from the social config the same way image_gen.py does so
+# this module works whether spawned from Next.js (no env), the orchestrator,
+# or invoked directly from a shell.
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+_ENV_PATH = _REPO_ROOT / "social" / "config" / "api_credentials.env"
+load_dotenv(_ENV_PATH)
 
 GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
 

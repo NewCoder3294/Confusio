@@ -71,11 +71,33 @@ class PersonaAgent:
     async def post_image(
         self, image_path: str, caption: str, channel: str
     ) -> PostResult:
-        """Send an image with caption (used for seed posts that ship the
-        generated artifact alongside the persona's text)."""
+        """Send an image with caption. Retries with exponential backoff on
+        Telegram FloodWait so an early-window throttle doesn't kill the
+        cascade — same policy as send_with_backoff() does for text."""
+        import asyncio
+        from social.telegram_client import RateLimitedError, TelegramError
+
         await self._tg.start()
         try:
             await self._tg.join_channel(channel)
         except Exception:
             pass
-        return await self._tg.send_image(channel, image_path, caption=caption)
+
+        max_attempts = 3
+        delay = 0
+        for attempt in range(1, max_attempts + 1):
+            if delay:
+                await asyncio.sleep(delay)
+            try:
+                return await self._tg.send_image(
+                    channel, image_path, caption=caption
+                )
+            except RateLimitedError as exc:
+                log.warning(
+                    "image rate limited (attempt %d): wait %ds",
+                    attempt, exc.seconds,
+                )
+                if attempt == max_attempts:
+                    raise
+                delay = max(exc.seconds, 2 ** attempt)
+        raise TelegramError("post_image: exhausted attempts")
