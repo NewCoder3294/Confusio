@@ -7,6 +7,7 @@ import {
 } from "@/lib/personas";
 import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
 import { NewAgentTrigger } from "@/components/new-agent-trigger";
+import { DeleteAgentButton } from "@/components/delete-agent-button";
 
 export const metadata = {
   title: "Mendacity — Agents",
@@ -145,6 +146,9 @@ function PersonaDetail({
     <Card
       title={persona.name}
       meta={`${persona.id} · ${persona.language}`}
+      actions={
+        <DeleteAgentButton agentId={persona.id} agentName={persona.name} />
+      }
     >
       <Tabs
         tabs={[

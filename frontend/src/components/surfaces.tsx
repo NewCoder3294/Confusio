@@ -11,11 +11,13 @@ import { useState, type ReactNode } from "react";
 export function Card({
   title,
   meta,
+  actions,
   children,
   className = "",
 }: {
   title: string;
   meta?: string;
+  actions?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
@@ -23,13 +25,16 @@ export function Card({
     <section
       className={`flex flex-col min-h-0 h-full border border-border-default bg-bg-panel ${className}`}
     >
-      <header className="flex items-baseline justify-between px-4 py-2 border-b border-border-default bg-bg-elevated shrink-0">
+      <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border-default bg-bg-elevated shrink-0">
         <h2 className="text-[14px] text-fg-default tracking-wide font-medium uppercase">
           {title}
         </h2>
-        {meta && (
-          <span className="font-mono text-[10px] text-fg-faint">{meta}</span>
-        )}
+        <div className="flex items-baseline gap-3">
+          {meta && (
+            <span className="font-mono text-[10px] text-fg-faint">{meta}</span>
+          )}
+          {actions}
+        </div>
       </header>
       <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
     </section>
