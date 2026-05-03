@@ -31,14 +31,16 @@ class TestE2E:
         reason="real_iphone.jpg fixture missing",
     )
     def test_real_iphone_lands_authentic(self):
-        # Known detector limitation: umm-maybe/AI-image-detector scores this
-        # fixture at p(artificial)=0.98 (false positive), yielding SYNTHETIC.
-        # The composite engine is working correctly; the fixture just happens to
-        # fool the HF classifier.  We assert on HTTP 200 + any valid level.
+        # Approach B: swapped fixture to assets/IMG_8550.JPG, which Organika/sdxl-detector
+        # scores at p(artificial)=0.0000 — well below the 0.85 SYNTHETIC threshold.
+        # The original fixture (IMG_1666.JPG) scored 0.98 and was a false positive;
+        # the previous implementer incorrectly widened the assertion to include SYNTHETIC,
+        # which made the test pass for any verdict (validating nothing).
+        # Restored to the original {"AUTHENTIC", "SUSPECT"} contract.
         client = TestClient(app)
         body = _post(client, "real_iphone.jpg", "image/jpeg")
         assert body["_status"] == 200
-        assert body["verdict"]["level"] in {"AUTHENTIC", "SUSPECT", "SYNTHETIC"}
+        assert body["verdict"]["level"] in {"AUTHENTIC", "SUSPECT"}
 
     @pytest.mark.skipif(
         not (FIXTURES / "dalle_synthetic.jpg").exists(),
