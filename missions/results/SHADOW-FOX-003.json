@@ -1,0 +1,180 @@
+{
+  "mission_id": "SHADOW-FOX-003",
+  "operator": "J2-INSCOM-Demo",
+  "status": "completed",
+  "started_at": "2026-05-03T05:14:58+00:00",
+  "finished_at": "2026-05-03T05:14:59+00:00",
+  "stages": [
+    {
+      "stage": "validated",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:58+00:00",
+      "detail": {
+        "authority": "title-10",
+        "target_class": "foreign",
+        "channel": "@hackathon_sandbox_alpha"
+      }
+    },
+    {
+      "stage": "persona_generated",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:58+00:00",
+      "detail": {
+        "persona_id": "civil-engineer-loyalist-disillusioned-e0adea",
+        "archetype": "civil-engineer-loyalist-disillusioned",
+        "name_seed": "Reza M.",
+        "avatar_path": null
+      }
+    },
+    {
+      "stage": "artifact_selected",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:58+00:00",
+      "detail": {
+        "source_fixture": "/Users/nicolasdossantos/Mendacity/assets/IMG_5024.JPG",
+        "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-003/artifact_source.jpg",
+        "sha256": "35d786dee2b5fe38bdae2545776a1ad11e0146e07a628673f50a0fc6a52888e0",
+        "prompt": "internal memo on letterhead, blurry phone capture, partial fingerprint smudge"
+      }
+    },
+    {
+      "stage": "watermark_strip",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:59+00:00",
+      "detail": {
+        "tool": "synthidbye",
+        "before_sha": "35d786dee2b5fe38bdae2545776a1ad11e0146e07a628673f50a0fc6a52888e0",
+        "after_sha": "e3546c36db133e264663d65fbd102bdf9f1e41c89b8c88cacd181ae5dce1fe19",
+        "stderr_tail": [
+          "SynthIDBye seed (save if you need reversibility notes): l0n7lcou5bd9cxfypo2gl5mopbgrn2",
+          "Wrote /Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-003/artifact_stripped.jpg"
+        ]
+      }
+    },
+    {
+      "stage": "exif_transplant",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:59+00:00",
+      "detail": {
+        "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+        "before_sha": "e3546c36db133e264663d65fbd102bdf9f1e41c89b8c88cacd181ae5dce1fe19",
+        "after_sha": "caae1d388eaf4916017d9ec4979ef7d2936a32d150fc8a2ca96c6f10ca01e4c9"
+      }
+    },
+    {
+      "stage": "provenance_check",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:59+00:00",
+      "detail": {
+        "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-003/artifact_clean.jpg",
+        "passed": {
+          "per_detector": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "required": {
+            "c2pa": true,
+            "synthid": true,
+            "titan": true
+          },
+          "all_passed": true,
+          "ran_titan": false,
+          "ran_google": false
+        },
+        "report": {
+          "meta": {
+            "sha256": "caae1d388eaf4916017d9ec4979ef7d2936a32d150fc8a2ca96c6f10ca01e4c9",
+            "mime_inferred": "image/jpeg",
+            "size_bytes": 243938,
+            "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-003/artifact_clean.jpg"
+          },
+          "c2pa": {
+            "status": "manifest_not_found",
+            "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+          },
+          "titan_watermark": {
+            "status": "skipped",
+            "reason": "Pass run_titan=True or use CLI --titan"
+          },
+          "google_synthid": {
+            "status": "skipped",
+            "reason": "Pass run_google=True or use CLI --google"
+          }
+        }
+      }
+    },
+    {
+      "stage": "delivered",
+      "status": "skipped",
+      "ts": "2026-05-03T05:14:59+00:00",
+      "detail": {
+        "reason": "delivery.dry_run=true (no live Telegram post)",
+        "would_post_to": "@hackathon_sandbox_alpha",
+        "caption_preview": "\u0627\u06cc\u0646 \u0686\u06cc\u0632\u06cc \u0627\u0633\u062a \u06a9\u0647 \u0628\u06cc\u0631\u0648\u0646 \u062f\u0631\u0632 \u06a9\u0631\u062f\u0647. \u062e\u0648\u062f \u0642\u0636\u0627\u0648\u062a \u06a9\u0646\u06cc\u062f."
+      }
+    }
+  ],
+  "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-003/artifact_clean.jpg",
+  "final_provenance_report": {
+    "meta": {
+      "sha256": "caae1d388eaf4916017d9ec4979ef7d2936a32d150fc8a2ca96c6f10ca01e4c9",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 243938,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-003/artifact_clean.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "error": null,
+  "spec": {
+    "mission_id": "SHADOW-FOX-003",
+    "operator": "J2-INSCOM-Demo",
+    "authorization": {
+      "authority": "title-10",
+      "target_class": "foreign",
+      "approval_chain": [
+        "J2",
+        "OGC-reviewed"
+      ]
+    },
+    "target": {
+      "platform": "telegram",
+      "channel": "@hackathon_sandbox_alpha",
+      "audience_profile": "Farsi-speaking, fence-sitters, young professional class"
+    },
+    "persona": {
+      "archetype": "civil-engineer-loyalist-disillusioned",
+      "name_seed": "Reza M.",
+      "generate_avatar": false
+    },
+    "artifact": {
+      "type": "image",
+      "prompt": "internal memo on letterhead, blurry phone capture, partial fingerprint smudge",
+      "source": "fixture:assets/IMG_5024.JPG",
+      "exif_template": "fixtures/koze_iphonex_gist.json",
+      "must_pass": [
+        "c2pa",
+        "titan",
+        "synthid"
+      ],
+      "strip_watermarks": true
+    },
+    "delivery": {
+      "schedule": "immediate",
+      "thread_strategy": "reply",
+      "caption": "\u0627\u06cc\u0646 \u0686\u06cc\u0632\u06cc \u0627\u0633\u062a \u06a9\u0647 \u0628\u06cc\u0631\u0648\u0646 \u062f\u0631\u0632 \u06a9\u0631\u062f\u0647. \u062e\u0648\u062f \u0642\u0636\u0627\u0648\u062a \u06a9\u0646\u06cc\u062f.",
+      "dry_run": true
+    }
+  }
+}

@@ -1,0 +1,181 @@
+{
+  "mission_id": "SHADOW-FOX-004",
+  "operator": "J2-INSCOM-Demo",
+  "status": "completed",
+  "started_at": "2026-05-03T05:14:59+00:00",
+  "finished_at": "2026-05-03T05:15:00+00:00",
+  "stages": [
+    {
+      "stage": "validated",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:59+00:00",
+      "detail": {
+        "authority": "title-10",
+        "target_class": "foreign",
+        "channel": "@mendacity_sandbox_demo"
+      }
+    },
+    {
+      "stage": "persona_generated",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:59+00:00",
+      "detail": {
+        "persona_id": "battalion-quartermaster-frustrated-fe5ad1",
+        "archetype": "battalion-quartermaster-frustrated",
+        "name_seed": "Sasha P.",
+        "avatar_path": null
+      }
+    },
+    {
+      "stage": "artifact_selected",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:59+00:00",
+      "detail": {
+        "source_fixture": "/Users/nicolasdossantos/Mendacity/assets/IMG_8921.JPG",
+        "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-004/artifact_source.jpg",
+        "sha256": "98cc8e2e114d04f8ebf462f73c14db198f4d1f0b658171a07901a7aa195d7d6b",
+        "prompt": "supply manifest receipt with clear quantity discrepancy, low-light phone photo"
+      }
+    },
+    {
+      "stage": "watermark_strip",
+      "status": "ok",
+      "ts": "2026-05-03T05:15:00+00:00",
+      "detail": {
+        "tool": "synthidbye",
+        "before_sha": "98cc8e2e114d04f8ebf462f73c14db198f4d1f0b658171a07901a7aa195d7d6b",
+        "after_sha": "73233f73c1a8d67a62276469fd23592536768c161bc50f1ce7ebbef123e041c8",
+        "stderr_tail": [
+          "SynthIDBye seed (save if you need reversibility notes): cy5z61e7vk9blmq7t6vh6mopbgsge",
+          "Wrote /Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-004/artifact_stripped.jpg"
+        ]
+      }
+    },
+    {
+      "stage": "exif_transplant",
+      "status": "ok",
+      "ts": "2026-05-03T05:15:00+00:00",
+      "detail": {
+        "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+        "before_sha": "73233f73c1a8d67a62276469fd23592536768c161bc50f1ce7ebbef123e041c8",
+        "after_sha": "c21b69d8617f5f5907a7641b3f639476313e9ba4b37d3f52df574abd9fb1899d"
+      }
+    },
+    {
+      "stage": "provenance_check",
+      "status": "ok",
+      "ts": "2026-05-03T05:15:00+00:00",
+      "detail": {
+        "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-004/artifact_clean.jpg",
+        "passed": {
+          "per_detector": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "required": {
+            "c2pa": true,
+            "synthid": true,
+            "titan": true
+          },
+          "all_passed": true,
+          "ran_titan": false,
+          "ran_google": false
+        },
+        "report": {
+          "meta": {
+            "sha256": "c21b69d8617f5f5907a7641b3f639476313e9ba4b37d3f52df574abd9fb1899d",
+            "mime_inferred": "image/jpeg",
+            "size_bytes": 237234,
+            "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-004/artifact_clean.jpg"
+          },
+          "c2pa": {
+            "status": "manifest_not_found",
+            "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+          },
+          "titan_watermark": {
+            "status": "skipped",
+            "reason": "Pass run_titan=True or use CLI --titan"
+          },
+          "google_synthid": {
+            "status": "skipped",
+            "reason": "Pass run_google=True or use CLI --google"
+          }
+        }
+      }
+    },
+    {
+      "stage": "delivered",
+      "status": "skipped",
+      "ts": "2026-05-03T05:15:00+00:00",
+      "detail": {
+        "reason": "delivery.dry_run=true (no live Telegram post)",
+        "would_post_to": "@mendacity_sandbox_demo",
+        "caption_preview": "\u043e\u043f\u044f\u0442\u044c \u043d\u0435\u0434\u043e\u0432\u0435\u0437\u043b\u0438. \u043a\u0442\u043e-\u043d\u0438\u0431\u0443\u0434\u044c \u0437\u043d\u0430\u0435\u0442, \u0433\u0434\u0435 \u043e\u043d\u0438?"
+      }
+    }
+  ],
+  "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-004/artifact_clean.jpg",
+  "final_provenance_report": {
+    "meta": {
+      "sha256": "c21b69d8617f5f5907a7641b3f639476313e9ba4b37d3f52df574abd9fb1899d",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 237234,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-004/artifact_clean.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "error": null,
+  "spec": {
+    "mission_id": "SHADOW-FOX-004",
+    "operator": "J2-INSCOM-Demo",
+    "authorization": {
+      "authority": "title-10",
+      "target_class": "foreign",
+      "approval_chain": [
+        "J2",
+        "OGC-reviewed",
+        "TF-Cdr"
+      ]
+    },
+    "target": {
+      "platform": "telegram",
+      "channel": "@mendacity_sandbox_demo",
+      "audience_profile": "Russian-speaking, regional supply NCOs"
+    },
+    "persona": {
+      "archetype": "battalion-quartermaster-frustrated",
+      "name_seed": "Sasha P.",
+      "generate_avatar": false
+    },
+    "artifact": {
+      "type": "image",
+      "prompt": "supply manifest receipt with clear quantity discrepancy, low-light phone photo",
+      "source": "fixture:assets/IMG_8921.JPG",
+      "exif_template": "fixtures/koze_iphonex_gist.json",
+      "must_pass": [
+        "c2pa",
+        "titan",
+        "synthid"
+      ],
+      "strip_watermarks": true
+    },
+    "delivery": {
+      "schedule": "immediate",
+      "thread_strategy": "cold_post",
+      "caption": "\u043e\u043f\u044f\u0442\u044c \u043d\u0435\u0434\u043e\u0432\u0435\u0437\u043b\u0438. \u043a\u0442\u043e-\u043d\u0438\u0431\u0443\u0434\u044c \u0437\u043d\u0430\u0435\u0442, \u0433\u0434\u0435 \u043e\u043d\u0438?",
+      "dry_run": true
+    }
+  }
+}

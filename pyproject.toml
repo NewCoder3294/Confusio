@@ -11,6 +11,7 @@ requires-python = ">=3.10"
 dependencies = [
     "c2pa-python>=0.32",
     "boto3>=1.35",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -20,6 +21,7 @@ dev = ["pytest>=8", "piexif>=1.1", "Pillow>=10"]
 
 [project.scripts]
 mendacity-check = "mendacity.cli:main"
+mendacity-mission = "mendacity.mission_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

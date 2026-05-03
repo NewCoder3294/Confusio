@@ -1,0 +1,180 @@
+{
+  "mission_id": "SHADOW-FOX-001",
+  "operator": "J2-INSCOM-Demo",
+  "status": "completed",
+  "started_at": "2026-05-03T05:14:55+00:00",
+  "finished_at": "2026-05-03T05:14:57+00:00",
+  "stages": [
+    {
+      "stage": "validated",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:55+00:00",
+      "detail": {
+        "authority": "title-10",
+        "target_class": "foreign",
+        "channel": "@mendacity_sandbox_demo"
+      }
+    },
+    {
+      "stage": "persona_generated",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:55+00:00",
+      "detail": {
+        "persona_id": "disgruntled-junior-officer-e52d8c",
+        "archetype": "disgruntled-junior-officer",
+        "name_seed": "Vlad K.",
+        "avatar_path": null
+      }
+    },
+    {
+      "stage": "artifact_selected",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:55+00:00",
+      "detail": {
+        "source_fixture": "/Users/nicolasdossantos/Mendacity/assets/Gemini_Generated_Image_uzqgniuzqgniuzqg_apple_meta.jpg",
+        "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_source.jpg",
+        "sha256": "8da31759957193fac8cc41768e05d7abedbba54345ae9d8911949013446a7a78",
+        "prompt": "leaked regiment movement order, smudged unit stamp, low-light phone photo"
+      }
+    },
+    {
+      "stage": "watermark_strip",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:57+00:00",
+      "detail": {
+        "tool": "synthidbye",
+        "before_sha": "8da31759957193fac8cc41768e05d7abedbba54345ae9d8911949013446a7a78",
+        "after_sha": "52bd1e87b93d9a5abbacd163617239f444d3ddc800d861b00a061e3cb47f1abb",
+        "stderr_tail": [
+          "SynthIDBye seed (save if you need reversibility notes): 4n9u5s81b5ibqsl7yszb7nmopbgq0m",
+          "Wrote /Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_stripped.jpg"
+        ]
+      }
+    },
+    {
+      "stage": "exif_transplant",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:57+00:00",
+      "detail": {
+        "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+        "before_sha": "52bd1e87b93d9a5abbacd163617239f444d3ddc800d861b00a061e3cb47f1abb",
+        "after_sha": "d4337795e62091095e962d3c5276a6cfc83c8fb7b48397c36d6eec49cf5a9410"
+      }
+    },
+    {
+      "stage": "provenance_check",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:57+00:00",
+      "detail": {
+        "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_clean.jpg",
+        "passed": {
+          "per_detector": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "required": {
+            "c2pa": true,
+            "synthid": true,
+            "titan": true
+          },
+          "all_passed": true,
+          "ran_titan": false,
+          "ran_google": false
+        },
+        "report": {
+          "meta": {
+            "sha256": "d4337795e62091095e962d3c5276a6cfc83c8fb7b48397c36d6eec49cf5a9410",
+            "mime_inferred": "image/jpeg",
+            "size_bytes": 274962,
+            "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_clean.jpg"
+          },
+          "c2pa": {
+            "status": "manifest_not_found",
+            "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+          },
+          "titan_watermark": {
+            "status": "skipped",
+            "reason": "Pass run_titan=True or use CLI --titan"
+          },
+          "google_synthid": {
+            "status": "skipped",
+            "reason": "Pass run_google=True or use CLI --google"
+          }
+        }
+      }
+    },
+    {
+      "stage": "delivered",
+      "status": "skipped",
+      "ts": "2026-05-03T05:14:57+00:00",
+      "detail": {
+        "reason": "delivery.dry_run=true (no live Telegram post)",
+        "would_post_to": "@mendacity_sandbox_demo",
+        "caption_preview": "\u043d\u0443 \u0432\u043e\u0442 \u0438 \u043f\u0440\u0438\u0435\u0445\u0430\u043b\u0438, \u043f\u0430\u0440\u043d\u0438. \u0432\u0438\u0434\u0435\u043b\u0438 \u043f\u0440\u0438\u043a\u0430\u0437?"
+      }
+    }
+  ],
+  "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_clean.jpg",
+  "final_provenance_report": {
+    "meta": {
+      "sha256": "d4337795e62091095e962d3c5276a6cfc83c8fb7b48397c36d6eec49cf5a9410",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 274962,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_clean.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "error": null,
+  "spec": {
+    "mission_id": "SHADOW-FOX-001",
+    "operator": "J2-INSCOM-Demo",
+    "authorization": {
+      "authority": "title-10",
+      "target_class": "foreign",
+      "approval_chain": [
+        "J2",
+        "OGC-reviewed"
+      ]
+    },
+    "target": {
+      "platform": "telegram",
+      "channel": "@mendacity_sandbox_demo",
+      "audience_profile": "Russian-speaking, pro-regime, junior officers"
+    },
+    "persona": {
+      "archetype": "disgruntled-junior-officer",
+      "name_seed": "Vlad K.",
+      "generate_avatar": false
+    },
+    "artifact": {
+      "type": "image",
+      "prompt": "leaked regiment movement order, smudged unit stamp, low-light phone photo",
+      "source": "fixture:assets/Gemini_Generated_Image_uzqgniuzqgniuzqg_apple_meta.jpg",
+      "exif_template": "fixtures/koze_iphonex_gist.json",
+      "must_pass": [
+        "c2pa",
+        "titan",
+        "synthid"
+      ],
+      "strip_watermarks": true
+    },
+    "delivery": {
+      "schedule": "immediate",
+      "thread_strategy": "cold_post",
+      "caption": "\u043d\u0443 \u0432\u043e\u0442 \u0438 \u043f\u0440\u0438\u0435\u0445\u0430\u043b\u0438, \u043f\u0430\u0440\u043d\u0438. \u0432\u0438\u0434\u0435\u043b\u0438 \u043f\u0440\u0438\u043a\u0430\u0437?",
+      "dry_run": true
+    }
+  }
+}

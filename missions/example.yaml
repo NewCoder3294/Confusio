@@ -1,0 +1,40 @@
+# Example MissionSpec — drop a copy of this into missions/inbox/ to execute.
+# Schema is locked in PALANTIR_BRIEF.md §4.1. Foundry's MissionPlanner emits
+# this format. Any extra keys are passed through to MissionResult for audit.
+
+mission_id: SHADOW-FOX-001
+operator: J2-INSCOM-Demo
+
+authorization:
+  authority: title-10
+  target_class: foreign
+  approval_chain:
+    - "J2"
+    - "OGC-reviewed"
+
+target:
+  platform: telegram
+  channel: "@mendacity_sandbox_demo"
+  audience_profile: "Russian-speaking, pro-regime, junior officers"
+
+persona:
+  archetype: "disgruntled-junior-officer"
+  name_seed: "Vlad K."
+  generate_avatar: false   # demo: skip live avatar gen, use fixture below
+
+artifact:
+  type: image
+  prompt: "leaked regiment movement order, smudged unit stamp, low-light phone photo"
+  source: "fixture:assets/Gemini_Generated_Image_uzqgniuzqgniuzqg_apple_meta.jpg"
+  exif_template: "fixtures/koze_iphonex_gist.json"
+  must_pass:
+    - c2pa
+    - titan
+    - synthid
+  strip_watermarks: true     # invoke SynthIDBye to defeat SynthID watermark
+
+delivery:
+  schedule: immediate
+  thread_strategy: cold_post
+  caption: "ну вот и приехали, парни. видели приказ?"   # placeholder; PersonaAgent overrides if available
+  dry_run: true              # demo: skip live Telegram post unless explicitly false

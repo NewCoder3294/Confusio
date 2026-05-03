@@ -1,0 +1,8 @@
+{
+  "_comment": "Hard allowlist of sandbox-only channels. Any mission targeting a channel NOT in this list will be rejected at validation. This is the Title-10 sandbox boundary — do not edit at the spec layer.",
+  "allowed_channels": [
+    "@mendacity_sandbox_demo",
+    "@inscom_lab_sandbox",
+    "@hackathon_sandbox_alpha"
+  ]
+}

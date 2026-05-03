@@ -1,0 +1,180 @@
+{
+  "mission_id": "SHADOW-FOX-002",
+  "operator": "J2-INSCOM-Demo",
+  "status": "completed",
+  "started_at": "2026-05-03T05:14:57+00:00",
+  "finished_at": "2026-05-03T05:14:58+00:00",
+  "stages": [
+    {
+      "stage": "validated",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:57+00:00",
+      "detail": {
+        "authority": "title-10",
+        "target_class": "foreign",
+        "channel": "@inscom_lab_sandbox"
+      }
+    },
+    {
+      "stage": "persona_generated",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:57+00:00",
+      "detail": {
+        "persona_id": "expat-engineer-returning-home-cf4f2e",
+        "archetype": "expat-engineer-returning-home",
+        "name_seed": "Liu W.",
+        "avatar_path": null
+      }
+    },
+    {
+      "stage": "artifact_selected",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:57+00:00",
+      "detail": {
+        "source_fixture": "/Users/nicolasdossantos/Mendacity/assets/IMG_4213.JPG",
+        "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-002/artifact_source.jpg",
+        "sha256": "63ef257caaf77118898d981fc9373905b63720e752df340e8af72c73cfb33399",
+        "prompt": "blurry photo of damaged radar dish at coastal base, taken from hillside"
+      }
+    },
+    {
+      "stage": "watermark_strip",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:58+00:00",
+      "detail": {
+        "tool": "synthidbye",
+        "before_sha": "63ef257caaf77118898d981fc9373905b63720e752df340e8af72c73cfb33399",
+        "after_sha": "ce5c4b990118846e181988fdc8719daeeb2a1e7a5afe61afa1b3f0ec40f685c5",
+        "stderr_tail": [
+          "SynthIDBye seed (save if you need reversibility notes): zxg4vb304ma928dcqy82umopbgqrm",
+          "Wrote /Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-002/artifact_stripped.jpg"
+        ]
+      }
+    },
+    {
+      "stage": "exif_transplant",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:58+00:00",
+      "detail": {
+        "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+        "before_sha": "ce5c4b990118846e181988fdc8719daeeb2a1e7a5afe61afa1b3f0ec40f685c5",
+        "after_sha": "af87a238417f991669191f6fb100913c0d971fecd695373b539cd73220a3f253"
+      }
+    },
+    {
+      "stage": "provenance_check",
+      "status": "ok",
+      "ts": "2026-05-03T05:14:58+00:00",
+      "detail": {
+        "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-002/artifact_clean.jpg",
+        "passed": {
+          "per_detector": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "required": {
+            "c2pa": true,
+            "synthid": true,
+            "titan": true
+          },
+          "all_passed": true,
+          "ran_titan": false,
+          "ran_google": false
+        },
+        "report": {
+          "meta": {
+            "sha256": "af87a238417f991669191f6fb100913c0d971fecd695373b539cd73220a3f253",
+            "mime_inferred": "image/jpeg",
+            "size_bytes": 237341,
+            "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-002/artifact_clean.jpg"
+          },
+          "c2pa": {
+            "status": "manifest_not_found",
+            "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+          },
+          "titan_watermark": {
+            "status": "skipped",
+            "reason": "Pass run_titan=True or use CLI --titan"
+          },
+          "google_synthid": {
+            "status": "skipped",
+            "reason": "Pass run_google=True or use CLI --google"
+          }
+        }
+      }
+    },
+    {
+      "stage": "delivered",
+      "status": "skipped",
+      "ts": "2026-05-03T05:14:58+00:00",
+      "detail": {
+        "reason": "delivery.dry_run=true (no live Telegram post)",
+        "would_post_to": "@inscom_lab_sandbox",
+        "caption_preview": "\u770b\u770b\u8fd9\u4e2a\uff0c\u670b\u53cb\u4eec \u2014 \u6cbf\u6d77\u57fa\u5730\u7684\u635f\u574f\u3002"
+      }
+    }
+  ],
+  "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-002/artifact_clean.jpg",
+  "final_provenance_report": {
+    "meta": {
+      "sha256": "af87a238417f991669191f6fb100913c0d971fecd695373b539cd73220a3f253",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 237341,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-002/artifact_clean.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "error": null,
+  "spec": {
+    "mission_id": "SHADOW-FOX-002",
+    "operator": "J2-INSCOM-Demo",
+    "authorization": {
+      "authority": "title-10",
+      "target_class": "foreign",
+      "approval_chain": [
+        "J2",
+        "OGC-reviewed"
+      ]
+    },
+    "target": {
+      "platform": "telegram",
+      "channel": "@inscom_lab_sandbox",
+      "audience_profile": "Mandarin-speaking, semi-active, regional militia adjacent"
+    },
+    "persona": {
+      "archetype": "expat-engineer-returning-home",
+      "name_seed": "Liu W.",
+      "generate_avatar": false
+    },
+    "artifact": {
+      "type": "image",
+      "prompt": "blurry photo of damaged radar dish at coastal base, taken from hillside",
+      "source": "fixture:assets/IMG_4213.JPG",
+      "exif_template": "fixtures/koze_iphonex_gist.json",
+      "must_pass": [
+        "c2pa",
+        "titan",
+        "synthid"
+      ],
+      "strip_watermarks": true
+    },
+    "delivery": {
+      "schedule": "immediate",
+      "thread_strategy": "cold_post",
+      "caption": "\u770b\u770b\u8fd9\u4e2a\uff0c\u670b\u53cb\u4eec \u2014 \u6cbf\u6d77\u57fa\u5730\u7684\u635f\u574f\u3002",
+      "dry_run": true
+    }
+  }
+}

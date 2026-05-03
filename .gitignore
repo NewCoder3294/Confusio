@@ -40,3 +40,4 @@ social/.heartbeat
 
 # Streamlit
 .streamlit/secrets.toml
+.gstack/
