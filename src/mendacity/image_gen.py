@@ -41,6 +41,40 @@ class GenerationResult:
     quality: str
 
 
+# Anti-cinematic envelope. DALL-E 3 silently rewrites prompts toward stock /
+# editorial / cinematic aesthetics unless the prompt itself is loaded with
+# vernacular cues. The image we want is the kind of photo a panicked local
+# would dump into a Telegram channel from a 2015-era phone — not a Reuters
+# stringer's frame. Concrete physical artifacts (sensor age, lens smudge,
+# JPEG ringing, framing mistakes) outperform abstract directives ("amateur",
+# "casual") because the model has training-data anchors for the former.
+_AMATEUR_WRAP = (
+    "Authentic amateur smartphone snapshot, captured in a hurry by a panicked "
+    "local bystander on an old iPhone 6s (2015, 8 MP rear camera, no OIS). "
+    "Subject (what the photo is OF): {subject}. "
+    "Hard requirements — the image MUST look like a vernacular cellphone "
+    "photo, NOT a professional, cinematic, editorial, stock, or staged image. "
+    "No artistic composition. Off-center subject, slightly tilted horizon, "
+    "awkward framing as if shot one-handed without aiming. Harsh real-world "
+    "lighting: blown-out highlights, blocked shadows, low dynamic range "
+    "typical of a small phone sensor. Visible JPEG compression artifacts "
+    "(blocking near edges, mosquito noise around high-contrast lines). Slight "
+    "motion blur from a shaky hand. Faint lens smudge or fingerprint haze. "
+    "Mundane, raw, unedited — as if uploaded straight to a Telegram channel "
+    "from the phone with no filter. Foreground may include incidental "
+    "obstructions (a passerby's shoulder, a railing, a chain-link fence, a "
+    "car mirror) suggesting the photographer did not have a clean line of "
+    "sight. Avoid: drone perspective, cinematic color grading, shallow depth "
+    "of field, golden-hour styling, dramatic atmosphere, lens flare as art, "
+    "artistic framing, photojournalism polish."
+)
+
+
+def wrap_amateur_prompt(subject: str) -> str:
+    """Envelope the operator's subject prompt with vernacular-phone cues."""
+    return _AMATEUR_WRAP.format(subject=subject.strip())
+
+
 def generate_image(
     prompt: str,
     *,
@@ -49,6 +83,7 @@ def generate_image(
     quality: str = "standard",
     model: str = "dall-e-3",
     api_key: str | None = None,
+    raw_prompt: bool = False,
 ) -> GenerationResult:
     """Generate one image and save it to ``output_path`` (PNG).
 
@@ -67,13 +102,18 @@ def generate_image(
     except ImportError as exc:
         raise ImageGenError(f"openai sdk not installed: {exc}") from exc
 
+    effective_prompt = prompt if raw_prompt else wrap_amateur_prompt(prompt)
+
     client = OpenAI(api_key=key)
-    log.info("generating image: model=%s size=%s quality=%s", model, size, quality)
+    log.info(
+        "generating image: model=%s size=%s quality=%s wrap=%s",
+        model, size, quality, "raw" if raw_prompt else "amateur",
+    )
 
     try:
         resp = client.images.generate(
             model=model,
-            prompt=prompt,
+            prompt=effective_prompt,
             size=size,
             quality=quality,
             n=1,
@@ -116,6 +156,13 @@ def _cli(argv: list[str] | None = None) -> int:
     p.add_argument("--output", required=True)
     p.add_argument("--size", default="1024x1024")
     p.add_argument("--quality", default="standard")
+    p.add_argument(
+        "--raw-prompt",
+        action="store_true",
+        help="Send the operator's prompt verbatim. Default wraps it in an "
+        "anti-cinematic amateur-phone envelope so DALL-E doesn't return "
+        "stock-photo / editorial output.",
+    )
     args = p.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -125,6 +172,7 @@ def _cli(argv: list[str] | None = None) -> int:
             output_path=Path(args.output),
             size=args.size,
             quality=args.quality,
+            raw_prompt=args.raw_prompt,
         )
     except ImageGenError as exc:
         print(f"image_gen: {exc}", file=sys.stderr)

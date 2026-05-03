@@ -74,10 +74,12 @@ class Orchestrator:
         storage: Storage,
         *,
         allowed_channels: list[str] | None = None,
+        auto_approve_sandbox: bool = False,
     ) -> None:
         self.agents = agents
         self.storage = storage
         self.allowed_channels = allowed_channels or _load_allowed_channels()
+        self.auto_approve_sandbox = auto_approve_sandbox
         self._joined: set[tuple[str, str]] = set()  # (persona_id, channel)
 
     # ---------- public API (called by Streamlit via direct DB writes,
@@ -207,6 +209,9 @@ class Orchestrator:
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
 
     async def _tick(self) -> None:
+        # 0. (optional) Auto-approve corroborator posts on sandbox channels.
+        if self.auto_approve_sandbox:
+            await self._auto_approve_sandbox_posts()
         # 1. Send approved posts.
         await self._post_approved()
         # 2. For each running campaign: ensure seed exists; on seed posted,
@@ -304,6 +309,39 @@ class Orchestrator:
                 continue
             await self._generate_one(campaign, persona_id, role)
             await self.storage.mark_schedule_generated(campaign_id, persona_id, role)
+
+    async def _auto_approve_sandbox_posts(self) -> None:
+        """Flip pending_approval → approved for non-seed posts on sandbox channels.
+
+        Only runs when ``auto_approve_sandbox`` is enabled. Seed posts always
+        require manual approval to preserve the audit trail on the actual
+        mission artifact; corroborator/backstop posts skip the gate.
+        """
+        for campaign in await self.storage.list_active_campaigns():
+            if campaign.status != "running":
+                continue
+            if self.allowed_channels and campaign.channel not in self.allowed_channels:
+                continue
+            pending = await self.storage.list_posts_for_campaign(
+                campaign.id, statuses=("pending_approval",)
+            )
+            for post in pending:
+                if post.role == "seed":
+                    continue
+                await self.storage.update_post_decision(
+                    post.id,
+                    status="approved",
+                    decided_by="auto_approve_sandbox",
+                )
+                self.storage.append_log(
+                    "post_approved",
+                    campaign_id=post.campaign_id,
+                    persona_id=post.persona_id,
+                    role=post.role,
+                    content=post.generated_content,
+                    operator="auto_approve_sandbox",
+                    extra={"auto": True, "channel": campaign.channel},
+                )
 
     async def _post_approved(self) -> None:
         # Find approved posts across all running campaigns.
@@ -415,7 +453,11 @@ class Orchestrator:
             )
 
 
-def build_orchestrator(*, require_sessions: bool = True) -> Orchestrator:
+def build_orchestrator(
+    *,
+    require_sessions: bool = True,
+    auto_approve_sandbox: bool = False,
+) -> Orchestrator:
     """Wire personas → agents → orchestrator. Used by the daemon entrypoint."""
     personas = load_personas(require_sessions=require_sessions)
     llm = LLMClient()
@@ -424,15 +466,32 @@ def build_orchestrator(*, require_sessions: bool = True) -> Orchestrator:
         tg = PersonaTelegramClient(persona.resolved_session_path())
         agents[pid] = PersonaAgent(persona, llm, tg)
     storage = Storage()
-    return Orchestrator(agents, storage)
+    return Orchestrator(
+        agents,
+        storage,
+        auto_approve_sandbox=auto_approve_sandbox,
+    )
 
 
 async def _main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Mendacity campaign orchestrator daemon.")
+    parser.add_argument(
+        "--auto-approve-sandbox",
+        action="store_true",
+        help="Auto-approve non-seed posts on channels in the sandbox allowlist.",
+    )
+    args = parser.parse_args()
+
     logging.basicConfig(
         level=os.getenv("MENDACITY_LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    orch = build_orchestrator(require_sessions=True)
+    orch = build_orchestrator(
+        require_sessions=True,
+        auto_approve_sandbox=args.auto_approve_sandbox,
+    )
     await orch.storage.init()
     await orch.run_forever()
 

@@ -1,0 +1,32 @@
+2026-05-03 03:56:14,954 INFO __main__: orchestrator daemon up: 4 agents, allowed=['https://t.me/+2la3xpus5vRmYmIx']
+2026-05-03 03:56:14,954 INFO telethon.network.mtprotosender: Connecting to 149.154.175.54:443/TcpFull...
+2026-05-03 03:56:15,031 INFO telethon.network.mtprotosender: Connection to 149.154.175.54:443/TcpFull complete!
+2026-05-03 03:56:15,551 INFO telethon.network.mtprotosender: Connecting to 149.154.167.51:443/TcpFull...
+2026-05-03 03:56:15,721 INFO telethon.network.mtprotosender: Connection to 149.154.167.51:443/TcpFull complete!
+2026-05-03 03:56:16,522 ERROR __main__: persona dmitry_dn session bad: Session /Users/nicolasdossantos/Mendacity/social/sessions/dmitry_dn.session not authorized. Re-run scripts/login_persona.py for this persona.
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/nicolasdossantos/Mendacity/social/orchestrator.py", line 500, in <module>
+    asyncio.run(_main())
+    ~~~~~~~~~~~^^^^^^^^^
+  File "/opt/anaconda3/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/opt/anaconda3/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/anaconda3/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "/Users/nicolasdossantos/Mendacity/social/orchestrator.py", line 496, in _main
+    await orch.run_forever()
+  File "/Users/nicolasdossantos/Mendacity/social/orchestrator.py", line 198, in run_forever
+    await agent.start()
+  File "/Users/nicolasdossantos/Mendacity/social/persona_agent.py", line 37, in start
+    await self._tg.start()
+  File "/Users/nicolasdossantos/Mendacity/social/telegram_client.py", line 109, in start
+    raise SessionExpiredError(
+    ...<2 lines>...
+    )
+social.telegram_client.SessionExpiredError: Session /Users/nicolasdossantos/Mendacity/social/sessions/dmitry_dn.session not authorized. Re-run scripts/login_persona.py for this persona.
