@@ -56,6 +56,65 @@ def _pick_donor() -> Path:
     return random.choice(donors)
 
 
+def degrade_to_phone(source_png: Path) -> dict:
+    """Force the DALL-E output to look like a 2015-era phone snapshot.
+
+    Belt-and-braces against DALL-E 3's incurable cinematic prior. We don't
+    trust prompt engineering alone — we degrade in pixel-space:
+
+      1. Downscale 1024 → 720 (3:2 linear loss kills micro-detail polish)
+      2. Slight Gaussian blur for soft focus
+      3. Sensor noise (Gaussian, sigma ~4 on 0-255) on luma
+      4. Desaturate slightly + lift shadows + crush highlights for the
+         characteristic flat low-DR look of an old small sensor
+      5. Tiny rotation (-1.2 to +1.2 deg) for hand-held tilt
+      6. Re-save as PNG (lossless; JPEG compression artifacts are added
+         downstream by the EXIF-transplant pass which uses JPEG quality 85)
+
+    Overwrites ``source_png`` in place so transplant_exif and embed_steg
+    both pick up the degraded master. Returns a small metrics dict.
+    """
+    from PIL import Image, ImageEnhance, ImageFilter
+    import numpy as np
+
+    metrics: dict = {}
+    with Image.open(source_png) as im:
+        im = im.convert("RGB")
+        original_size = im.size
+        target = 720
+        if max(im.size) > target:
+            scale = target / max(im.size)
+            new_size = (max(1, int(im.size[0] * scale)), max(1, int(im.size[1] * scale)))
+            im = im.resize(new_size, Image.LANCZOS)
+        metrics["resized_to"] = list(im.size)
+
+        im = im.filter(ImageFilter.GaussianBlur(radius=0.7))
+
+        im = ImageEnhance.Color(im).enhance(0.82)
+        im = ImageEnhance.Contrast(im).enhance(0.92)
+        im = ImageEnhance.Brightness(im).enhance(1.04)
+
+        arr = np.asarray(im, dtype=np.int16)
+        noise = np.random.normal(0.0, 4.0, arr.shape).astype(np.int16)
+        arr = np.clip(arr + noise, 0, 255).astype(np.uint8)
+        im = Image.fromarray(arr, mode="RGB")
+
+        tilt_deg = random.uniform(-1.2, 1.2)
+        im = im.rotate(
+            tilt_deg,
+            resample=Image.BILINEAR,
+            expand=False,
+            fillcolor=(0, 0, 0),
+        )
+        metrics["tilt_deg"] = round(tilt_deg, 2)
+
+        im.save(source_png, format="PNG", optimize=False)
+
+    metrics["original_size"] = list(original_size)
+    log.info("degraded %s → %s tilt=%s°", source_png.name, metrics["resized_to"], metrics["tilt_deg"])
+    return metrics
+
+
 def _summarize_exif(jpeg_path: Path) -> dict:
     """Extract a small operator-facing summary of the transplanted EXIF."""
     try:
@@ -158,6 +217,8 @@ def process(
     steg_path = out_dir / f"{mission_id}.steg.png"
     meta_path = out_dir / f"{mission_id}.meta.json"
 
+    degrade_metrics = degrade_to_phone(source_png)
+
     donor = _pick_donor()
     log.info("donor: %s", donor.name)
 
@@ -172,6 +233,7 @@ def process(
         "missionId": mission_id,
         "channel": channel,
         "prompt": prompt,
+        "degrade": degrade_metrics,
         "exif": {
             "donor": donor.name,
             "claims": exif_summary,

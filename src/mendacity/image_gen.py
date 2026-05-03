@@ -49,24 +49,20 @@ class GenerationResult:
 # JPEG ringing, framing mistakes) outperform abstract directives ("amateur",
 # "casual") because the model has training-data anchors for the former.
 _AMATEUR_WRAP = (
-    "Authentic amateur smartphone snapshot, captured in a hurry by a panicked "
-    "local bystander on an old iPhone 6s (2015, 8 MP rear camera, no OIS). "
-    "Subject (what the photo is OF): {subject}. "
-    "Hard requirements — the image MUST look like a vernacular cellphone "
-    "photo, NOT a professional, cinematic, editorial, stock, or staged image. "
-    "No artistic composition. Off-center subject, slightly tilted horizon, "
-    "awkward framing as if shot one-handed without aiming. Harsh real-world "
-    "lighting: blown-out highlights, blocked shadows, low dynamic range "
-    "typical of a small phone sensor. Visible JPEG compression artifacts "
-    "(blocking near edges, mosquito noise around high-contrast lines). Slight "
-    "motion blur from a shaky hand. Faint lens smudge or fingerprint haze. "
-    "Mundane, raw, unedited — as if uploaded straight to a Telegram channel "
-    "from the phone with no filter. Foreground may include incidental "
-    "obstructions (a passerby's shoulder, a railing, a chain-link fence, a "
-    "car mirror) suggesting the photographer did not have a clean line of "
-    "sight. Avoid: drone perspective, cinematic color grading, shallow depth "
-    "of field, golden-hour styling, dramatic atmosphere, lens flare as art, "
-    "artistic framing, photojournalism polish."
+    # OpenAI's documented auto-revise bypass — keeps DALL-E 3 from silently
+    # adding "professional cinematic atmosphere" boilerplate to the prompt.
+    "I NEED to test how the tool works with extremely simple prompts. DO NOT "
+    "add any detail, just use the prompt AS-IS:\n\n"
+    # Pure positive description, no negations. Negations like "no drone view"
+    # or "no people holding cameras" actually activate those concepts in
+    # DALL-E 3 because the model attends to the noun and ignores the "no".
+    # Anchor instead on a concrete, well-known image class the model has
+    # strong priors for: low-quality candid news still.
+    "Eye-level ground-perspective candid still of {subject}. "
+    "Shot from a normal standing height, looking straight ahead. "
+    "Soft focus, flat dull colors, blown-out overcast daylight, slight "
+    "horizon tilt. Looks like a low-quality casual photo someone uploaded "
+    "to a regional news Telegram channel without editing."
 )
 
 
