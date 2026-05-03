@@ -167,19 +167,127 @@ def _load_sandbox_allowlist() -> set[str]:
     return set(cfg.get("allowed_channels", []))
 
 
-def validate_spec(spec: MissionSpec) -> None:
-    """Hard guardrails. Fails closed — any violation aborts before any work."""
-    auth = spec.authorization
+_MID_RE = __import__("re").compile(r"^[A-Za-z0-9][A-Za-z0-9_\-]{0,63}$")
+
+
+def _schema_check(spec: MissionSpec) -> list[str]:
+    """Return a list of schema-shape problems. Empty = OK. Pure (no I/O)."""
+    issues: list[str] = []
+
+    # mission_id format
+    if not _MID_RE.match(spec.mission_id or ""):
+        issues.append(
+            f"mission_id {spec.mission_id!r} must match [A-Za-z0-9_-]+ "
+            "(64 chars max, must start with alphanumeric)"
+        )
+
+    if not (spec.operator or "").strip():
+        issues.append("operator must be a non-empty string")
+
+    # authorization
+    auth = spec.authorization or {}
     if auth.get("authority") != "title-10":
-        raise MissionValidationError(
-            f"authorization.authority must be 'title-10' (got {auth.get('authority')!r})",
-            code="validation_failed",
+        issues.append(
+            f"authorization.authority must be 'title-10' (got {auth.get('authority')!r})"
         )
     if auth.get("target_class") != "foreign":
-        raise MissionValidationError(
-            f"authorization.target_class must be 'foreign' (got {auth.get('target_class')!r})",
-            code="validation_failed",
+        issues.append(
+            f"authorization.target_class must be 'foreign' (got {auth.get('target_class')!r})"
         )
+    chain = auth.get("approval_chain")
+    if chain is not None and not isinstance(chain, list):
+        issues.append(f"authorization.approval_chain must be a list (got {type(chain).__name__})")
+
+    # target
+    target = spec.target or {}
+    if target.get("platform") != "telegram":
+        issues.append(
+            f"target.platform must be 'telegram' (got {target.get('platform')!r})"
+        )
+    if not (target.get("channel") or "").strip():
+        issues.append("target.channel must be a non-empty string")
+
+    # persona
+    persona = spec.persona or {}
+    if "archetype" in persona and not isinstance(persona["archetype"], str):
+        issues.append(f"persona.archetype must be string (got {type(persona['archetype']).__name__})")
+    if "generate_avatar" in persona and not isinstance(persona["generate_avatar"], bool):
+        issues.append(
+            f"persona.generate_avatar must be bool (got {type(persona['generate_avatar']).__name__})"
+        )
+
+    # artifact
+    artifact = spec.artifact or {}
+    if artifact.get("type") != "image":
+        issues.append(
+            f"artifact.type must be 'image' (got {artifact.get('type')!r}; only image v1)"
+        )
+    src = (artifact.get("source") or "").strip()
+    if not src:
+        issues.append("artifact.source required ('generate' or 'fixture:<path>')")
+    elif src != "generate" and not src.startswith("fixture:"):
+        issues.append(
+            f"artifact.source must be 'generate' or 'fixture:<path>' (got {src!r})"
+        )
+    if src == "generate" and not (artifact.get("prompt") or "").strip():
+        issues.append("artifact.prompt required when artifact.source='generate'")
+    must_pass = artifact.get("must_pass")
+    if not isinstance(must_pass, list):
+        issues.append(f"artifact.must_pass must be a list (got {type(must_pass).__name__})")
+    else:
+        required_set = {"c2pa", "titan", "synthid"}
+        missing = required_set - set(must_pass)
+        if missing:
+            issues.append(
+                f"artifact.must_pass must include {sorted(required_set)}; missing {sorted(missing)}"
+            )
+    if "strip_watermarks" in artifact and not isinstance(artifact["strip_watermarks"], bool):
+        issues.append(
+            f"artifact.strip_watermarks must be bool "
+            f"(got {type(artifact['strip_watermarks']).__name__})"
+        )
+    if "max_regen_attempts" in artifact:
+        v = artifact["max_regen_attempts"]
+        if not isinstance(v, int) or v < 1 or v > 10:
+            issues.append(
+                f"artifact.max_regen_attempts must be int in [1,10] (got {v!r})"
+            )
+
+    # delivery
+    delivery = spec.delivery or {}
+    if "dry_run" in delivery and not isinstance(delivery["dry_run"], bool):
+        issues.append(
+            f"delivery.dry_run must be bool (got {type(delivery['dry_run']).__name__})"
+        )
+    if delivery.get("dry_run") is False and not (delivery.get("persona_id") or "").strip():
+        issues.append(
+            "delivery.persona_id required when delivery.dry_run is false"
+        )
+
+    return issues
+
+
+def validate_spec(spec: MissionSpec) -> None:
+    """Hard guardrails. Fails closed — any violation aborts before any work.
+
+    Two layers:
+    1. Schema-shape checks (collected, all reported at once)
+    2. Sandbox allowlist (separate code so we can use a different error code)
+    """
+    issues = _schema_check(spec)
+    if issues:
+        # Distinguish authorization issues from generic schema for the right code.
+        auth_issues = [
+            i for i in issues
+            if "authority" in i or "target_class" in i
+        ]
+        msg = (
+            f"schema validation failed with {len(issues)} issue(s):\n  - "
+            + "\n  - ".join(issues)
+        )
+        # If the only failures are sandbox-channel-related, prefer that code;
+        # otherwise validation_failed.
+        raise MissionValidationError(msg, code="validation_failed")
 
     chan = spec.target.get("channel")
     allowed = _load_sandbox_allowlist()
@@ -188,14 +296,6 @@ def validate_spec(spec: MissionSpec) -> None:
             f"target.channel {chan!r} is not in sandbox allowlist. "
             f"Allowed: {sorted(allowed)}",
             code="channel_not_authorized",
-        )
-
-    must_pass = set(spec.artifact.get("must_pass", []))
-    required = {"c2pa", "titan", "synthid"}
-    if not required.issubset(must_pass):
-        raise MissionValidationError(
-            f"artifact.must_pass must include {sorted(required)}; got {sorted(must_pass)}",
-            code="validation_failed",
         )
 
 

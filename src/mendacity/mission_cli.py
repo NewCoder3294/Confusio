@@ -5,6 +5,7 @@ Subcommands:
 - ``watch``            — daemon: poll missions/inbox/, process new specs
 - ``grade <result.json>`` — re-print pass/fail summary for a completed run
 - ``audit <image>``    — before/after transform report for slide rendering
+- ``plan "<intent>"``  — operator intent → MissionSpec YAML (LLM planner)
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from mendacity.mission import (
     watch_inbox,
     write_result,
 )
+from mendacity.mission_planner import PlannerError, plan_mission_yaml
 
 
 def _setup_logging(verbose: bool) -> None:
@@ -185,6 +187,108 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_personas(args: argparse.Namespace) -> int:
+    """Show all personas with their session auth status."""
+    if str(MISSIONS_DIR.parent) not in sys.path:
+        sys.path.insert(0, str(MISSIONS_DIR.parent))
+    try:
+        from social.personas import load_personas
+        from social.telegram_client import (
+            PersonaTelegramClient,
+            SessionExpiredError,
+            TelegramError,
+        )
+    except Exception as exc:
+        print(f"social/ stack not importable: {exc}", file=sys.stderr)
+        return 2
+
+    personas_dir = MISSIONS_DIR.parent / "social" / "personas"
+    try:
+        personas = load_personas(personas_dir=personas_dir, require_sessions=False)
+    except Exception as exc:
+        print(f"persona load failed: {exc}", file=sys.stderr)
+        return 2
+
+    if not personas:
+        print("(no personas found)")
+        return 0
+
+    import asyncio
+
+    async def _probe_one(p) -> str:
+        sp = p.resolved_session_path()
+        if not sp.exists():
+            return "no-session-file"
+        client = PersonaTelegramClient(sp)
+        try:
+            await client.start()
+            return "AUTHORIZED"
+        except SessionExpiredError:
+            return "EXPIRED"
+        except TelegramError as exc:
+            return f"ERROR ({exc})"
+        except Exception as exc:
+            return f"ERROR ({type(exc).__name__})"
+        finally:
+            try:
+                await client.stop()
+            except Exception:
+                pass
+
+    async def _probe_all() -> dict[str, str]:
+        out = {}
+        for pid, p in personas.items():
+            out[pid] = await _probe_one(p)
+        return out
+
+    statuses = asyncio.run(_probe_all())
+
+    print(f"{'persona_id':<22} {'language':<10} {'session status'}")
+    print("-" * 60)
+    for pid, p in personas.items():
+        marker = {
+            "AUTHORIZED": "[OK]",
+            "EXPIRED": "[!!]",
+            "no-session-file": "[--]",
+        }.get(statuses[pid], "[??]")
+        print(f"{marker} {pid:<18} {p.language:<10} {statuses[pid]}")
+    print()
+    expired = [pid for pid, s in statuses.items() if s != "AUTHORIZED"]
+    if expired:
+        print(f"To re-login expired personas, run interactively:")
+        for pid in expired:
+            print(f"  python -m social.scripts.login_persona {pid}")
+    return 0
+
+
+def _cmd_plan(args: argparse.Namespace) -> int:
+    try:
+        text = plan_mission_yaml(
+            args.intent,
+            operator=args.operator,
+            require_live_persona=args.live,
+        )
+    except PlannerError as exc:
+        print(f"[planner] {exc}", file=sys.stderr)
+        return 2
+
+    if args.out:
+        out = Path(args.out)
+        if out.is_dir():
+            # Extract mission_id from the YAML to name the file
+            import yaml as _yaml
+            spec = _yaml.safe_load(text)
+            mid = spec.get("mission_id", "GENERATED-MISSION")
+            out = out / f"{mid}.yaml"
+        # Atomic write
+        tmp = out.with_suffix(out.suffix + ".tmp")
+        tmp.write_text(text, encoding="utf-8")
+        tmp.replace(out)
+        print(f"[planner] wrote {out}", file=sys.stderr)
+    print(text)
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="mendacity-mission",
@@ -225,6 +329,34 @@ def main(argv: list[str] | None = None) -> int:
     p_audit.add_argument("--google", action="store_true")
     p_audit.add_argument("--json", action="store_true", help="emit full audit JSON")
     p_audit.set_defaults(func=_cmd_audit)
+
+    p_plan = sub.add_parser(
+        "plan", help="convert operator-intent text into a MissionSpec YAML"
+    )
+    p_plan.add_argument(
+        "intent",
+        help="natural-language description of the mission "
+             "(e.g., 'plant a leaked-orders post in the pro-regime channel "
+             "from a frustrated quartermaster persona')",
+    )
+    p_plan.add_argument(
+        "--operator", default="J2-INSCOM-Demo",
+        help="operator identity stamped on the mission (default: J2-INSCOM-Demo)",
+    )
+    p_plan.add_argument(
+        "--out", help="write YAML to file or directory (mission_id is appended if dir)",
+    )
+    p_plan.add_argument(
+        "--live", action="store_true",
+        help="require delivery.persona_id to come from social/personas/",
+    )
+    p_plan.set_defaults(func=_cmd_plan)
+
+    p_personas = sub.add_parser(
+        "personas",
+        help="list available personas and their Telegram session auth status",
+    )
+    p_personas.set_defaults(func=_cmd_personas)
 
     args = parser.parse_args(argv)
     _setup_logging(args.verbose)
