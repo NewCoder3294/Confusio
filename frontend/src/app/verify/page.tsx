@@ -459,10 +459,10 @@ function DetectorGrid({ states }: { states: Record<string, DetectorState> }) {
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(3, 1fr)",
-        gap: "8px",
-        padding: "12px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+        padding: "10px",
       }}
     >
       {DETECTOR_ORDER.map((key) => {
@@ -475,18 +475,18 @@ function DetectorGrid({ states }: { states: Record<string, DetectorState> }) {
         let evidenceText: string | null = null;
 
         if (state.phase === "ready") {
-          cellStyle = { ...SV_READY, padding: "10px 8px", display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-start" };
-          badgeStyle = { ...SV_READY, fontSize: "9px", letterSpacing: "0.14em", padding: "2px 6px", textTransform: "uppercase" as const };
+          cellStyle = { ...SV_READY, padding: "8px 10px", display: "flex", flexDirection: "column", gap: "4px" };
+          badgeStyle = { ...SV_READY, fontSize: "9px", letterSpacing: "0.14em", padding: "1px 6px", textTransform: "uppercase" as const };
           badgeText = "READY";
         } else if (state.phase === "running") {
-          cellStyle = { ...SV_RUNNING, padding: "10px 8px", display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-start" };
-          badgeStyle = { ...SV_RUNNING, fontSize: "9px", letterSpacing: "0.14em", padding: "2px 6px", textTransform: "uppercase" as const };
+          cellStyle = { ...SV_RUNNING, padding: "8px 10px", display: "flex", flexDirection: "column", gap: "4px" };
+          badgeStyle = { ...SV_RUNNING, fontSize: "9px", letterSpacing: "0.14em", padding: "1px 6px", textTransform: "uppercase" as const };
           badgeText = "RUNNING…";
         } else {
           const sig = state.signal;
           const base = severityStyle(sig.severity);
-          cellStyle = { ...base, padding: "10px 8px", display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-start" };
-          badgeStyle = { ...base, fontSize: "9px", letterSpacing: "0.14em", padding: "2px 6px", textTransform: "uppercase" as const };
+          cellStyle = { ...base, padding: "8px 10px", display: "flex", flexDirection: "column", gap: "4px" };
+          badgeStyle = { ...base, fontSize: "9px", letterSpacing: "0.14em", padding: "1px 6px", textTransform: "uppercase" as const };
           badgeText = sig.severity === "n/a" ? "N/A" : sig.severity.toUpperCase();
           evidenceText = sig.severity === "n/a" ? "unavailable" : sig.evidence;
         }
@@ -499,19 +499,23 @@ function DetectorGrid({ states }: { states: Record<string, DetectorState> }) {
               animation: state.phase === "running" ? "pulse 1.2s ease-in-out infinite" : undefined,
             }}
           >
-            <span
-              style={{
-                fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-                fontSize: "10px",
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                color: cellStyle.color as string,
-                opacity: 0.8,
-              }}
-            >
-              {label}
-            </span>
-            <span style={badgeStyle}>{badgeText}</span>
+            {/* Name + badge on one row */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+                  fontSize: "10px",
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  color: cellStyle.color as string,
+                  opacity: 0.85,
+                }}
+              >
+                {label}
+              </span>
+              <span style={{ ...badgeStyle, flexShrink: 0 }}>{badgeText}</span>
+            </div>
+            {/* Evidence below, full width */}
             {evidenceText && (
               <span
                 style={{
@@ -1152,7 +1156,7 @@ export default function VerifyPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "180px 1fr 240px",
+            gridTemplateColumns: "180px 1fr 300px",
             flex: "1",
             minHeight: "0",
             overflow: "hidden",
