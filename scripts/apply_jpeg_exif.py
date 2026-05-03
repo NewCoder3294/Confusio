@@ -166,13 +166,29 @@ def _harmonize_exif_to_output_jpeg(
 
 
 def _annotate_fixture(piexif, exif_dict: dict) -> None:
-    suffix = b" | mendacity-test-fixture"
+    # Previously appended " | mendacity-test-fixture" to the Software field —
+    # screams "fake" in any operator-facing inspector. Now a no-op so the
+    # donor's original Software string carries through unchanged.
+    return
+
+
+def _freshen_dates(piexif, exif_dict: dict) -> None:
+    """Overwrite donor capture timestamps with "now" so the artifact reads as
+    a fresh capture rather than a several-year-old donor frame. Affects:
+
+      - 0th.DateTime              (file last modified)
+      - Exif.DateTimeOriginal     (shutter press)
+      - Exif.DateTimeDigitized    (sensor → file)
+
+    EXIF date format is ASCII ``YYYY:MM:DD HH:MM:SS`` (locale-naive, treated
+    as the camera's local time)."""
+    from datetime import datetime, timezone
+    stamp = datetime.now(timezone.utc).strftime("%Y:%m:%d %H:%M:%S").encode("ascii")
     ifd0 = exif_dict.setdefault("0th", {})
-    sw = ifd0.get(piexif.ImageIFD.Software, b"")
-    if isinstance(sw, bytes):
-        ifd0[piexif.ImageIFD.Software] = sw.rstrip() + suffix
-    else:
-        ifd0[piexif.ImageIFD.Software] = suffix.strip()
+    exif_ifd = exif_dict.setdefault("Exif", {})
+    ifd0[piexif.ImageIFD.DateTime] = stamp
+    exif_ifd[piexif.ExifIFD.DateTimeOriginal] = stamp
+    exif_ifd[piexif.ExifIFD.DateTimeDigitized] = stamp
 
 
 def cmd_transplant(args: argparse.Namespace) -> int:
@@ -188,6 +204,10 @@ def cmd_transplant(args: argparse.Namespace) -> int:
 
     if args.annotate_fixture:
         _annotate_fixture(piexif, exif_dict)
+
+    # Always overwrite donor capture timestamps with "now" so the artifact
+    # reads as a fresh capture rather than a year-old donor frame.
+    _freshen_dates(piexif, exif_dict)
 
     jpeg_bytes, note = _read_image_as_jpeg_bytes(image_path, args.reencode_jpeg)
     if note:

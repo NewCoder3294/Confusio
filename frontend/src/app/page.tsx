@@ -344,22 +344,6 @@ function MissionDetail({
                 },
               ]
             : []),
-          {
-            id: "timeline",
-            label: "Timeline",
-            count: stages.length + campaignEvents.length,
-            panel: (
-              <TimelinePanel
-                stages={stages}
-                campaignEvents={campaignEvents}
-              />
-            ),
-          },
-          {
-            id: "raw",
-            label: "Raw",
-            panel: <RawPanel artifact={artifact} mission={mission} />,
-          },
         ]}
       />
     </Card>

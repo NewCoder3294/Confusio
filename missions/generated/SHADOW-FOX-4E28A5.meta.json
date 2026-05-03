@@ -1,7 +1,7 @@
 {
   "missionId": "SHADOW-FOX-4E28A5",
   "channel": "@hackathon_sandbox_alpha",
-  "prompt": "A distant military tank moving across a vast desert landscape, photographed from far away on a hillside by a civilian. The image should feel like it was taken on an old, low-quality Android phone \u2014 slightly blurry, grainy, compressed, with muted colors and haze. The tank is small in the frame, barely distinguishable, surrounded by empty, dusty terrain with sparse vegetation. Lighting is harsh and natural, with a washed-out sky and atmospheric dust reducing clarity. Composition feels unintentional and slightly off-center, like a quick handheld snapshot. No cinematic effects, no sharp focus \u2014 realistic, imperfect, documentary-style.",
+  "prompt": "A distant military tank moving across a vast desert landscape, photographed from far away on a hillside by a civilian. The image should feel like it was taken on an old, low-quality Android phone — slightly blurry, grainy, compressed, with muted colors and haze. The tank is small in the frame, barely distinguishable, surrounded by empty, dusty terrain with sparse vegetation. Lighting is harsh and natural, with a washed-out sky and atmospheric dust reducing clarity. Composition feels unintentional and slightly off-center, like a quick handheld snapshot. No cinematic effects, no sharp focus — realistic, imperfect, documentary-style.",
   "degrade": {
     "resized_to": [
       720,
@@ -18,8 +18,8 @@
     "claims": {
       "Make": "Apple",
       "Model": "iPhone X",
-      "Software": "11.1 | mendacity-test-fixture",
-      "DateTimeOriginal": "2017:12:01 18:06:58",
+      "Software": "11.1",
+      "DateTimeOriginal": "2026:05:03 17:40:14",
       "LensModel": "iPhone X back dual camera 4mm f/1.8",
       "FNumber": "1.8",
       "ISOSpeedRatings": "100",
