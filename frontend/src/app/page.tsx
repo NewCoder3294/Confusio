@@ -429,6 +429,7 @@ function ArtifactPanel({
           src={`/api/artifact/${encodeURIComponent(artifact.artifactId)}?variant=${variant}`}
           alt={`Mission ${mission.missionId} artifact (${variant})`}
           className="max-h-full max-w-full object-contain"
+          style={{ imageOrientation: "from-image" }}
         />
       </div>
       <Block>
