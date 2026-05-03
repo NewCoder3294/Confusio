@@ -224,7 +224,17 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   // of the board for the demo. Each entry's image must exist at
   // missions/generated/{missionId}.{png|jpg} so /api/campaign-image/{id} can
   // serve it.
-  const demoPins = buildDemoPinnedMissions();
+  // Real entries (local store or Foundry) take precedence over demo pins
+  // sharing the same missionId, so a live dispatch never gets shadowed by a
+  // synthetic. Without this guard React throws "two children with the same
+  // key" when 003/004 exist in both Foundry and the demo pin set.
+  const realMissionIds = new Set([
+    ...localMissions.map((m) => m.missionId),
+    ...missions.map((m) => m.missionId),
+  ]);
+  const demoPins = buildDemoPinnedMissions().filter(
+    (d) => !realMissionIds.has(d.mission.missionId),
+  );
   const demoMissions = demoPins.map((d) => d.mission);
   const demoArtifacts = demoPins.map((d) => d.artifact);
 
@@ -248,9 +258,11 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   });
 
   const artifactByMission = new Map<string, Artifact>();
+  // Demo artifacts first so real Foundry/local artifacts can overwrite them
+  // (real data always wins on collision).
+  for (const a of demoArtifacts) artifactByMission.set(a.missionId, a);
   for (const a of artifacts) artifactByMission.set(a.missionId, a);
   for (const a of localArtifacts) artifactByMission.set(a.missionId, a);
-  for (const a of demoArtifacts) artifactByMission.set(a.missionId, a);
 
   const detectionsByArtifact = new Map<string, DetectionResult[]>();
   for (const d of detections) {
