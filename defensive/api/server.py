@@ -4,16 +4,25 @@ from __future__ import annotations
 import hashlib
 import io
 import uuid
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
 from defensive.engine.composite import run as composite_run
+from defensive.engine.detectors.ai_classifier import warmup as _warmup_classifier
 from defensive.engine.verdict import Verdict
 from defensive.persistence.audit import append as audit_append
 
-app = FastAPI(title="Mendacity Verify", version="1.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    _warmup_classifier()
+    yield
+
+
+app = FastAPI(title="Mendacity Verify", version="1.0", lifespan=lifespan)
 
 ALLOWED_MIMES = {"image/jpeg", "image/png", "image/webp"}
 MAX_BYTES = 10 * 1024 * 1024  # 10 MB

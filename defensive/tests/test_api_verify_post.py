@@ -2,6 +2,7 @@
 import io
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -12,6 +13,13 @@ from defensive.engine.verdict import (
     Verdict,
     VerdictLevel,
 )
+
+
+@pytest.fixture(autouse=True)
+def _patch_warmup(monkeypatch):
+    """Prevent the lifespan warm-up from downloading the HF model in every test."""
+    from defensive.api import server
+    monkeypatch.setattr(server, "_warmup_classifier", lambda: None)
 
 
 def _png_bytes() -> bytes:
@@ -58,3 +66,12 @@ class TestPostVerify:
                 data={"operator": "J2-INSCOM-Demo", "source": "verify_tab"},
             )
         assert (tmp_path / "audit.jsonl").exists()
+
+
+class TestStartup:
+    def test_lifespan_calls_warmup(self):
+        from defensive.api import server
+        with patch.object(server, "_warmup_classifier") as mock:
+            with TestClient(server.app):
+                pass
+        mock.assert_called_once()
