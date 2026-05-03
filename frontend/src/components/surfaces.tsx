@@ -25,8 +25,8 @@ export function Card({
     <section
       className={`flex flex-col min-h-0 h-full border border-border-default bg-bg-panel ${className}`}
     >
-      <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border-default bg-bg-elevated shrink-0">
-        <h2 className="text-[14px] text-fg-default tracking-wide font-medium uppercase">
+      <header className="flex items-baseline justify-between gap-3 px-4 py-[10px] border-b border-border-subtle bg-bg-panel shrink-0">
+        <h2 className="text-[11px] text-fg-muted tracking-[0.18em] font-medium uppercase font-mono">
           {title}
         </h2>
         <div className="flex items-baseline gap-3">
@@ -57,7 +57,7 @@ export function Tabs({
     <div className={`flex flex-col h-full min-h-0 ${className}`}>
       <nav
         role="tablist"
-        className="flex border-b border-border-subtle bg-bg-base shrink-0"
+        className="flex border-b border-border-subtle bg-bg-panel shrink-0"
       >
         {tabs.map((t) => {
           const isActive = t.id === activeTab?.id;
@@ -67,10 +67,10 @@ export function Tabs({
               role="tab"
               aria-selected={isActive}
               onClick={() => setActive(t.id)}
-              className={`px-4 py-2 font-mono text-[11px] uppercase tracking-[0.16em] border-r border-border-subtle transition-colors ${
+              className={`px-4 py-[9px] font-mono text-[10px] uppercase tracking-[0.18em] transition-colors border-b-[2px] -mb-[1px] ${
                 isActive
-                  ? "text-fg-default bg-bg-panel border-b-[2px] border-b-info-fg -mb-[1px]"
-                  : "text-fg-faint hover:text-fg-default hover:bg-bg-hover"
+                  ? "text-fg-default bg-bg-base border-b-info-fg"
+                  : "text-fg-faint hover:text-fg-default hover:bg-bg-hover border-b-transparent"
               }`}
             >
               {t.label}
@@ -148,16 +148,16 @@ export function PageHeader({
 }) {
   return (
     <header className="border-b border-border-subtle bg-bg-panel shrink-0">
-      <div className="px-6 py-3 flex items-baseline justify-between gap-6">
-        <div>
-          <div className="font-mono text-[10px] tracking-[0.18em] text-classified uppercase">
+      <div className="px-6 py-3 flex items-start justify-between gap-6">
+        <div className="min-w-0">
+          <div className="font-mono text-[9px] tracking-[0.22em] text-fg-faint uppercase">
             {eyebrow}
           </div>
-          <h1 className="mt-[2px] text-xl text-fg-default tracking-wide font-medium">
+          <h1 className="mt-[3px] text-[20px] text-fg-default tracking-tight font-medium leading-tight">
             {title}
           </h1>
           {brief && (
-            <p className="mt-1 text-[12px] text-fg-muted leading-5 max-w-[680px]">
+            <p className="mt-[6px] text-[12px] text-fg-muted leading-[1.5] max-w-[640px]">
               {brief}
             </p>
           )}
