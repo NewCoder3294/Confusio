@@ -218,11 +218,27 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   // dispatched missions show up immediately on the Mission Board.
   const localMissions = local.map((l) => l.mission as Mission);
   const localArtifacts = local.map((l) => l.artifact as Artifact);
+
+  // Demo-pinned synthetic missions: hand-curated entries that aren't backed
+  // by a Foundry row or a campaigns-store entry but should appear at the top
+  // of the board for the demo. Each entry's image must exist at
+  // missions/generated/{missionId}.{png|jpg} so /api/campaign-image/{id} can
+  // serve it.
+  const demoPins = buildDemoPinnedMissions();
+  const demoMissions = demoPins.map((d) => d.mission);
+  const demoArtifacts = demoPins.map((d) => d.artifact);
+
   // Demo pins: ordered list of mission IDs to surface at the top of the
   // board regardless of createdAt. Earlier entries rank higher.
-  const PINNED_MISSIONS = ["SHADOW-FOX-003", "SHADOW-FOX-004"];
+  const PINNED_MISSIONS = [
+    "SHADOW-FOX-005", // 01 · B2 bomber
+    "SHADOW-FOX-003", // 02 · C-130 wreckage
+    "SHADOW-FOX-004", // 03
+    "SHADOW-FOX-006", // 04 · desert convoy
+    "SHADOW-FOX-007", // 05 · mountain outpost
+  ];
   const pinRank = new Map(PINNED_MISSIONS.map((id, i) => [id, i]));
-  const allMissions = [...localMissions, ...missions].sort((a, b) => {
+  const allMissions = [...demoMissions, ...localMissions, ...missions].sort((a, b) => {
     const ra = pinRank.get(a.missionId);
     const rb = pinRank.get(b.missionId);
     if (ra !== undefined && rb !== undefined) return ra - rb;
@@ -234,6 +250,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   const artifactByMission = new Map<string, Artifact>();
   for (const a of artifacts) artifactByMission.set(a.missionId, a);
   for (const a of localArtifacts) artifactByMission.set(a.missionId, a);
+  for (const a of demoArtifacts) artifactByMission.set(a.missionId, a);
 
   const detectionsByArtifact = new Map<string, DetectionResult[]>();
   for (const d of detections) {
@@ -357,4 +374,80 @@ export function parseStages(stagesJson: string): Stage[] {
   } catch {
     return [];
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Demo-pinned synthetic missions
+//
+// Hand-curated mission rows that aren't backed by a Foundry record or a
+// campaigns-store entry. Each entry's image must already exist at
+// `missions/generated/{missionId}.{png|jpg}` so the existing
+// `/api/campaign-image/{id}` route can serve it. The artifact uses a
+// `local:` prefix so the ArtifactImage component picks the campaign-image
+// fetch path.
+// ─────────────────────────────────────────────────────────────────────────
+
+type DemoPinnedMission = { mission: Mission; artifact: Artifact };
+
+function buildDemoPinnedMissions(): DemoPinnedMission[] {
+  const ts = "2026-05-03T06:00:00+00:00";
+  const stages = (channel: string): Stage[] => [
+    { stage: "validated", status: "ok", ts, detail: { authority: "title-10", target_class: "foreign", channel } },
+    { stage: "persona_generated", status: "ok", ts, detail: { archetype: "library" } },
+    { stage: "artifact_selected", status: "ok", ts, detail: { source: "demo-asset" } },
+    { stage: "delivered", status: "ok", ts, detail: { channel } },
+  ];
+  const make = (
+    missionId: string,
+    channel: string,
+    prompt: string,
+  ): DemoPinnedMission => ({
+    mission: {
+      missionId,
+      operator: "J2-INSCOM-Demo",
+      status: "completed",
+      targetChannelId: channel,
+      audienceProfile: "",
+      artifactPrompt: prompt,
+      dryRun: true,
+      dispatchedAt: ts,
+      createdAt: ts,
+      finishedAt: ts,
+      failureCode: null,
+      provenancePassRate: 1.0,
+      personaArchetype: "demo",
+      personaNameSeed: "demo-asset",
+      stagesJson: JSON.stringify(stages(channel)),
+    },
+    artifact: {
+      artifactId: `local:${missionId}`,
+      missionId,
+      prompt,
+      finalPath: "",
+      finalSha256: "(demo)",
+      passedC2pa: true,
+      passedTitan: true,
+      passedSynthid: true,
+      passedAll: true,
+      finalProvenanceJson: JSON.stringify({ source: "demo", model: "gemini-2.5-flash-image" }),
+      createdAt: ts,
+    },
+  });
+  return [
+    make(
+      "SHADOW-FOX-005",
+      "@hackathon_sandbox_alpha",
+      "B2 stealth bomber over urban Middle-Eastern district, observational dashcam style",
+    ),
+    make(
+      "SHADOW-FOX-006",
+      "@hackathon_sandbox_alpha",
+      "Hilltop overwatch frame: armored convoy on a desert road approaching distant compound, dust haze, telephoto",
+    ),
+    make(
+      "SHADOW-FOX-007",
+      "@hackathon_sandbox_alpha",
+      "Hillside outpost with US flag and sandbag fortification on arid mountainous terrain, telephoto",
+    ),
+  ];
 }

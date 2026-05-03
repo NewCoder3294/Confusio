@@ -545,6 +545,8 @@ const SAMPLES = [
   { key: "b2-bomber", label: "01 · B2 bomber", path: "/samples/01-b2-bomber.png", mime: "image/png" },
   { key: "shadow-fox-003", label: "02 · SHADOW-FOX-003", path: "/samples/02-shadow-fox-003.jpg", mime: "image/jpeg" },
   { key: "shadow-fox-004", label: "03 · SHADOW-FOX-004", path: "/samples/03-shadow-fox-004.jpg", mime: "image/jpeg" },
+  { key: "desert-convoy", label: "04 · desert convoy", path: "/samples/04-desert-convoy.png", mime: "image/png" },
+  { key: "mountain-outpost", label: "05 · mountain outpost", path: "/samples/05-mountain-outpost.png", mime: "image/png" },
 ];
 
 function DropZonePanel({
