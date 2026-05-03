@@ -55,6 +55,7 @@ function NavBar() {
         </div>
         <div className="flex items-center gap-1">
           <NavLink href="/">Mission Board</NavLink>
+          <NavLink href="/intel">Intel Inbox</NavLink>
           <NavLink href="/audit">Authorization &amp; Audit</NavLink>
         </div>
       </div>
