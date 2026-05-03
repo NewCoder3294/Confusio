@@ -117,3 +117,99 @@ export async function listAllPosts(): Promise<GeneratedPost[]> {
   );
   return rows.map(coercePost);
 }
+
+/**
+ * Effective status for the timeline: a post sitting at status=pending_approval
+ * with a future posted_at flips to "posted" once the wall clock passes its
+ * scheduled time. Lets the campaign visibly progress without a background job.
+ */
+export type EffectivePostStatus = "posted" | "pending_approval" | "rejected" | "error" | "scheduled";
+
+export function effectiveStatus(p: GeneratedPost, now: number = Date.now()): EffectivePostStatus {
+  if (p.status === "posted") return "posted";
+  if (p.status === "rejected" || p.status === "error") return p.status;
+  if (p.status === "pending_approval" && p.postedAt) {
+    const t = Date.parse(p.postedAt);
+    if (!Number.isNaN(t)) {
+      return t <= now ? "posted" : "scheduled";
+    }
+  }
+  return "pending_approval";
+}
+
+/* ───────────────────────── writers ────────────────────────── */
+
+const execFileP2 = execFileP;
+
+function sqlEscape(s: string): string {
+  return s.replace(/'/g, "''");
+}
+
+async function sqlExec(stmt: string): Promise<void> {
+  await execFileP2("sqlite3", [PERSONA_DB, stmt]);
+}
+
+export type DispatchPost = {
+  id: string;
+  personaId: string;
+  role: "seed" | "corroborator";
+  generatedContent: string;
+  /** ISO timestamp; for scheduled posts this is the future moment they "publish". */
+  postedAt: string;
+  /** "posted" for the seed (immediate), "pending_approval" for staggered corroborators. */
+  status: "posted" | "pending_approval";
+};
+
+export type DispatchCampaign = {
+  id: string;
+  intent: string;
+  channel: string;
+  status: string;
+  createdBy: string;
+  delayRangeSeconds: [number, number];
+  /** persona_id → role */
+  roster: Record<string, "seed" | "corroborator">;
+  posts: DispatchPost[];
+};
+
+/** Insert a campaign and its initial post slate atomically. */
+export async function insertCampaign(c: DispatchCampaign): Promise<void> {
+  const now = new Date().toISOString();
+  const stmts: string[] = [];
+  stmts.push(
+    `INSERT INTO campaign(id, intent, channel, delay_range_seconds, status, created_at, created_by, roster) VALUES (
+      '${sqlEscape(c.id)}',
+      '${sqlEscape(c.intent)}',
+      '${sqlEscape(c.channel)}',
+      '${sqlEscape(JSON.stringify(c.delayRangeSeconds))}',
+      '${sqlEscape(c.status)}',
+      '${sqlEscape(now)}',
+      '${sqlEscape(c.createdBy)}',
+      '${sqlEscape(JSON.stringify(c.roster))}'
+    );`,
+  );
+  for (const p of c.posts) {
+    const tgId =
+      p.status === "posted"
+        ? `tg_${Math.floor(Math.random() * 1e9).toString(36)}`
+        : "";
+    stmts.push(
+      `INSERT INTO generated_post(id, campaign_id, persona_id, role, generated_content, edited_content, status, generated_at, decided_at, decided_by, posted_at, telegram_message_id, error) VALUES (
+        '${sqlEscape(p.id)}',
+        '${sqlEscape(c.id)}',
+        '${sqlEscape(p.personaId)}',
+        '${sqlEscape(p.role)}',
+        '${sqlEscape(p.generatedContent)}',
+        NULL,
+        '${sqlEscape(p.status)}',
+        '${sqlEscape(now)}',
+        '${sqlEscape(now)}',
+        '${sqlEscape(c.createdBy)}',
+        '${sqlEscape(p.postedAt)}',
+        ${tgId ? `'${sqlEscape(tgId)}'` : "NULL"},
+        NULL
+      );`,
+    );
+  }
+  await sqlExec(`BEGIN TRANSACTION;\n${stmts.join("\n")}\nCOMMIT;`);
+}
