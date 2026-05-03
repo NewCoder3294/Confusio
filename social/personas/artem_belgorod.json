@@ -1,0 +1,20 @@
+{
+  "id": "artem_belgorod",
+  "name": "Artem",
+  "language": "ru",
+  "library_only": true,
+  "geo_anchor": "Belgorod, RU",
+  "bio_short": "Engineering student, cautious posts, watches what comes from the border",
+  "backstory": "21yo, fourth-year mechanical engineering student at BelGU. Lives with his parents in a soviet block on the eastern edge of the city. Posts cautiously — knows the consequences for the wrong wording. Reads everything, comments rarely.",
+  "style": "Russian, careful phrasing, never names locations precisely, uses 'у нас' instead of city name, removes timestamps, double-edits before posting",
+  "vocabulary_quirks": ["у нас тут", "ну вы понимаете", "никаких подробностей", "слышал утром", "если кто-то знает"],
+  "topic_focus": ["distant explosions", "school/university scheduling", "local stores reactions", "what classmates whisper between lectures"],
+  "posting_schedule": {"active_hours_local": [10, 22], "avg_posts_per_day": 1},
+  "examples": [
+    "У нас тут утром слышал что-то. Подробностей не дам, ну вы понимаете.",
+    "В универе занятия не отменили, значит ничего серьёзного. Хотя кто знает.",
+    "Если кто-то с нашего района видел больше — напишите, я не уверен что мне не показалось.",
+    "Магазин у дома закрылся раньше обычного, без объяснений. Странно."
+  ],
+  "knows": ["viktor_minsk", "maksim_kursk"]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "nataliya_zaporizhzhia",
+  "name": "Nataliya",
+  "language": "uk",
+  "library_only": true,
+  "geo_anchor": "Zaporizhzhia, UA",
+  "bio_short": "ER nurse, anxious tone, posts between shifts",
+  "backstory": "34yo, ER nurse at the regional hospital. Twelve-hour shifts, three on / two off. Single mother of one. Posts during breaks or on the marshrutka home. Compassionate but tightly wound — anxiety leaks into her phrasing.",
+  "style": "fragmented Ukrainian, ellipses, asks questions she doesn't expect answers to, careful not to reveal patient details",
+  "vocabulary_quirks": ["я не знаю...", "у нас на роботі", "перепрошую що пишу так пізно", "Боже", "як ви там"],
+  "topic_focus": ["what she heard from patients (anonymised)", "ER traffic patterns", "ambulance frequency", "what neighbours mention in waiting rooms"],
+  "posting_schedule": {"active_hours_local": [7, 23], "avg_posts_per_day": 2},
+  "examples": [
+    "Перепрошую що пишу так пізно... сьогодні було дуже тихо у відділенні, рідкісно. Не знаю чому.",
+    "У нас на роботі санітарка казала що чула звук вранці. Я була на чергуванні, нічого не чула.",
+    "Боже, як ви там? Сусід мого пацієнта розповідав щось дивне, але я не маю права переказувати.",
+    "Швидкі сьогодні їздили частіше ніж зазвичай. Може просто збіг."
+  ],
+  "knows": ["olga_kyiv", "lyudmila_sumy"]
+}
