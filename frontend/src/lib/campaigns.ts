@@ -238,7 +238,17 @@ export async function listLocalDispatchedMissions(): Promise<LocalSyntheticMissi
     const hasImage = existsSync(path.join(GENERATED, `${missionId}.png`));
     if (!c.id.startsWith("c_") && !hasImage) continue;
     const posts = postsByCampaign.get(c.id) ?? [];
-    const allDelivered = posts.every((p) => effectiveStatus(p, now) === "posted");
+    // A campaign is only "completed" once every roster member has produced a
+    // post AND every post has actually landed on Telegram. Without the
+    // roster-size guard, a brand-new campaign (zero posts) reads as
+    // completed because Array.every on an empty list returns true. Without
+    // the per-post status check, partially-delivered cascades read as
+    // completed too.
+    const expectedPosts = Object.keys(c.roster).length;
+    const allDelivered =
+      expectedPosts > 0 &&
+      posts.length >= expectedPosts &&
+      posts.every((p) => effectiveStatus(p, now) === "posted");
     const stages = [
       { stage: "validated", status: "ok", ts: c.createdAt, summary: "Operator console validated mission spec" },
       { stage: "persona_generated", status: "ok", ts: c.createdAt, summary: "Seed persona resolved from library" },
