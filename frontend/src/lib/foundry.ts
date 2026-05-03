@@ -248,7 +248,25 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     "SHADOW-FOX-007", // 05 · mountain outpost
   ];
   const pinRank = new Map(PINNED_MISSIONS.map((id, i) => [id, i]));
+  // Newly-dispatched missions go to the very top of the board so the
+  // operator can see what they just kicked off without scrolling. The pin
+  // block sits beneath the freshly-dispatched batch but above the rest of
+  // the (older) ledger. Anything created within the last 6 hours counts as
+  // "fresh" — long enough to cover a demo session, short enough that
+  // yesterday's runs don't push the pins down.
+  const FRESH_WINDOW_MS = 6 * 60 * 60 * 1000;
+  const now = Date.now();
+  const isFresh = (m: Mission) => {
+    if (pinRank.has(m.missionId)) return false; // pins never count as fresh
+    const t = Date.parse(m.createdAt);
+    return Number.isFinite(t) && now - t < FRESH_WINDOW_MS;
+  };
   const allMissions = [...demoMissions, ...localMissions, ...missions].sort((a, b) => {
+    const fa = isFresh(a);
+    const fb = isFresh(b);
+    if (fa && !fb) return -1;
+    if (fb && !fa) return 1;
+    if (fa && fb) return b.createdAt.localeCompare(a.createdAt);
     const ra = pinRank.get(a.missionId);
     const rb = pinRank.get(b.missionId);
     if (ra !== undefined && rb !== undefined) return ra - rb;
