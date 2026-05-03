@@ -505,13 +505,47 @@ def build_orchestrator(
     require_sessions: bool = True,
     auto_approve_sandbox: bool = False,
 ) -> Orchestrator:
-    """Wire personas → agents → orchestrator. Used by the daemon entrypoint."""
+    """Wire personas → agents → orchestrator. Used by the daemon entrypoint.
+
+    library_only personas (no Telethon session of their own) are paired with
+    a carrier persona's client at post time. The orchestrator still treats
+    them as first-class agents — the LLM prompt uses the library persona's
+    voice, the post body carries that voice, and the post is sent through
+    the carrier's logged-in session. Carriers are picked round-robin so the
+    load spreads.
+    """
     personas = load_personas(require_sessions=require_sessions)
     llm = LLMClient()
     agents: dict[str, PersonaAgent] = {}
+
+    # First pass: build live agents (real session per persona).
+    live_clients: list[PersonaTelegramClient] = []
     for pid, persona in personas.items():
+        if persona.library_only:
+            continue
         tg = PersonaTelegramClient(persona.resolved_session_path())
         agents[pid] = PersonaAgent(persona, llm, tg)
+        live_clients.append(tg)
+
+    if not live_clients:
+        raise PersonaLoadError(
+            "no live persona sessions available; cannot route library_only "
+            "personas without at least one carrier session."
+        )
+
+    # Second pass: library personas borrow a carrier's client round-robin.
+    carrier_idx = 0
+    for pid, persona in personas.items():
+        if not persona.library_only:
+            continue
+        carrier = live_clients[carrier_idx % len(live_clients)]
+        carrier_idx += 1
+        agents[pid] = PersonaAgent(persona, llm, carrier)
+        log.info(
+            "library persona %s carried by session %s",
+            pid, carrier.session_path.name,
+        )
+
     storage = Storage()
     return Orchestrator(
         agents,

@@ -22,7 +22,9 @@ class PostingSchedule(BaseModel):
 class Persona(BaseModel):
     id: str
     name: str
-    session_path: str
+    # Optional for library_only personas — those don't have their own
+    # Telethon session and are routed through a carrier session at post time.
+    session_path: str = ""
     language: str  # ISO 639-1
     style: str
     examples: list[str]
@@ -34,6 +36,12 @@ class Persona(BaseModel):
     topic_focus: list[str] = Field(default_factory=list)
     posting_schedule: PostingSchedule = Field(default_factory=PostingSchedule)
     knows: list[str] = Field(default_factory=list)
+
+    # When true the persona has no Telethon session of its own — the
+    # orchestrator pairs it with a carrier persona's client at post time.
+    # Lets the cast UI surface a richer persona library without requiring
+    # a separate Telegram account per identity.
+    library_only: bool = False
 
     @field_validator("id")
     @classmethod
@@ -99,7 +107,11 @@ def load_personas(
                 f"persona id '{persona.id}' must match filename stem '{f.stem}'"
             )
 
-        if require_sessions and not persona.resolved_session_path().exists():
+        if (
+            require_sessions
+            and not persona.library_only
+            and not persona.resolved_session_path().exists()
+        ):
             raise PersonaLoadError(
                 f"session file missing for {persona.id}: "
                 f"{persona.resolved_session_path()}. "
