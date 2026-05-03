@@ -194,21 +194,26 @@ def _inject_style() -> None:
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --ink-0: #0E0D0B;          /* deepest near-black, warm */
-  --ink-1: #15130F;          /* main surface */
-  --ink-2: #1C1916;          /* card surface */
-  --ink-3: #28231D;          /* hover / active */
-  --rule:  #3A3127;          /* warm-dark border */
-  --rule-soft: #2A2419;      /* softer divider */
-  --paper: #E8E2D6;          /* primary text — warm off-white */
-  --paper-muted: #9C928A;    /* secondary text */
-  --paper-faint: #6B6259;    /* tertiary / metadata */
+  /* Light mode — declassified-dossier palette. Variable names are legacy
+     from the dark theme; values now invert (--ink-* = paper tones,
+     --paper-* = ink tones). */
+  --ink-0: #F1ECE0;          /* page bg — warm cream */
+  --ink-1: #E6E0D0;          /* sidebar / banner — card stock */
+  --ink-2: #EDE7D7;          /* panel bg (depth 1) */
+  --ink-3: #FBF7EC;          /* card bg (depth 2) — bright paper */
+  --ink-4: #D9D2BD;          /* hover / inset (depth 3) */
+  --rule:  #B8B19C;
+  --rule-soft: #D4CDB8;
+  --rule-strong: #6B6452;
+  --paper: #16140F;          /* primary ink */
+  --paper-muted: #5C5749;
+  --paper-faint: #8A8472;
 
-  --pending:  #C28D2A;
-  --approved: #3F7D78;
-  --posted:   #9B2A2A;
-  --failed:   #D14E4E;
-  --rejected: #7A6B7E;
+  --pending:  #16140F;
+  --approved: #16140F;
+  --posted:   #16140F;
+  --failed:   #16140F;
+  --rejected: #8A8472;
 
   --serif: 'IBM Plex Serif', Georgia, serif;
   --sans:  'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -233,14 +238,14 @@ html, body, [data-testid="stAppViewContainer"] {
   visibility: hidden !important;
 }
 .block-container {
-  padding-top: 0.25rem !important;
-  padding-bottom: 3rem !important;
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-  max-width: 1640px !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 4rem !important;
+  padding-left: 2.5rem !important;
+  padding-right: 2.5rem !important;
+  max-width: 1280px !important;
 }
 footer { visibility: hidden; }
-[data-testid="stMainBlockContainer"] { gap: 0 !important; }
+[data-testid="stMain"] [data-testid="stMainBlockContainer"] { gap: 0 !important; }
 
 /* Type system */
 body, p, div, span, li, label {
@@ -301,17 +306,19 @@ code, pre, kbd, .mono { font-family: var(--mono); }
   text-transform: uppercase;
 }
 .kpi .n { color: var(--paper); font-size: 13px; font-weight: 600; letter-spacing: 0; }
-.kpi.pending  { color: var(--pending);  border-color: color-mix(in oklch, var(--pending) 40%, var(--rule)); }
-.kpi.pending .n  { color: var(--pending); }
-.kpi.posted   { color: var(--posted);   border-color: color-mix(in oklch, var(--posted) 40%, var(--rule)); }
-.kpi.posted .n   { color: var(--posted); }
-.kpi.failed   { color: var(--failed);   border-color: color-mix(in oklch, var(--failed) 40%, var(--rule)); }
-.kpi.failed .n   { color: var(--failed); }
+.kpi.pending  { color: var(--paper); border-color: var(--paper); }
+.kpi.pending .n { color: var(--paper); }
+.kpi.posted {
+  color: var(--ink-0); background: var(--paper); border-color: var(--paper);
+}
+.kpi.posted .n { color: var(--ink-0); }
+.kpi.failed   { color: var(--paper); border-color: var(--paper); border-width: 2px; }
+.kpi.failed .n  { color: var(--paper); }
 .kpi.active   { color: var(--paper-muted); }
-.kpi.active .n   { color: var(--paper); }
+.kpi.active .n  { color: var(--paper); }
 
-.system-armed     { color: var(--approved) !important; }
-.system-stale     { color: var(--pending) !important; }
+.system-armed     { color: var(--paper) !important; }
+.system-stale     { color: var(--paper-muted) !important; }
 .system-offline   { color: var(--paper-faint) !important; }
 .system-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
@@ -319,36 +326,75 @@ code, pre, kbd, .mono { font-family: var(--mono); }
   box-shadow: 0 0 6px currentColor;
 }
 
-/* ──── section headers (dossier markers) ──── */
+/* ──── section panels (each section wrapped in its own elevated panel) ──── */
+[data-testid="stMain"] [data-testid="stContainer"][class*="border"],
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]:has(> [data-testid="stVerticalBlock"]):has([class*="dcard"]) {
+  background: var(--ink-2) !important;
+  border: 1px solid var(--rule) !important;
+  border-radius: 0 !important;
+}
+.panel-wrap {
+  background: var(--ink-2);
+  border: 1px solid var(--rule);
+  margin-bottom: 32px;
+  position: relative;
+}
+.panel-wrap::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 12px; height: 12px;
+  border-top: 1px solid var(--paper-faint);
+  border-left: 1px solid var(--paper-faint);
+}
+.panel-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 12px; height: 12px;
+  border-bottom: 1px solid var(--paper-faint);
+  border-right: 1px solid var(--paper-faint);
+}
+
+/* Section headers (dossier markers, sit at the top of each panel) */
 .section-head {
-  display: flex; align-items: baseline; gap: 12px;
-  border-top: 1px solid var(--rule);
-  padding: 12px 14px 10px 14px;
-  margin: 0 0 8px 0;
+  display: flex; align-items: center; gap: 16px;
+  padding: 18px 24px 16px 24px;
+  margin: 0;
   background: var(--ink-1);
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.22em;
-  color: var(--paper-muted);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--sans);
   text-transform: uppercase;
+  color: var(--paper-muted);
 }
 .section-head .sn {
-  color: var(--paper-faint);
+  color: var(--paper);
   font-family: var(--serif);
   font-style: italic;
-  font-size: 13px;
-  letter-spacing: 0.05em;
-  font-weight: 600;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 38px;
+  border-right: 1px solid var(--rule);
+  padding-right: 16px;
 }
 .section-head .stitle {
   color: var(--paper);
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.18em;
 }
 .section-head .sub {
   margin-left: auto;
   color: var(--paper-faint);
+  font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.20em;
+}
+
+.section-body {
+  padding: 22px 24px 24px 24px;
 }
 
 /* ──── stamps ──── */
@@ -365,19 +411,128 @@ code, pre, kbd, .mono { font-family: var(--mono); }
   text-transform: uppercase;
   border-radius: 1px;
 }
-.stamp.pending  { color: var(--pending); }
-.stamp.approved { color: var(--approved); }
-.stamp.posted   { color: var(--posted); }
-.stamp.failed   { color: var(--failed); }
-.stamp.rejected { color: var(--rejected); }
+.stamp.pending  { color: var(--paper); border-color: var(--paper); }
+.stamp.approved {
+  color: var(--paper); border-color: var(--paper);
+  background: rgba(22,20,15,0.05);
+}
+.stamp.posted {
+  color: var(--ink-0); background: var(--paper); border-color: var(--paper);
+}
+.stamp.failed {
+  color: var(--paper); border-color: var(--paper); border-width: 2px;
+  background: repeating-linear-gradient(
+    -45deg, transparent 0 4px, rgba(22,20,15,0.08) 4px 6px
+  );
+}
+.stamp.rejected {
+  color: var(--paper-faint); border-color: var(--paper-faint);
+  border-style: dashed;
+}
 .stamp .dot {
-  width: 6px; height: 6px; background: currentColor; border-radius: 1px;
+  width: 6px; height: 6px; background: currentColor; border-radius: 0;
+}
+.stamp.posted .dot { background: var(--ink-0); }
+
+/* ──── nested st.container = post card (depth 2) ──── */
+[data-testid="stMain"]
+  [data-testid="stVerticalBlockBorderWrapper"]
+  [data-testid="stVerticalBlockBorderWrapper"] {
+  background: var(--ink-3) !important;
+  border: 1px solid var(--rule-strong) !important;
+  margin-bottom: 14px !important;
+  margin-top: 0 !important;
+}
+[data-testid="stMain"]
+  [data-testid="stVerticalBlockBorderWrapper"]
+  [data-testid="stVerticalBlockBorderWrapper"]::before,
+[data-testid="stMain"]
+  [data-testid="stVerticalBlockBorderWrapper"]
+  [data-testid="stVerticalBlockBorderWrapper"]::after {
+  display: none;
+}
+[data-testid="stMain"]
+  [data-testid="stVerticalBlockBorderWrapper"]
+  [data-testid="stVerticalBlockBorderWrapper"]
+  > [data-testid="stVerticalBlock"] {
+  padding: 0 !important;
 }
 
-/* ──── dossier card (pending post / posted record) ──── */
-.dcard {
+/* ──── post card internals (head / meta / content label / foot) ──── */
+.post-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px;
+  padding: 16px 22px;
   background: var(--ink-1);
-  border: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+.post-head-left {
+  display: flex; align-items: center; gap: 12px;
+}
+.post-role-chip {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.20em;
+  color: var(--paper-faint);
+  text-transform: uppercase;
+  padding-left: 12px;
+  border-left: 1px solid var(--rule);
+}
+.post-head-right {
+  font-size: 11px;
+  color: var(--paper-faint);
+  letter-spacing: 0.10em;
+}
+.post-meta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px 24px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.post-meta > div { display: flex; flex-direction: column; gap: 4px; }
+.post-meta .k {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--paper-faint);
+}
+.post-meta .v { color: var(--paper); font-size: 12.5px; }
+.post-meta .v.mono { font-family: var(--mono); font-size: 11.5px; color: var(--paper-muted); }
+.post-content-label {
+  padding: 16px 22px 6px 22px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.20em;
+  color: var(--paper-faint);
+  text-transform: uppercase;
+}
+.post-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 14px;
+  padding: 12px 22px;
+  margin-top: 6px;
+  background: var(--ink-2);
+  border-top: 1px solid var(--rule-soft);
+  font-size: 10.5px;
+  color: var(--paper-faint);
+  letter-spacing: 0.10em;
+}
+
+/* Push the textarea inside the post card to span edge-to-edge cleanly */
+[data-testid="stMain"]
+  [data-testid="stVerticalBlockBorderWrapper"]
+  [data-testid="stVerticalBlockBorderWrapper"]
+  [data-testid="stTextArea"] {
+  padding: 0 22px !important;
+  margin-top: -6px !important;
+}
+
+/* ──── (legacy) dossier card kept for sidebar/active campaigns ──── */
+.dcard {
+  background: var(--ink-3);
+  border: 1px solid var(--rule-strong);
   border-left-width: 1px;
   margin: 0;
   padding: 0;
@@ -385,17 +540,17 @@ code, pre, kbd, .mono { font-family: var(--mono); }
 .dcard-head {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px;
-  padding: 14px 20px 10px 20px;
+  padding: 18px 26px 14px 26px;
   border-bottom: 1px solid var(--rule-soft);
 }
 .dcard-meta {
   display: grid;
-  grid-template-columns: 110px 1fr;
-  row-gap: 4px;
-  column-gap: 16px;
-  padding: 12px 20px 12px 20px;
+  grid-template-columns: 130px 1fr;
+  row-gap: 8px;
+  column-gap: 18px;
+  padding: 18px 26px 18px 26px;
   border-bottom: 1px solid var(--rule-soft);
-  font-size: 12px;
+  font-size: 12.5px;
 }
 .dcard-meta .k {
   font-family: var(--mono);
@@ -410,16 +565,16 @@ code, pre, kbd, .mono { font-family: var(--mono); }
 }
 .dcard-meta .v.mono { font-family: var(--mono); font-size: 11.5px; color: var(--paper-muted); }
 .dcard-body {
-  padding: 18px 22px 18px 22px;
+  padding: 24px 26px 24px 26px;
   font-family: var(--serif);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.65;
   color: var(--paper);
 }
 .dcard-foot {
   display: flex; align-items: center; justify-content: space-between;
   gap: 14px;
-  padding: 10px 20px 10px 20px;
+  padding: 14px 26px 14px 26px;
   border-top: 1px solid var(--rule-soft);
   font-family: var(--mono);
   font-size: 10.5px;
@@ -538,6 +693,409 @@ code, pre, kbd, .mono { font-family: var(--mono); }
   border-bottom: 2px solid var(--pending) !important;
 }
 
+/* ──── Sidebar ──── */
+[data-testid="stSidebar"] {
+  background: var(--ink-1) !important;
+  border-right: 1px solid var(--rule) !important;
+  min-width: 280px !important;
+  max-width: 320px !important;
+}
+[data-testid="stSidebar"] [data-testid="stSidebarContent"],
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+  background: var(--ink-1) !important;
+}
+[data-testid="stSidebar"] .block-container {
+  padding-top: 1.5rem !important;
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] > button {
+  height: 26px !important;
+  padding: 4px 10px !important;
+  font-size: 9.5px !important;
+  letter-spacing: 0.18em !important;
+  font-weight: 600 !important;
+}
+[data-testid="stSidebar"] [data-testid="stHorizontalBlock"] { gap: 4px !important; }
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"] {
+  display: none !important;
+}
+.sb-brand {
+  display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--mono);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 700;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 18px;
+}
+.sb-brand .v {
+  color: var(--paper-faint);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+.sb-section {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper-faint);
+  padding: 14px 0 8px 0;
+  border-top: 1px solid var(--rule);
+  margin-top: 14px;
+}
+.sb-section:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+.sb-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  gap: 10px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--rule-soft);
+  align-items: center;
+  font-size: 12px;
+}
+.sb-row .glyph {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--paper-faint);
+  text-align: right;
+  font-size: 12px;
+}
+.sb-row .name { color: var(--paper); }
+.sb-row .lang {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--paper-faint);
+  letter-spacing: 0.15em;
+}
+.sb-stat {
+  display: flex; justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 6px 4px;
+  color: var(--paper-muted);
+  border-bottom: 1px solid var(--rule-soft);
+}
+.sb-stat .v { color: var(--paper); }
+
+.sb-camp {
+  border: 1px solid var(--rule);
+  background: var(--ink-2);
+  padding: 8px 10px;
+  margin-bottom: 4px;
+}
+.sb-camp-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 4px;
+}
+.sb-camp-id {
+  font-size: 10px;
+  color: var(--paper-faint);
+  letter-spacing: 0.10em;
+}
+.sb-camp-status {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.20em;
+  color: var(--paper);
+}
+.sb-camp-intent {
+  font-size: 12px;
+  color: var(--paper);
+  line-height: 1.4;
+  font-family: var(--serif);
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   shadcn-borrowed patterns: refined header, sidebar groups, avatar,
+   subtle elevation. Adapted to dossier aesthetic — sharp corners on
+   stamps, soft 3-4px on inputs/buttons, hover bg shifts on menu items.
+   ────────────────────────────────────────────────────────────────── */
+
+/* Top classification strip — runs above the main header bar */
+.classification-strip {
+  position: sticky; top: 0; z-index: 60;
+  margin: -0.25rem -1.5rem 0 -1.5rem;
+  padding: 4px 18px;
+  background: var(--paper);
+  color: var(--ink-0);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 24px;
+}
+.classification-strip .cs-left {
+  display: flex; gap: 14px; align-items: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  min-width: 0;
+}
+.classification-strip .cs-marker {
+  display: inline-block; width: 8px; height: 8px;
+  background: var(--ink-0); flex: 0 0 auto;
+}
+.classification-strip .cs-right { color: var(--ink-3); white-space: nowrap; flex: 0 0 auto; }
+
+/* Main header bar (replaces old .banner usage) */
+.hdr {
+  position: sticky; top: 22px; z-index: 50;
+  margin: 0 -1.5rem 22px -1.5rem;
+  padding: 14px 22px 13px 22px;
+  background: var(--ink-1);
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 1px 0 0 rgba(22,20,15,0.04), 0 1px 3px -1px rgba(22,20,15,0.06);
+  display: flex;
+  gap: 14px 18px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.hdr-brand {
+  display: flex; align-items: baseline; gap: 12px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.hdr-spacer { flex: 1 1 auto; min-width: 8px; }
+.hdr-mark {
+  font-family: var(--mono);
+  font-size: 14px; font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--paper);
+  text-transform: uppercase;
+}
+.hdr-crumb {
+  display: flex; align-items: baseline; gap: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  color: var(--paper-faint);
+  text-transform: uppercase;
+}
+.hdr-crumb .sep { color: var(--paper-faint); opacity: 0.55; }
+.hdr-crumb .cur { color: var(--paper-muted); }
+
+.hdr-status-pill {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 7px 14px 6px 12px;
+  border: 1px solid var(--rule-strong);
+  background: var(--ink-3);
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+  color: var(--paper);
+  white-space: nowrap;
+}
+.hdr-status-pill .label { color: var(--paper-faint); }
+.hdr-status-pill .age { color: var(--paper-muted); font-size: 10px; letter-spacing: 0; }
+.hdr-status-pill .dot {
+  display: inline-block; width: 7px; height: 7px;
+  background: currentColor; box-shadow: 0 0 8px currentColor;
+}
+.hdr-status-pill.s-armed { color: #2F6B3A; border-color: #B8C8AE; background: #F1F5EA; }
+.hdr-status-pill.s-stale { color: #8A6A1F; border-color: #D4C497; background: #F6EFD8; }
+.hdr-status-pill.s-offline { color: var(--paper-faint); }
+
+.hdr-right {
+  display: flex; align-items: center; gap: 14px; justify-content: flex-end;
+}
+.hdr-kpis { display: inline-flex; gap: 0; }
+.hdr-kpi {
+  display: inline-flex; align-items: baseline; gap: 7px;
+  padding: 6px 11px 5px 11px;
+  border: 1px solid var(--rule);
+  background: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  color: var(--paper-faint);
+  text-transform: uppercase;
+  margin-left: -1px;
+  transition: background 120ms ease;
+}
+.hdr-kpi:first-child { margin-left: 0; }
+.hdr-kpi:hover { background: var(--ink-4); }
+.hdr-kpi .n {
+  color: var(--paper); font-size: 14px; font-weight: 600;
+  letter-spacing: 0; line-height: 1;
+}
+.hdr-kpi.posted { background: var(--paper); color: var(--ink-3); border-color: var(--paper); }
+.hdr-kpi.posted .n { color: var(--ink-0); }
+
+.hdr-op {
+  display: flex; align-items: center; gap: 10px;
+  padding: 5px 10px 5px 5px;
+  border: 1px solid var(--rule);
+  background: var(--ink-3);
+  border-radius: 3px;
+}
+.hdr-op:hover { background: var(--ink-4); }
+.hdr-op-avatar {
+  width: 26px; height: 26px;
+  background: var(--paper);
+  color: var(--ink-0);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.hdr-op-meta {
+  display: flex; flex-direction: column; line-height: 1.1;
+}
+.hdr-op-name {
+  font-family: var(--mono); font-size: 11px; color: var(--paper);
+  letter-spacing: 0.12em; font-weight: 600; text-transform: uppercase;
+}
+.hdr-op-role {
+  font-family: var(--mono); font-size: 8.5px; color: var(--paper-faint);
+  letter-spacing: 0.20em; text-transform: uppercase;
+}
+
+/* ──── Sidebar — shadcn group / menu / footer pattern ──── */
+.sb-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 4px 16px 4px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 16px;
+}
+.sb-head-mark {
+  width: 30px; height: 30px;
+  background: var(--paper); color: var(--ink-0);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.sb-head-meta { display: flex; flex-direction: column; line-height: 1.15; }
+.sb-head-name {
+  font-family: var(--mono); font-size: 13px; font-weight: 700;
+  letter-spacing: 0.20em; color: var(--paper); text-transform: uppercase;
+}
+.sb-head-sub {
+  font-family: var(--mono); font-size: 9px; color: var(--paper-faint);
+  letter-spacing: 0.22em; text-transform: uppercase;
+}
+
+.sb-group { padding: 14px 0 8px 0; }
+.sb-group + .sb-group { border-top: 1px solid var(--rule-soft); }
+.sb-group-label {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--paper-faint);
+  padding: 0 4px 8px 4px;
+}
+.sb-group-label .count {
+  font-size: 9px;
+  color: var(--paper-muted);
+  letter-spacing: 0.10em;
+}
+
+.sb-menu { display: flex; flex-direction: column; gap: 1px; }
+.sb-menu-item {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 7px 8px;
+  border-radius: 3px;
+  font-family: var(--sans);
+  font-size: 12.5px;
+  color: var(--paper);
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+.sb-menu-item:hover { background: var(--ink-4); }
+.sb-menu-item.active { background: var(--ink-4); }
+.sb-menu-item .icon {
+  font-family: var(--serif); font-style: italic;
+  color: var(--paper-faint); font-size: 12px; text-align: right;
+}
+.sb-menu-item.active .icon { color: var(--paper); }
+.sb-menu-item .meta {
+  font-family: var(--mono); font-size: 9.5px;
+  color: var(--paper-faint); letter-spacing: 0.16em;
+}
+
+/* sidebar persona row — refined with avatar block */
+.sb-persona {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 6px 4px;
+  border-radius: 3px;
+}
+.sb-persona:hover { background: var(--ink-4); }
+.sb-persona-av {
+  width: 26px; height: 26px;
+  background: var(--ink-2);
+  border: 1px solid var(--rule);
+  color: var(--paper);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-style: italic;
+  font-size: 12px;
+}
+.sb-persona-name {
+  font-family: var(--sans); font-size: 12.5px;
+  color: var(--paper); line-height: 1.15;
+}
+.sb-persona-handle {
+  font-family: var(--mono); font-size: 9.5px;
+  color: var(--paper-faint); letter-spacing: 0.10em;
+}
+.sb-persona-lang {
+  font-family: var(--mono); font-size: 9.5px;
+  color: var(--paper-muted); letter-spacing: 0.18em;
+  padding: 2px 6px; border: 1px solid var(--rule);
+}
+
+/* sidebar system stat with status dot */
+.sb-stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 4px;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--paper-muted);
+}
+.sb-stat-row .label { display: inline-flex; align-items: center; gap: 8px; letter-spacing: 0.05em; }
+.sb-stat-row .v { color: var(--paper); letter-spacing: 0.04em; }
+.sb-stat-row .dot {
+  display: inline-block; width: 6px; height: 6px;
+  background: currentColor;
+}
+.sb-stat-row.s-armed   .dot { background: #4F8C5C; }
+.sb-stat-row.s-stale   .dot { background: #B79844; }
+.sb-stat-row.s-offline .dot { background: var(--paper-faint); }
+
+/* sidebar footer — operator block pinned to bottom */
+.sb-footer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 10px;
+}
+.sb-footer-av {
+  width: 32px; height: 32px;
+  background: var(--paper); color: var(--ink-0);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.sb-footer-meta { display: flex; flex-direction: column; line-height: 1.15; }
+.sb-footer-name {
+  font-family: var(--mono); font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.18em; color: var(--paper); text-transform: uppercase;
+}
+.sb-footer-role {
+  font-family: var(--mono); font-size: 9px; color: var(--paper-faint);
+  letter-spacing: 0.22em; text-transform: uppercase;
+}
+
 /* Empty-state SITREP block */
 .standby {
   border: 1px dashed var(--rule);
@@ -577,25 +1135,37 @@ code, pre, kbd, .mono { font-family: var(--mono); }
 .audit .body.fail { color: var(--failed); }
 .audit .body.post { color: var(--posted); }
 
-/* Channel mirror message bubble — looks like a stamped record */
+/* Channel mirror — each posted message is its own card-like record */
 .tg-row {
   display: grid;
-  grid-template-columns: 130px 1fr;
-  border-bottom: 1px solid var(--rule-soft);
-  padding: 14px 6px;
-  gap: 18px;
+  grid-template-columns: 150px 1fr;
+  background: var(--ink-3);
+  border: 1px solid var(--rule-strong);
+  margin-bottom: 10px;
+  padding: 0;
+  gap: 0;
 }
 .tg-meta {
   font-family: var(--mono);
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--paper-faint);
-  letter-spacing: 0.10em;
+  letter-spacing: 0.14em;
+  padding: 14px 16px;
+  background: var(--ink-2);
+  border-right: 1px solid var(--rule-strong);
+  display: flex; flex-direction: column; gap: 6px;
+  text-transform: uppercase;
 }
+.tg-meta > span { display: block; }
+.tg-meta .tg-msgid { color: var(--paper); font-size: 11px; }
+.tg-meta .tg-time { color: var(--paper-muted); }
+.tg-meta .tg-persona { color: var(--paper-muted); margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--rule); }
 .tg-body {
   font-family: var(--serif);
-  font-size: 14.5px;
+  font-size: 15.5px;
   color: var(--paper);
-  line-height: 1.55;
+  line-height: 1.6;
+  padding: 18px 22px;
 }
 
 /* Campaign roster row */
@@ -619,7 +1189,60 @@ code, pre, kbd, .mono { font-family: var(--mono); }
 
 /* ──── dashboard column shells ──── */
 [data-testid="stMain"] [data-testid="stVerticalBlock"] {
-  gap: 0.5rem !important;
+  gap: 1.25rem !important;
+}
+[data-testid="stMain"] [data-testid="stHorizontalBlock"]
+  [data-testid="stVerticalBlock"] { gap: 0.6rem !important; }
+
+/* Each st.container(border=True) becomes a section panel — depth 1 from page bg. */
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {
+  background: var(--ink-2) !important;
+  border: 1px solid var(--rule) !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin-bottom: 28px !important;
+  position: relative;
+}
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]::before {
+  content: '';
+  position: absolute;
+  top: -1px; left: -1px;
+  width: 14px; height: 14px;
+  border-top: 1px solid var(--paper-faint);
+  border-left: 1px solid var(--paper-faint);
+  pointer-events: none;
+}
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; right: -1px;
+  width: 14px; height: 14px;
+  border-bottom: 1px solid var(--paper-faint);
+  border-right: 1px solid var(--paper-faint);
+  pointer-events: none;
+}
+/* Inner block needs internal padding (the wrapper sets padding:0 to allow
+   the section-head bg to extend edge-to-edge). */
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]
+  > [data-testid="stVerticalBlock"] {
+  padding: 0 !important;
+  gap: 0 !important;
+}
+/* The section-head sits flush at top; following content gets generous padding */
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]
+  > [data-testid="stVerticalBlock"]
+  > [data-testid="stElementContainer"]:not(:has(.section-head)) {
+  padding: 0 24px !important;
+}
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]
+  > [data-testid="stVerticalBlock"]
+  > [data-testid="stElementContainer"]:nth-child(2) {
+  padding-top: 22px !important;
+}
+[data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"]
+  > [data-testid="stVerticalBlock"]
+  > [data-testid="stElementContainer"]:last-child {
+  padding-bottom: 24px !important;
 }
 .panel {
   border: 1px solid var(--rule);
@@ -717,11 +1340,7 @@ def _live_counts() -> dict[str, int]:
 
 def render_banner() -> None:
     sys_status, age = _heartbeat_state()
-    sys_class = {
-        "ARMED": "system-armed",
-        "STALE": "system-stale",
-        "OFFLINE": "system-offline",
-    }[sys_status]
+    sys_class = {"ARMED": "s-armed", "STALE": "s-stale", "OFFLINE": "s-offline"}[sys_status]
     age_str = "—" if age is None else f"{age:0.1f}s"
     channel_short = "—"
     allowed = _allowed_channels()
@@ -729,26 +1348,43 @@ def render_banner() -> None:
         channel_short = _short_channel(allowed[0])
     now = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
     operator = _operator_id().upper()
+    op_initials = (operator[:2] if operator else "—").upper()
     k = _live_counts()
 
     html = f"""
-<div class="banner">
-  <span class="b-title">// MENDACITY</span>
-  <span class="b-sep">//</span>
-  <span><span class="b-key">OP</span> <span class="b-val">{operator}</span></span>
-  <span class="b-sep">//</span>
-  <span><span class="b-key">CH</span> <span class="b-val mono">{channel_short}</span></span>
-  <span class="b-sep">//</span>
-  <span><span class="b-key">SYS</span> <span class="b-val {sys_class}"><span class="system-dot"></span>{sys_status}</span> <span class="b-key mono">{age_str}</span></span>
-  <span class="b-sep">//</span>
-  <span class="b-key mono">{now}</span>
-  <span class="spacer"></span>
-  <span class="kpis">
-    <span class="kpi pending"><span class="n">{k["pending"]}</span> Pending</span>
-    <span class="kpi posted"><span class="n">{k["posted"]}</span> Posted</span>
-    <span class="kpi failed"><span class="n">{k["failed"]}</span> Failed</span>
-    <span class="kpi active"><span class="n">{k["active"]}</span> Active</span>
-  </span>
+<div class="classification-strip">
+  <div class="cs-left">
+    <span class="cs-marker"></span>
+    <span>CLASSIFIED · OPERATOR EYES ONLY</span>
+    <span>·</span>
+    <span>CH {channel_short}</span>
+  </div>
+  <div class="cs-right">{now}</div>
+</div>
+<div class="hdr">
+  <div class="hdr-brand">
+    <span class="hdr-mark">// MENDACITY</span>
+  </div>
+  <div class="hdr-spacer"></div>
+  <div class="hdr-status-pill {sys_class}">
+    <span class="dot"></span>
+    <span class="label">SYS</span>
+    <span>{sys_status}</span>
+    <span class="age">· {age_str}</span>
+  </div>
+  <div class="hdr-kpis">
+    <span class="hdr-kpi pending"><span class="n">{k["pending"]}</span> Pending</span>
+    <span class="hdr-kpi posted"><span class="n">{k["posted"]}</span> Posted</span>
+    <span class="hdr-kpi failed"><span class="n">{k["failed"]}</span> Failed</span>
+    <span class="hdr-kpi active"><span class="n">{k["active"]}</span> Active</span>
+  </div>
+  <div class="hdr-op">
+    <span class="hdr-op-avatar">{op_initials}</span>
+    <span class="hdr-op-meta">
+      <span class="hdr-op-name">{operator}</span>
+      <span class="hdr-op-role">OPERATOR</span>
+    </span>
+  </div>
 </div>
 """
     st.html(html)
@@ -759,68 +1395,44 @@ def render_banner() -> None:
 # ────────────────────────────────────────────────────────────────────────
 
 
+_SECTION_ANCHOR = {"I": "section-directive", "II": "section-queue", "III": "section-audit"}
+
+
 def _section_head(numeral: str, title: str, sub: str = "") -> None:
     sub_html = f'<span class="sub">{sub}</span>' if sub else ""
+    anchor = _SECTION_ANCHOR.get(numeral, "")
+    anchor_attr = f' id="{anchor}"' if anchor else ""
     st.markdown(
-        f'<div class="section-head"><span class="sn">§ {numeral}</span>'
+        f'<div class="section-head"{anchor_attr}><span class="sn">§ {numeral}</span>'
         f'<span class="stitle">{title}</span>{sub_html}</div>',
         unsafe_allow_html=True,
     )
 
 
-def section_active_campaigns() -> None:
-    """Right-rail panel: list of active campaigns with PAUSE/ABORT inside the card."""
+def section_active_campaigns_compact() -> None:
+    """Sidebar-only compact view: one row per active campaign with action menu."""
     orch = _get_orchestrator()
-    personas = _get_personas()
     active = _run(orch.storage.list_active_campaigns())
     running = [c for c in active if c.status in ("running", "paused")]
 
-    sub = f"{len(running)}" if running else "—"
-    _section_head("II", "ACTIVE CAMPAIGNS", sub)
-
+    st.html('<div class="sb-section">ACTIVE CAMPAIGNS</div>')
     if not running:
         st.html(
-            '<div class="standby" style="padding:18px 14px;">'
-            '// NO ACTIVE DIRECTIVE //'
-            '</div>'
+            '<div class="sb-stat" style="border-bottom:none;color:var(--paper-faint);">'
+            '<span>NONE</span></div>'
         )
         return
 
     for c in running:
-        roster_lines = "".join(
-            f'<div class="roster-row">'
-            f'<span class="glyph">{ROLE_GLYPH.get(role, "·")}</span>'
-            f'<span class="pname">{personas[pid].name if pid in personas else pid}</span>'
-            f'<span class="mono" style="color:var(--paper-faint);font-size:10.5px;text-align:right;">'
-            f'{role.upper()}</span>'
-            f'<span class="mono" style="color:var(--paper-faint);font-size:10.5px;text-align:right;">'
-            f'{personas[pid].language.upper() if pid in personas else "—"}</span>'
-            f'</div>'
-            for pid, role in c.roster.items()
-        )
-        stamp_class = "approved" if c.status == "running" else "pending"
-        stamp_label = c.status.upper()
+        intent_short = c.intent if len(c.intent) <= 60 else c.intent[:57] + "…"
         st.html(
-            f"""
-<div class="dcard">
-  <div class="dcard-head">
-    <div><span class="stamp {stamp_class}"><span class="dot"></span>{stamp_label}</span></div>
-    <div class="mono" style="color:var(--paper-faint);font-size:10.5px;letter-spacing:0.10em;text-align:right;">
-      {c.id[-8:]}<br>{_format_ts_short(c.created_at)}
-    </div>
-  </div>
-  <div class="dcard-body" style="font-size:14px;padding:12px 14px;">
-    {c.intent}
-  </div>
-  <div class="dcard-meta">
-    <div class="k">CHANNEL</div>  <div class="v mono" style="font-size:11px;">{_short_channel(c.channel)}</div>
-    <div class="k">DELAY</div>    <div class="v mono">{c.delay_range_seconds[0]}–{c.delay_range_seconds[1]} s</div>
-  </div>
-  <div style="padding:6px 14px 0 14px;">
-    {roster_lines}
-  </div>
-</div>
-"""
+            f'<div class="sb-camp">'
+            f'<div class="sb-camp-head">'
+            f'<span class="sb-camp-id mono">{c.id[-6:]}</span>'
+            f'<span class="sb-camp-status">{c.status.upper()}</span>'
+            f'</div>'
+            f'<div class="sb-camp-intent">{intent_short}</div>'
+            f'</div>'
         )
         cols = st.columns(2)
         with cols[0]:
@@ -846,7 +1458,7 @@ def section_new_directive() -> None:
         1 for c in _run(orch.storage.list_active_campaigns()) if c.status == "running"
     )
 
-    _section_head("III", "ISSUE DIRECTIVE", "")
+    _section_head("I", "ISSUE DIRECTIVE", "")
     with st.expander("OPEN FORM", expanded=(running_count == 0)):
         with st.form("new_campaign", clear_on_submit=False):
             intent = st.text_area(
@@ -947,7 +1559,7 @@ def section_approval_queue() -> None:
     personas = _get_personas()
     pending = _run(orch.storage.list_pending())
     sub = f"{len(pending)} AWAITING DECISION" if pending else "STANDBY"
-    _section_head("I", "APPROVAL QUEUE", sub)
+    _section_head("II", "APPROVAL QUEUE", sub)
 
     if not pending:
         st.markdown(
@@ -968,46 +1580,48 @@ def section_approval_queue() -> None:
         glyph = ROLE_GLYPH.get(post.role, "·")
         is_armed = (st.session_state.get("_armed_post_id") == post.id)
 
-        st.markdown(
-            f"""
-<div class="dcard">
-  <div class="dcard-head">
-    <div>{_stamp_html("pending_approval")}</div>
-    <div class="mono" style="color:var(--paper-faint);font-size:11px;letter-spacing:0.10em;">
-      ROLE {glyph} · {post.role.upper()}
-    </div>
+        with st.container(border=True):
+            st.html(
+                f"""
+<div class="post-head">
+  <div class="post-head-left">
+    {_stamp_html("pending_approval")}
+    <span class="post-role-chip">ROLE {glyph} · {post.role.upper()}</span>
   </div>
-  <div class="dcard-meta">
-    <div class="k">PERSONA</div>   <div class="v">{name} <span class="mono" style="color:var(--paper-faint);">({post.persona_id})</span></div>
-    <div class="k">LANGUAGE</div>  <div class="v mono">{lang}</div>
-    <div class="k">GENERATED</div> <div class="v mono">{_format_ts_full(post.generated_at)}</div>
-    <div class="k">CAMPAIGN</div>  <div class="v mono">{post.campaign_id}</div>
+  <div class="post-head-right mono">
+    {post.id}
   </div>
 </div>
-""",
-            unsafe_allow_html=True,
-        )
-
-        edited = st.text_area(
-            "POST CONTENT — editable",
-            value=post.generated_content,
-            key=f"edit_{post.id}",
-            height=120,
-        )
-        char_count = len(edited)
-        edited_flag = (edited.strip() != post.generated_content.strip())
-
-        st.markdown(
-            f"""
-<div class="dcard-foot">
-  <span>{char_count} CHARS · ID {post.id}</span>
-  <span>SHA256: <span class="mono" style="color:var(--paper-muted);">{__import__("hashlib").sha256(edited.encode("utf-8")).hexdigest()[:16]}…</span></span>
+<div class="post-meta">
+  <div><span class="k">PERSONA</span><span class="v">{name} <span class="mono" style="color:var(--paper-faint);">({post.persona_id})</span></span></div>
+  <div><span class="k">LANG</span><span class="v mono">{lang}</span></div>
+  <div><span class="k">GENERATED</span><span class="v mono">{_format_ts_full(post.generated_at)}</span></div>
+  <div><span class="k">CAMPAIGN</span><span class="v mono">{post.campaign_id[-8:]}</span></div>
 </div>
-""",
-            unsafe_allow_html=True,
-        )
+<div class="post-content-label">// POST CONTENT — EDITABLE</div>
+"""
+            )
 
-        action_cols = st.columns([1.2, 1.7, 1, 1, 3.5])
+            edited = st.text_area(
+                "post content",
+                value=post.generated_content,
+                key=f"edit_{post.id}",
+                height=120,
+                label_visibility="collapsed",
+            )
+            char_count = len(edited)
+            edited_flag = (edited.strip() != post.generated_content.strip())
+
+            st.html(
+                f"""
+<div class="post-foot mono">
+  <span>{char_count} CHARS</span>
+  <span>SHA256 <span style="color:var(--paper);">{__import__("hashlib").sha256(edited.encode("utf-8")).hexdigest()[:16]}…</span></span>
+</div>
+"""
+            )
+
+            action_cols = st.columns([1.2, 1.7, 1, 1, 3.5])
         with action_cols[0]:
             if not is_armed:
                 if st.button("APPROVE", key=f"ap_{post.id}", type="primary"):
@@ -1026,7 +1640,7 @@ def section_approval_queue() -> None:
         with action_cols[1]:
             if not is_armed:
                 if st.button(
-                    "EDIT & APPROVE",
+                    "EDIT · APPROVE",
                     key=f"ea_{post.id}",
                     disabled=not edited_flag,
                 ):
@@ -1064,7 +1678,7 @@ _EVENT_TONE = {
 def section_audit_trace() -> None:
     orch = _get_orchestrator()
     personas = _get_personas()
-    _section_head("IV", "AUDIT TRACE", "APPEND-ONLY")
+    _section_head("III", "AUDIT TRACE", "APPEND-ONLY")
 
     tabs = st.tabs(["CHANNEL", "EVENTS", "CAMPAIGNS"])
 
@@ -1079,19 +1693,18 @@ def section_audit_trace() -> None:
                 any_posts = True
                 persona = personas.get(p.persona_id)
                 name = persona.name if persona else p.persona_id
-                st.markdown(
+                st.html(
                     f"""
 <div class="tg-row">
   <div class="tg-meta">
-    {_stamp_html("posted")}<br>
-    <span style="color:var(--paper-faint);">MSG #{p.telegram_message_id}</span><br>
-    <span style="color:var(--paper-faint);">{_format_ts_short(p.posted_at)}</span><br>
-    <span style="color:var(--paper-muted);">{name} · {p.role.upper()}</span>
+    {_stamp_html("posted")}
+    <span class="tg-msgid">MSG #{p.telegram_message_id}</span>
+    <span class="tg-time">{_format_ts_short(p.posted_at)}</span>
+    <span class="tg-persona">{name} · {p.role.upper()}</span>
   </div>
   <div class="tg-body">{p.final_content}</div>
 </div>
-""",
-                    unsafe_allow_html=True,
+"""
                 )
         if not any_posts:
             st.markdown(
@@ -1177,28 +1790,79 @@ def section_audit_trace() -> None:
 # ────────────────────────────────────────────────────────────────────────
 
 
+def render_sidebar() -> None:
+    orch = _get_orchestrator()
+    personas = _get_personas()
+    sys_status, age = _heartbeat_state()
+    counts = _live_counts()
+
+    with st.sidebar:
+        # Header — monogram mark + wordmark + version
+        st.html(
+            '<div class="sb-head">'
+            '<span class="sb-head-mark">M</span>'
+            '<span class="sb-head-meta">'
+            '<span class="sb-head-name">MENDACITY</span>'
+            '<span class="sb-head-sub">v0.1 · ISSUE #3</span>'
+            '</span>'
+            '</div>'
+        )
+
+        # Group: Active Campaigns — primary operator-actionable content
+        section_active_campaigns_compact()
+
+        # Group: Personas roster — context for who's on the bench
+        st.html(
+            '<div class="sb-group">'
+            f'<div class="sb-group-label"><span>Personas</span><span class="count">{len(personas)}</span></div>'
+            '</div>'
+        )
+        default_roles = ["seed", "witness", "reaction", "aggregator"]
+        rows = []
+        for i, (pid, p) in enumerate(personas.items()):
+            role = default_roles[min(i, len(default_roles) - 1)]
+            glyph = ROLE_GLYPH.get(role, "·")
+            rows.append(
+                f'<div class="sb-persona">'
+                f'<span class="sb-persona-av">{glyph}</span>'
+                f'<span class="sb-persona-name">{p.name}</span>'
+                f'<span class="sb-persona-lang">{p.language.upper()}</span>'
+                f'</div>'
+            )
+        st.html("".join(rows))
+
+        # Footer — operator avatar block
+        op = _operator_id().upper()
+        op_initials = (op[:2] if op else "—").upper()
+        st.html(
+            f'<div class="sb-footer">'
+            f'<span class="sb-footer-av">{op_initials}</span>'
+            f'<span class="sb-footer-meta">'
+            f'<span class="sb-footer-name">{op}</span>'
+            f'<span class="sb-footer-role">OPERATOR · SIGNED IN</span>'
+            f'</span>'
+            f'</div>'
+        )
+
+
 def main() -> None:
     st.set_page_config(
         page_title="Mendacity / Operator Console",
         page_icon=None,
         layout="wide",
-        initial_sidebar_state="collapsed",
+        initial_sidebar_state="expanded",
     )
     _inject_style()
+    render_sidebar()
     render_banner()
 
-    # Dashboard: two-column layout. Approval queue is the primary workspace
-    # (left, ~60%); right rail stacks active campaigns, the new-directive
-    # form, and the audit trace.
-    primary, rail = st.columns([1.6, 1], gap="medium")
-    with primary:
-        section_approval_queue()
-    with rail:
-        st.markdown('<div class="rail">', unsafe_allow_html=True)
-        section_active_campaigns()
+    # Single-column main with each section inside its own panel.
+    with st.container(border=True):
         section_new_directive()
+    with st.container(border=True):
+        section_approval_queue()
+    with st.container(border=True):
         section_audit_trace()
-        st.markdown('</div>', unsafe_allow_html=True)
 
 
 main()
