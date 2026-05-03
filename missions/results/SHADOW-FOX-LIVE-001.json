@@ -1,0 +1,186 @@
+{
+  "mission_id": "SHADOW-FOX-LIVE-001",
+  "operator": "J2-INSCOM-Demo",
+  "status": "completed",
+  "started_at": "2026-05-03T05:28:02+00:00",
+  "finished_at": "2026-05-03T05:28:18+00:00",
+  "stages": [
+    {
+      "stage": "validated",
+      "status": "ok",
+      "ts": "2026-05-03T05:28:02+00:00",
+      "detail": {
+        "authority": "title-10",
+        "target_class": "foreign",
+        "channel": "@mendacity_sandbox_demo"
+      }
+    },
+    {
+      "stage": "persona_generated",
+      "status": "ok",
+      "ts": "2026-05-03T05:28:02+00:00",
+      "detail": {
+        "persona_id": "battalion-quartermaster-frustrated-04227b",
+        "archetype": "battalion-quartermaster-frustrated",
+        "name_seed": "Sasha P.",
+        "avatar_path": null
+      }
+    },
+    {
+      "stage": "artifact_selected",
+      "status": "ok",
+      "ts": "2026-05-03T05:28:16+00:00",
+      "detail": {
+        "mode": "generated",
+        "model": "dall-e-3",
+        "size": "1024x1024",
+        "quality": "standard",
+        "prompt": "low-light phone photo of a paper supply manifest receipt on a metal desk, slight motion blur, blue ink stamps partially smudged, fluorescent ceiling light reflection in upper corner, no logos visible",
+        "revised_prompt": "An image illustrating a low-light phone capture of a paper supply manifest receipt lying on a metallic desk. The photo has a subtle motion blur effect, adding a sense of urgency or a rushed ambience. Parts of blue ink stamps on the receipt are smudged, indicating usage or possibly haste in record-keeping. The reflection of a fluorescent ceiling light beams from the upper corner of the desk, adding to the prevailing light condition. Importantly, there are no logos visible anywhere within the frame, ensuring anonymity of the supposed business.",
+        "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-LIVE-001/artifact_source.jpg",
+        "sha256": "941a35838ee92d27de31a4c85eb150cfdab5e9ff169e72a872b5829deba0165d"
+      }
+    },
+    {
+      "stage": "watermark_strip",
+      "status": "ok",
+      "ts": "2026-05-03T05:28:18+00:00",
+      "detail": {
+        "tool": "synthidbye",
+        "before_sha": "941a35838ee92d27de31a4c85eb150cfdab5e9ff169e72a872b5829deba0165d",
+        "after_sha": "b4f43e88946863b3d895f8fc13c8f91990e4d0f7e990f6336dba557b2143245b",
+        "stderr_tail": [
+          "SynthIDBye seed (save if you need reversibility notes): v9tw5tp26xmeuutpeuh0imopbxvvq",
+          "Wrote /Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-LIVE-001/artifact_stripped.jpg"
+        ]
+      }
+    },
+    {
+      "stage": "exif_transplant",
+      "status": "ok",
+      "ts": "2026-05-03T05:28:18+00:00",
+      "detail": {
+        "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+        "before_sha": "b4f43e88946863b3d895f8fc13c8f91990e4d0f7e990f6336dba557b2143245b",
+        "after_sha": "d611ee05739b946fbfdf19c474d04bde17522d1a2a8d1d9292a0aff1869160cd"
+      }
+    },
+    {
+      "stage": "provenance_check",
+      "status": "ok",
+      "ts": "2026-05-03T05:28:18+00:00",
+      "detail": {
+        "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-LIVE-001/artifact_clean.jpg",
+        "passed": {
+          "per_detector": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "required": {
+            "c2pa": true,
+            "synthid": true,
+            "titan": true
+          },
+          "all_passed": true,
+          "ran_titan": false,
+          "ran_google": false
+        },
+        "report": {
+          "meta": {
+            "sha256": "d611ee05739b946fbfdf19c474d04bde17522d1a2a8d1d9292a0aff1869160cd",
+            "mime_inferred": "image/jpeg",
+            "size_bytes": 351652,
+            "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-LIVE-001/artifact_clean.jpg"
+          },
+          "c2pa": {
+            "status": "manifest_not_found",
+            "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+          },
+          "titan_watermark": {
+            "status": "skipped",
+            "reason": "Pass run_titan=True or use CLI --titan"
+          },
+          "google_synthid": {
+            "status": "skipped",
+            "reason": "Pass run_google=True or use CLI --google"
+          }
+        }
+      }
+    },
+    {
+      "stage": "delivered",
+      "status": "skipped",
+      "ts": "2026-05-03T05:28:18+00:00",
+      "detail": {
+        "reason": "delivery.dry_run=true (no live Telegram post)",
+        "would_post_to": "@mendacity_sandbox_demo",
+        "caption_preview": "\u043e\u043f\u044f\u0442\u044c \u043d\u0435\u0434\u043e\u0432\u0435\u0437\u043b\u0438. \u0432\u043e\u0442 \u043a\u0432\u0438\u0442\u0430\u043d\u0446\u0438\u044f."
+      }
+    }
+  ],
+  "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-LIVE-001/artifact_clean.jpg",
+  "final_provenance_report": {
+    "meta": {
+      "sha256": "d611ee05739b946fbfdf19c474d04bde17522d1a2a8d1d9292a0aff1869160cd",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 351652,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-LIVE-001/artifact_clean.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "error": null,
+  "spec": {
+    "mission_id": "SHADOW-FOX-LIVE-001",
+    "operator": "J2-INSCOM-Demo",
+    "authorization": {
+      "authority": "title-10",
+      "target_class": "foreign",
+      "approval_chain": [
+        "J2",
+        "OGC-reviewed"
+      ]
+    },
+    "target": {
+      "platform": "telegram",
+      "channel": "@mendacity_sandbox_demo",
+      "audience_profile": "Russian-speaking, regional supply NCOs"
+    },
+    "persona": {
+      "archetype": "battalion-quartermaster-frustrated",
+      "name_seed": "Sasha P.",
+      "generate_avatar": false
+    },
+    "artifact": {
+      "type": "image",
+      "prompt": "low-light phone photo of a paper supply manifest receipt on a metal desk, slight motion blur, blue ink stamps partially smudged, fluorescent ceiling light reflection in upper corner, no logos visible",
+      "source": "generate",
+      "exif_template": "fixtures/koze_iphonex_gist.json",
+      "must_pass": [
+        "c2pa",
+        "titan",
+        "synthid"
+      ],
+      "strip_watermarks": true,
+      "size": "1024x1024",
+      "quality": "standard"
+    },
+    "delivery": {
+      "schedule": "immediate",
+      "thread_strategy": "cold_post",
+      "caption": "\u043e\u043f\u044f\u0442\u044c \u043d\u0435\u0434\u043e\u0432\u0435\u0437\u043b\u0438. \u0432\u043e\u0442 \u043a\u0432\u0438\u0442\u0430\u043d\u0446\u0438\u044f.",
+      "dry_run": true
+    }
+  }
+}

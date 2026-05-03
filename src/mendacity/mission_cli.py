@@ -4,6 +4,7 @@ Subcommands:
 - ``run <spec.yaml>``  — execute one mission, write result to missions/results/
 - ``watch``            — daemon: poll missions/inbox/, process new specs
 - ``grade <result.json>`` — re-print pass/fail summary for a completed run
+- ``audit <image>``    — before/after transform report for slide rendering
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ import logging
 import sys
 from pathlib import Path
 
+from mendacity.audit import run_audit
 from mendacity.mission import (
     MISSIONS_DIR,
     MissionSpec,
@@ -127,6 +129,62 @@ def _cmd_grade(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_audit(args: argparse.Namespace) -> int:
+    img = Path(args.image)
+    if not img.exists():
+        print(f"image not found: {img}", file=sys.stderr)
+        return 2
+    template = Path(args.exif_template) if args.exif_template else None
+    result = run_audit(
+        img,
+        exif_template=template,
+        run_titan=args.titan,
+        run_google=args.google,
+    )
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2))
+        return 0
+
+    d = result.to_dict()
+    print(f"Audit:    {d['audit_id']}")
+    print(f"Started:  {d['started_at']}")
+    print()
+    inp, out = d["input"], d["output"]
+    print(f"BEFORE  {inp['path']}")
+    print(f"  sha256:  {inp['sha256']}")
+    print(f"  mime:    {inp['mime']}")
+    print(f"  size:    {inp['size_bytes']:>10} bytes")
+    print(
+        f"  exif:    make={inp['exif'].get('make')!r:<10} "
+        f"model={inp['exif'].get('model')!r:<14} "
+        f"software={inp['exif'].get('software')!r}"
+    )
+    print(f"  C2PA:    {d['provenance_before'].get('c2pa', {}).get('status')}")
+    print()
+    print(f"AFTER   {out['path']}")
+    print(f"  sha256:  {out['sha256']}")
+    print(f"  mime:    {out['mime']}")
+    print(f"  size:    {out['size_bytes']:>10} bytes")
+    print(
+        f"  exif:    make={out['exif'].get('make')!r:<10} "
+        f"model={out['exif'].get('model')!r:<14} "
+        f"software={out['exif'].get('software')!r}"
+    )
+    print(f"  C2PA:    {d['provenance_after'].get('c2pa', {}).get('status')}")
+    print()
+    pix = d["transform"].get("pixel_diff", {})
+    print(f"TRANSFORM")
+    print(f"  pixels modified : {pix.get('pct_modified')}%")
+    print(f"  mean RGB delta  : {pix.get('mean_delta')}")
+    print(f"  EXIF template   : {d['transform'].get('exif_template')}")
+    print(f"  SynthIDBye log  : {d['transform'].get('synthidbye_seed_log')[:120]}")
+    print()
+    print(f"COMPARISON IMAGE: {d.get('comparison_image_path')}")
+    print()
+    print(f"VERDICT: {d['verdict']}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="mendacity-mission",
@@ -154,6 +212,19 @@ def main(argv: list[str] | None = None) -> int:
     p_grade = sub.add_parser("grade", help="print summary of a completed result JSON")
     p_grade.add_argument("result", help="path to result JSON")
     p_grade.set_defaults(func=_cmd_grade)
+
+    p_audit = sub.add_parser(
+        "audit", help="before/after transform report on a single image"
+    )
+    p_audit.add_argument("image", help="path to input image (PNG or JPEG)")
+    p_audit.add_argument(
+        "--exif-template",
+        help="path to EXIF JSON template (default: fixtures/koze_iphonex_gist.json)",
+    )
+    p_audit.add_argument("--titan", action="store_true")
+    p_audit.add_argument("--google", action="store_true")
+    p_audit.add_argument("--json", action="store_true", help="emit full audit JSON")
+    p_audit.set_defaults(func=_cmd_audit)
 
     args = parser.parse_args(argv)
     _setup_logging(args.verbose)

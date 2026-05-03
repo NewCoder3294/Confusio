@@ -226,41 +226,95 @@ def _stage_persona(spec: MissionSpec, work_dir: Path) -> StageRecord:
 
 
 def _stage_select_artifact(spec: MissionSpec, work_dir: Path) -> StageRecord:
-    """Resolve artifact source. v1 demo path: fixture-backed.
+    """Resolve artifact source.
 
-    In production this dispatches to an image generator (DALL-E, Flux, etc.)
-    Right now we copy a fixture into work_dir so subsequent stages have a
-    stable target.
+    Two source modes:
+    - ``fixture:<repo-relative-path>`` — copy a pre-baked image (offline, fast)
+    - ``generate`` — call DALL-E 3 with ``artifact.prompt`` (live, ~5–8s, $0.04)
+
+    Default: ``generate`` if a prompt is present, else fail.
     """
     art = spec.artifact
-    src = art.get("source", "")
-    if not src.startswith("fixture:"):
-        raise MissionExecutionError(
-            "v1 supports artifact.source 'fixture:<path>' only. Image generation "
-            "wiring is post-hackathon.",
-            code="generation_failed",
-            stage="artifact_selected",
-        )
-    src_path = REPO_ROOT / src[len("fixture:") :]
-    if not src_path.exists():
-        raise MissionExecutionError(
-            f"fixture not found: {src_path}",
-            code="artifact_source_missing",
-            stage="artifact_selected",
-        )
+    src = art.get("source", "").strip()
+    prompt = art.get("prompt", "")
 
     target = work_dir / "artifact_source.jpg"
-    shutil.copyfile(src_path, target)
-    return StageRecord(
+
+    # Fixture path
+    if src.startswith("fixture:"):
+        src_path = REPO_ROOT / src[len("fixture:") :]
+        if not src_path.exists():
+            raise MissionExecutionError(
+                f"fixture not found: {src_path}",
+                code="artifact_source_missing",
+                stage="artifact_selected",
+            )
+        shutil.copyfile(src_path, target)
+        return StageRecord(
+            stage="artifact_selected",
+            status="ok",
+            ts=_now_iso(),
+            detail={
+                "mode": "fixture",
+                "source_fixture": str(src_path),
+                "work_path": str(target),
+                "sha256": _sha256(target),
+                "prompt": prompt,
+            },
+        )
+
+    # Generate path
+    if src in ("generate", "") and prompt:
+        if not prompt.strip():
+            raise MissionExecutionError(
+                "artifact.prompt required for source='generate'",
+                code="generation_failed",
+                stage="artifact_selected",
+            )
+        try:
+            from mendacity.image_gen import ImageGenError, generate_image
+        except ImportError as exc:
+            raise MissionExecutionError(
+                f"image_gen not importable: {exc}",
+                code="generation_failed",
+                stage="artifact_selected",
+            ) from exc
+
+        try:
+            gen = generate_image(
+                prompt=prompt,
+                output_path=target,
+                size=art.get("size", "1024x1024"),
+                quality=art.get("quality", "standard"),
+                model=art.get("model", "dall-e-3"),
+            )
+        except ImageGenError as exc:
+            raise MissionExecutionError(
+                f"image generation failed: {exc}",
+                code="generation_failed",
+                stage="artifact_selected",
+            ) from exc
+
+        return StageRecord(
+            stage="artifact_selected",
+            status="ok",
+            ts=_now_iso(),
+            detail={
+                "mode": "generated",
+                "model": gen.model,
+                "size": gen.size,
+                "quality": gen.quality,
+                "prompt": gen.prompt,
+                "revised_prompt": gen.revised_prompt,
+                "work_path": str(target),
+                "sha256": _sha256(target),
+            },
+        )
+
+    raise MissionExecutionError(
+        f"unrecognized artifact.source {src!r}; use 'fixture:<path>' or 'generate'",
+        code="generation_failed",
         stage="artifact_selected",
-        status="ok",
-        ts=_now_iso(),
-        detail={
-            "source_fixture": str(src_path),
-            "work_path": str(target),
-            "sha256": _sha256(target),
-            "prompt": art.get("prompt"),
-        },
     )
 
 
@@ -476,7 +530,10 @@ def _stage_delivery(spec: MissionSpec, work_dir: Path) -> StageRecord:
         )
 
     # Live path. Imported lazily so a missing social/ env doesn't break
-    # dry-run demos.
+    # dry-run demos. social/ lives at REPO_ROOT (sibling of src/), not on
+    # the path of the installed mendacity package — inject it.
+    if str(REPO_ROOT) not in sys.path:
+        sys.path.insert(0, str(REPO_ROOT))
     try:
         from social.personas import load_personas
         from social.telegram_client import PersonaTelegramClient
@@ -488,7 +545,7 @@ def _stage_delivery(spec: MissionSpec, work_dir: Path) -> StageRecord:
         ) from exc
 
     personas_dir = REPO_ROOT / "social" / "personas"
-    personas = load_personas(personas_dir)
+    personas = load_personas(personas_dir=personas_dir, require_sessions=True)
     if not personas:
         raise MissionExecutionError(
             f"no personas found under {personas_dir}",
@@ -496,9 +553,20 @@ def _stage_delivery(spec: MissionSpec, work_dir: Path) -> StageRecord:
             stage="delivered",
         )
 
-    persona = personas[0]  # v1: pick first available persona
-    sessions_dir = REPO_ROOT / "social" / "sessions"
-    session_file = sessions_dir / f"{persona.id}.session"
+    persona_id = delivery.get("persona_id")
+    if persona_id:
+        persona = personas.get(persona_id)
+        if persona is None:
+            raise MissionExecutionError(
+                f"delivery.persona_id {persona_id!r} not in loaded personas: {sorted(personas)}",
+                code="delivery_failed",
+                stage="delivered",
+            )
+    else:
+        # Default to first persona alphabetically (sorted by load_personas).
+        persona = next(iter(personas.values()))
+
+    session_file = persona.resolved_session_path()
     client = PersonaTelegramClient(session_file)
 
     async def _send() -> dict[str, Any]:
@@ -575,6 +643,33 @@ def execute_mission(
         result.stages.append(prov_stage)
         result.final_provenance_report = prov_report
 
+        # Self-grading red-team loop: if provenance flags the artifact,
+        # re-run watermark strip (with a fresh SynthIDBye seed) + EXIF
+        # transplant + provenance check, up to ``max_regen_attempts``.
+        max_attempts = int(spec.artifact.get("max_regen_attempts", 3))
+        attempt = 1
+        while prov_stage.status != "ok" and attempt < max_attempts:
+            attempt += 1
+            log.info(
+                "regen attempt %d/%d for mission %s (provenance flagged)",
+                attempt, max_attempts, spec.mission_id,
+            )
+            result.stages.append(
+                StageRecord(
+                    stage="regen_attempt",
+                    status="ok",
+                    ts=_now_iso(),
+                    detail={"attempt": attempt, "max_attempts": max_attempts},
+                )
+            )
+            result.stages.append(_stage_watermark_strip(spec, work_dir))
+            result.stages.append(_stage_exif_transplant(spec, work_dir))
+            prov_stage, prov_report = _stage_provenance_check(
+                spec, work_dir, run_titan=run_titan, run_google=run_google
+            )
+            result.stages.append(prov_stage)
+            result.final_provenance_report = prov_report
+
         # Determine which artifact file is final
         for cand in ("artifact_clean.jpg", "artifact_stripped.jpg", "artifact_source.jpg"):
             if (work_dir / cand).exists():
@@ -587,8 +682,9 @@ def execute_mission(
                 "stage": "provenance_check",
                 "code": "regen_budget_exhausted",
                 "message": (
-                    "provenance grading failed; one or more required detectors flagged "
-                    "the artifact. See stages[provenance_check].detail.passed."
+                    f"provenance grading still failing after {attempt} attempt(s); "
+                    "one or more required detectors flagged the artifact. "
+                    "See stages[provenance_check].detail.passed."
                 ),
             }
             return result

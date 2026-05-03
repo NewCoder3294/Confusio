@@ -1,0 +1,183 @@
+{
+  "mission_id": "VERIFY-LIVE-001",
+  "operator": "J2-INSCOM-Demo",
+  "status": "completed",
+  "started_at": "2026-05-03T05:33:35+00:00",
+  "finished_at": "2026-05-03T05:33:37+00:00",
+  "stages": [
+    {
+      "stage": "validated",
+      "status": "ok",
+      "ts": "2026-05-03T05:33:35+00:00",
+      "detail": {
+        "authority": "title-10",
+        "target_class": "foreign",
+        "channel": "https://t.me/+2la3xpus5vRmYmIx"
+      }
+    },
+    {
+      "stage": "persona_generated",
+      "status": "ok",
+      "ts": "2026-05-03T05:33:35+00:00",
+      "detail": {
+        "persona_id": "aggregator-994850",
+        "archetype": "aggregator",
+        "name_seed": "anton_kh",
+        "avatar_path": null
+      }
+    },
+    {
+      "stage": "artifact_selected",
+      "status": "ok",
+      "ts": "2026-05-03T05:33:35+00:00",
+      "detail": {
+        "mode": "fixture",
+        "source_fixture": "/Users/nicolasdossantos/Mendacity/assets/IMG_8550.JPG",
+        "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-001/artifact_source.jpg",
+        "sha256": "cbe07e97613b62a437b26c80796cbfbaaf3028a83eeca7b667c912abec5f5103",
+        "prompt": "verification fixture \u2014 not for delivery"
+      }
+    },
+    {
+      "stage": "watermark_strip",
+      "status": "ok",
+      "ts": "2026-05-03T05:33:36+00:00",
+      "detail": {
+        "tool": "synthidbye",
+        "before_sha": "cbe07e97613b62a437b26c80796cbfbaaf3028a83eeca7b667c912abec5f5103",
+        "after_sha": "a75afd05e31f8dadb79b62c6e11ed6c69f5c2dd2f361a68c716a4890f45a8561",
+        "stderr_tail": [
+          "SynthIDBye seed (save if you need reversibility notes): lvlzykhn6crkg1124umvumopc4pkv",
+          "Wrote /Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-001/artifact_stripped.jpg"
+        ]
+      }
+    },
+    {
+      "stage": "exif_transplant",
+      "status": "ok",
+      "ts": "2026-05-03T05:33:36+00:00",
+      "detail": {
+        "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
+        "before_sha": "a75afd05e31f8dadb79b62c6e11ed6c69f5c2dd2f361a68c716a4890f45a8561",
+        "after_sha": "2022ad7754a5309ba5cfab16643ecd8a9e03cada02c14d3f63509bc06213cdb1"
+      }
+    },
+    {
+      "stage": "provenance_check",
+      "status": "ok",
+      "ts": "2026-05-03T05:33:36+00:00",
+      "detail": {
+        "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-001/artifact_clean.jpg",
+        "passed": {
+          "per_detector": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "required": {
+            "c2pa": true,
+            "titan": true,
+            "synthid": true
+          },
+          "all_passed": true,
+          "ran_titan": false,
+          "ran_google": false
+        },
+        "report": {
+          "meta": {
+            "sha256": "2022ad7754a5309ba5cfab16643ecd8a9e03cada02c14d3f63509bc06213cdb1",
+            "mime_inferred": "image/jpeg",
+            "size_bytes": 274965,
+            "path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-001/artifact_clean.jpg"
+          },
+          "c2pa": {
+            "status": "manifest_not_found",
+            "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+          },
+          "titan_watermark": {
+            "status": "skipped",
+            "reason": "Pass run_titan=True or use CLI --titan"
+          },
+          "google_synthid": {
+            "status": "skipped",
+            "reason": "Pass run_google=True or use CLI --google"
+          }
+        }
+      }
+    },
+    {
+      "stage": "delivered",
+      "status": "ok",
+      "ts": "2026-05-03T05:33:37+00:00",
+      "detail": {
+        "telegram_message_id": 3,
+        "posted_at": "2026-05-03T05:33:37.377079+00:00",
+        "persona_id": "anton_kh",
+        "channel": "https://t.me/+2la3xpus5vRmYmIx"
+      }
+    }
+  ],
+  "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-001/artifact_clean.jpg",
+  "final_provenance_report": {
+    "meta": {
+      "sha256": "2022ad7754a5309ba5cfab16643ecd8a9e03cada02c14d3f63509bc06213cdb1",
+      "mime_inferred": "image/jpeg",
+      "size_bytes": 274965,
+      "path": "/Users/nicolasdossantos/Mendacity/missions/work/VERIFY-LIVE-001/artifact_clean.jpg"
+    },
+    "c2pa": {
+      "status": "manifest_not_found",
+      "detail": "No C2PA JUMBF data in this file (missing does not prove camera/original)."
+    },
+    "titan_watermark": {
+      "status": "skipped",
+      "reason": "Pass run_titan=True or use CLI --titan"
+    },
+    "google_synthid": {
+      "status": "skipped",
+      "reason": "Pass run_google=True or use CLI --google"
+    }
+  },
+  "error": null,
+  "spec": {
+    "mission_id": "VERIFY-LIVE-001",
+    "operator": "J2-INSCOM-Demo",
+    "authorization": {
+      "authority": "title-10",
+      "target_class": "foreign",
+      "approval_chain": [
+        "J2",
+        "OGC-reviewed"
+      ]
+    },
+    "target": {
+      "platform": "telegram",
+      "channel": "https://t.me/+2la3xpus5vRmYmIx",
+      "audience_profile": "internal sandbox"
+    },
+    "persona": {
+      "archetype": "aggregator",
+      "name_seed": "anton_kh",
+      "generate_avatar": false
+    },
+    "artifact": {
+      "type": "image",
+      "prompt": "verification fixture \u2014 not for delivery",
+      "source": "fixture:assets/IMG_8550.JPG",
+      "exif_template": "fixtures/koze_iphonex_gist.json",
+      "must_pass": [
+        "c2pa",
+        "titan",
+        "synthid"
+      ],
+      "strip_watermarks": true
+    },
+    "delivery": {
+      "schedule": "immediate",
+      "thread_strategy": "cold_post",
+      "caption": "[mendacity verify-live-001] engine\u2192telegram delivery probe",
+      "dry_run": false,
+      "persona_id": "anton_kh"
+    }
+  }
+}

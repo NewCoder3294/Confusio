@@ -2,13 +2,13 @@
   "mission_id": "SHADOW-FOX-001",
   "operator": "J2-INSCOM-Demo",
   "status": "completed",
-  "started_at": "2026-05-03T05:14:55+00:00",
-  "finished_at": "2026-05-03T05:14:57+00:00",
+  "started_at": "2026-05-03T05:29:29+00:00",
+  "finished_at": "2026-05-03T05:29:30+00:00",
   "stages": [
     {
       "stage": "validated",
       "status": "ok",
-      "ts": "2026-05-03T05:14:55+00:00",
+      "ts": "2026-05-03T05:29:29+00:00",
       "detail": {
         "authority": "title-10",
         "target_class": "foreign",
@@ -18,9 +18,9 @@
     {
       "stage": "persona_generated",
       "status": "ok",
-      "ts": "2026-05-03T05:14:55+00:00",
+      "ts": "2026-05-03T05:29:29+00:00",
       "detail": {
-        "persona_id": "disgruntled-junior-officer-e52d8c",
+        "persona_id": "disgruntled-junior-officer-b6a817",
         "archetype": "disgruntled-junior-officer",
         "name_seed": "Vlad K.",
         "avatar_path": null
@@ -29,8 +29,9 @@
     {
       "stage": "artifact_selected",
       "status": "ok",
-      "ts": "2026-05-03T05:14:55+00:00",
+      "ts": "2026-05-03T05:29:29+00:00",
       "detail": {
+        "mode": "fixture",
         "source_fixture": "/Users/nicolasdossantos/Mendacity/assets/Gemini_Generated_Image_uzqgniuzqgniuzqg_apple_meta.jpg",
         "work_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_source.jpg",
         "sha256": "8da31759957193fac8cc41768e05d7abedbba54345ae9d8911949013446a7a78",
@@ -40,13 +41,13 @@
     {
       "stage": "watermark_strip",
       "status": "ok",
-      "ts": "2026-05-03T05:14:57+00:00",
+      "ts": "2026-05-03T05:29:30+00:00",
       "detail": {
         "tool": "synthidbye",
         "before_sha": "8da31759957193fac8cc41768e05d7abedbba54345ae9d8911949013446a7a78",
-        "after_sha": "52bd1e87b93d9a5abbacd163617239f444d3ddc800d861b00a061e3cb47f1abb",
+        "after_sha": "7e350d6b347ce01fc3ebe94aa785c6f7699950f881a7f8895aaae476590fe938",
         "stderr_tail": [
-          "SynthIDBye seed (save if you need reversibility notes): 4n9u5s81b5ibqsl7yszb7nmopbgq0m",
+          "SynthIDBye seed (save if you need reversibility notes): 5wt5ewn5v15z1h254pgbgkmopbzfqw",
           "Wrote /Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_stripped.jpg"
         ]
       }
@@ -54,17 +55,17 @@
     {
       "stage": "exif_transplant",
       "status": "ok",
-      "ts": "2026-05-03T05:14:57+00:00",
+      "ts": "2026-05-03T05:29:30+00:00",
       "detail": {
         "template": "/Users/nicolasdossantos/Mendacity/fixtures/koze_iphonex_gist.json",
-        "before_sha": "52bd1e87b93d9a5abbacd163617239f444d3ddc800d861b00a061e3cb47f1abb",
-        "after_sha": "d4337795e62091095e962d3c5276a6cfc83c8fb7b48397c36d6eec49cf5a9410"
+        "before_sha": "7e350d6b347ce01fc3ebe94aa785c6f7699950f881a7f8895aaae476590fe938",
+        "after_sha": "368a346c2250af19cdff4c867c5e2dbb1db3aff10dbe64fa9995a9e0566b3046"
       }
     },
     {
       "stage": "provenance_check",
       "status": "ok",
-      "ts": "2026-05-03T05:14:57+00:00",
+      "ts": "2026-05-03T05:29:30+00:00",
       "detail": {
         "artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_clean.jpg",
         "passed": {
@@ -75,8 +76,8 @@
           },
           "required": {
             "c2pa": true,
-            "synthid": true,
-            "titan": true
+            "titan": true,
+            "synthid": true
           },
           "all_passed": true,
           "ran_titan": false,
@@ -84,9 +85,9 @@
         },
         "report": {
           "meta": {
-            "sha256": "d4337795e62091095e962d3c5276a6cfc83c8fb7b48397c36d6eec49cf5a9410",
+            "sha256": "368a346c2250af19cdff4c867c5e2dbb1db3aff10dbe64fa9995a9e0566b3046",
             "mime_inferred": "image/jpeg",
-            "size_bytes": 274962,
+            "size_bytes": 275197,
             "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_clean.jpg"
           },
           "c2pa": {
@@ -107,7 +108,7 @@
     {
       "stage": "delivered",
       "status": "skipped",
-      "ts": "2026-05-03T05:14:57+00:00",
+      "ts": "2026-05-03T05:29:30+00:00",
       "detail": {
         "reason": "delivery.dry_run=true (no live Telegram post)",
         "would_post_to": "@mendacity_sandbox_demo",
@@ -118,9 +119,9 @@
   "final_artifact_path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_clean.jpg",
   "final_provenance_report": {
     "meta": {
-      "sha256": "d4337795e62091095e962d3c5276a6cfc83c8fb7b48397c36d6eec49cf5a9410",
+      "sha256": "368a346c2250af19cdff4c867c5e2dbb1db3aff10dbe64fa9995a9e0566b3046",
       "mime_inferred": "image/jpeg",
-      "size_bytes": 274962,
+      "size_bytes": 275197,
       "path": "/Users/nicolasdossantos/Mendacity/missions/work/SHADOW-FOX-001/artifact_clean.jpg"
     },
     "c2pa": {
