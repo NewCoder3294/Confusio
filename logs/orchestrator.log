@@ -14,3 +14,7 @@
 2026-05-03 04:09:19,129 INFO telethon.client.updates: Got difference for channel 3531494081 updates
 2026-05-03 04:09:19,136 INFO telethon.client.updates: Got difference for channel 3531494081 updates
 2026-05-03 04:09:23,233 INFO telethon.client.users: Sleeping for 3s (0:00:03) on ImportChatInviteRequest flood wait
+2026-05-03 04:21:58,351 INFO telethon.client.updates: Got difference for account updates
+2026-05-03 04:21:58,934 INFO telethon.client.updates: Got difference for account updates
+2026-05-03 04:21:59,524 INFO telethon.client.updates: Got difference for account updates
+2026-05-03 04:22:00,284 INFO telethon.client.updates: Got difference for account updates
