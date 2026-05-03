@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+/*
+ * Mendacity Operator Console — design tokens.
+ *
+ * Aesthetic lane (PRODUCT.md): Palantir Foundry / Gotham + declassified
+ * dossier. Dark surfaces, restrained accents, editorial typography,
+ * monospace identifiers. WCAG 2.1 AA contrast on all text — projector
+ * glare in row 5 is the worst-case viewing condition.
+ */
+
+:root {
+  --bg-base: #0a0c0e;
+  --bg-panel: #111418;
+  --bg-elevated: #181c21;
+  --bg-hover: #1f242a;
+  --border-subtle: #232830;
+  --border-default: #2c333c;
+  --border-strong: #3a424c;
+
+  --fg-default: #e6e9ec;
+  --fg-muted: #9aa3ad;
+  --fg-faint: #6b7480;
+  --fg-mono: #c4cad1;
+
+  /* Status palette — saturated enough to read from row 5,
+     restrained enough not to look like a SOC. */
+  --pass-fg: #6cd690;
+  --pass-bg: #0e2818;
+  --pass-border: #1a4f30;
+
+  --warn-fg: #e3b14a;
+  --warn-bg: #2a2010;
+  --warn-border: #4a3a1a;
+
+  --fail-fg: #e36b6b;
+  --fail-bg: #2a1212;
+  --fail-border: #4a1f1f;
+
+  --info-fg: #5fb8d6;
+  --info-bg: #0e2530;
+  --info-border: #1f4a5f;
+
+  --neutral-fg: #adb4bd;
+  --neutral-bg: #1a1d22;
+  --neutral-border: #2c333c;
+
+  --accent-classified: #e36b6b;
+}
+
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-panel: var(--bg-panel);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-hover: var(--bg-hover);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-fg-default: var(--fg-default);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-fg-mono: var(--fg-mono);
+
+  --color-pass-fg: var(--pass-fg);
+  --color-pass-bg: var(--pass-bg);
+  --color-pass-border: var(--pass-border);
+
+  --color-warn-fg: var(--warn-fg);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-border: var(--warn-border);
+
+  --color-fail-fg: var(--fail-fg);
+  --color-fail-bg: var(--fail-bg);
+  --color-fail-border: var(--fail-border);
+
+  --color-info-fg: var(--info-fg);
+  --color-info-bg: var(--info-bg);
+  --color-info-border: var(--info-border);
+
+  --color-neutral-fg: var(--neutral-fg);
+  --color-neutral-bg: var(--neutral-bg);
+  --color-neutral-border: var(--neutral-border);
+
+  --color-classified: var(--accent-classified);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html, body {
+  background: var(--bg-base);
+  color: var(--fg-default);
+}
+
+body {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Mono is for IDs, hashes, timestamps, channel handles, anything with
+   structure that should look entered, not written. */
+code, kbd, pre, samp, .font-mono {
+  font-family: var(--font-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+/* Operator-grade focus rings — visible without being garish. */
+*:focus-visible {
+  outline: 2px solid var(--info-fg);
+  outline-offset: 2px;
+}
+
+/* Honor reduced motion (PRODUCT.md design principle: calm under pressure). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Selection — readable on dark, no neon. */
+::selection {
+  background: var(--info-bg);
+  color: var(--info-fg);
+}
+
+/* Scrollbar restrained for the dossier vibe. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 0;
+  border: 2px solid var(--bg-base);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border-strong); }
