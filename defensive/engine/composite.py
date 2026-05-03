@@ -9,14 +9,13 @@ from defensive.engine.verdict import (
 )
 
 WEIGHTS: dict[str, float] = {
-    "ai_classifier":    0.25,
-    "ai_classifier_v2": 0.15,
-    "exif":             0.20,
-    "c2pa":             0.10,
-    "synthid":          0.10,
-    "titan":            0.10,
-    "ela":              0.05,
-    "phash":            0.05,
+    "ai_classifier":  0.20,
+    "gemini_visual":  0.30,
+    "exif":           0.15,
+    "c2pa":           0.15,
+    "titan":          0.05,
+    "ela":            0.10,
+    "phash":          0.05,
 }
 
 
@@ -100,28 +99,26 @@ from concurrent.futures import ThreadPoolExecutor  # noqa: E402
 
 from defensive.engine.detectors import (  # noqa: E402
     ai_classifier as _ai,
-    ai_classifier_v2 as _ai_v2,
     c2pa as _c2pa,
     ela as _ela,
     exif as _exif,
+    gemini_visual as _gemini,
     phash as _phash,
-    synthid as _synthid,
     titan as _titan,
 )
 from defensive.engine.detectors._shared import safe_run  # noqa: E402
 
 
 def run(image_bytes: bytes, *, mime_type: str = "image/jpeg") -> Verdict:
-    """Dispatch all 8 detectors in parallel; reduce signals to a Verdict.
+    """Dispatch all 7 detectors in parallel; reduce signals to a Verdict.
 
     Per-detector exceptions never propagate — they become n/a signals.
     """
     tasks = [
         (_c2pa.NAME, lambda b: _c2pa.run(b, mime_type=mime_type)),
-        (_synthid.NAME, _synthid.run),
+        (_gemini.NAME, _gemini.run),
         (_titan.NAME, _titan.run),
         (_ai.NAME, _ai.run),
-        (_ai_v2.NAME, _ai_v2.run),
         (_exif.NAME, _exif.run),
         (_ela.NAME, _ela.run),
         (_phash.NAME, _phash.run),

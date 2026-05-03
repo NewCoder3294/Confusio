@@ -13,7 +13,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 
 from defensive.engine.composite import run as composite_run
 from defensive.engine.detectors.ai_classifier import warmup as _warmup_classifier
-from defensive.engine.detectors.ai_classifier_v2 import warmup as _warmup_classifier_v2
+from defensive.engine.detectors.gemini_visual import warmup as _warmup_gemini
 from defensive.engine.verdict import Verdict
 from defensive.persistence.audit import append as audit_append, default_path as audit_default_path
 
@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
     except Exception:
         pass
     try:
-        _warmup_classifier_v2()
+        _warmup_gemini()
     except Exception:
         pass
     yield
@@ -133,7 +133,7 @@ async def health() -> dict:
     return {
         "ok": True,
         "classifier_warm": classifier_warm,
-        "detectors": ["c2pa", "synthid", "titan", "ai_classifier", "ai_classifier_v2", "exif", "ela", "phash"],
+        "detectors": ["c2pa", "titan", "ai_classifier", "gemini_visual", "exif", "ela", "phash"],
         "audit_count": audit_count,
     }
 
