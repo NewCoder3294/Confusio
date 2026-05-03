@@ -15,10 +15,18 @@ from telethon.errors import (
     AuthKeyError,
     ChannelPrivateError,
     FloodWaitError,
+    InviteHashEmptyError,
+    InviteHashExpiredError,
+    InviteHashInvalidError,
     SessionPasswordNeededError,
+    UserAlreadyParticipantError,
     UserNotParticipantError,
 )
 from telethon.tl.functions.channels import JoinChannelRequest
+from telethon.tl.functions.messages import (
+    CheckChatInviteRequest,
+    ImportChatInviteRequest,
+)
 
 _ENV_PATH = Path(__file__).parent / "config" / "api_credentials.env"
 load_dotenv(_ENV_PATH)
@@ -64,6 +72,19 @@ def _api_creds() -> tuple[int, str]:
     return int(api_id), api_hash
 
 
+def _is_invite_link(channel: str) -> bool:
+    return "/+" in channel or "/joinchat/" in channel
+
+
+def _invite_hash(channel: str) -> str:
+    """Extract the hash from a t.me/+xxxx or t.me/joinchat/xxxx invite link."""
+    if "/joinchat/" in channel:
+        return channel.split("/joinchat/", 1)[1].split("?")[0].rstrip("/")
+    if "/+" in channel:
+        return channel.split("/+", 1)[1].split("?")[0].rstrip("/")
+    raise ValueError(f"not an invite link: {channel}")
+
+
 class PersonaTelegramClient:
     """Owns one Telethon connection bound to a single persona's session file."""
 
@@ -74,6 +95,9 @@ class PersonaTelegramClient:
         stem = str(self.session_path.with_suffix(""))
         self._client = TelegramClient(stem, api_id, api_hash)
         self._connected = False
+        # Invite-link → resolved channel id, populated by join_channel().
+        # send_message() uses this to target the channel after joining.
+        self._invite_to_channel_id: dict[str, int] = {}
 
     async def start(self) -> None:
         """Idempotent connect. Raises SessionExpiredError if the session is invalid."""
@@ -96,11 +120,14 @@ class PersonaTelegramClient:
             self._connected = False
 
     async def join_channel(self, channel: str) -> None:
-        """Idempotent join. No-op if already a member."""
+        """Idempotent join. Accepts @username or t.me/+hash invite link."""
         await self.start()
         try:
-            entity = await self._client.get_entity(channel)
-            await self._client(JoinChannelRequest(entity))
+            if _is_invite_link(channel):
+                await self._join_via_invite(channel)
+            else:
+                entity = await self._client.get_entity(channel)
+                await self._client(JoinChannelRequest(entity))
         except UserNotParticipantError:
             pass  # shouldn't reach here, but tolerate
         except ChannelPrivateError as exc:
@@ -110,10 +137,39 @@ class PersonaTelegramClient:
         except FloodWaitError as exc:
             raise RateLimitedError(exc.seconds) from exc
 
+    async def _join_via_invite(self, channel: str) -> None:
+        invite_hash = _invite_hash(channel)
+        try:
+            result = await self._client(ImportChatInviteRequest(invite_hash))
+            chat_id = self._extract_channel_id(result)
+        except UserAlreadyParticipantError:
+            # Already a member — peek the invite to recover the channel id.
+            check = await self._client(CheckChatInviteRequest(invite_hash))
+            chat_id = self._extract_channel_id(check)
+        except (
+            InviteHashEmptyError,
+            InviteHashExpiredError,
+            InviteHashInvalidError,
+        ) as exc:
+            raise TelegramError(f"invite link invalid/expired: {exc}") from exc
+        if chat_id is not None:
+            self._invite_to_channel_id[channel] = chat_id
+
+    @staticmethod
+    def _extract_channel_id(result) -> int | None:
+        # ImportChatInviteRequest → Updates with .chats[0]
+        # CheckChatInviteRequest → ChatInviteAlready with .chat
+        if hasattr(result, "chats") and result.chats:
+            return result.chats[0].id
+        if hasattr(result, "chat") and result.chat is not None:
+            return result.chat.id
+        return None
+
     async def send_message(self, channel: str, text: str) -> PostResult:
         await self.start()
+        target = self._invite_to_channel_id.get(channel, channel)
         try:
-            msg = await self._client.send_message(channel, text)
+            msg = await self._client.send_message(target, text)
             return PostResult(
                 telegram_message_id=msg.id,
                 posted_at=datetime.now(timezone.utc).isoformat(),
@@ -125,8 +181,9 @@ class PersonaTelegramClient:
 
     async def read_recent(self, channel: str, limit: int = 20) -> list[RecentMessage]:
         await self.start()
+        target = self._invite_to_channel_id.get(channel, channel)
         out: list[RecentMessage] = []
-        async for msg in self._client.iter_messages(channel, limit=limit):
+        async for msg in self._client.iter_messages(target, limit=limit):
             out.append(
                 RecentMessage(
                     id=msg.id,
