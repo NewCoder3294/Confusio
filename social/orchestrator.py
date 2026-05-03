@@ -359,8 +359,10 @@ class Orchestrator:
                     )
                     continue
                 try:
-                    await agent.join(campaign.channel)
-                    self._joined.add((agent.id, campaign.channel))
+                    join_key = (agent.id, campaign.channel)
+                    if join_key not in self._joined:
+                        await agent.join(campaign.channel)
+                        self._joined.add(join_key)
                     result = await agent.post(post.final_content, campaign.channel)
                 except RateLimitedError as exc:
                     await self.storage.update_post_failed(

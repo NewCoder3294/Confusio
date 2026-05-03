@@ -99,13 +99,21 @@ def degrade_to_phone(source_png: Path) -> dict:
         arr = np.clip(arr + noise, 0, 255).astype(np.uint8)
         im = Image.fromarray(arr, mode="RGB")
 
-        tilt_deg = random.uniform(-1.2, 1.2)
-        im = im.rotate(
+        # Tilt last, then center-crop to hide the empty triangles at the
+        # corners. Without the crop, PIL's rotate fills the corners with
+        # black (or whatever fillcolor) — visible as wedges in the output.
+        tilt_deg = random.uniform(-1.4, 1.4)
+        rotated = im.rotate(
             tilt_deg,
             resample=Image.BILINEAR,
             expand=False,
-            fillcolor=(0, 0, 0),
         )
+        # Crop ~3% off each side: enough to hide the rotation wedges for any
+        # tilt within ±1.4° on a 720px image, while preserving most of frame.
+        w, h = rotated.size
+        margin_w = int(w * 0.03)
+        margin_h = int(h * 0.03)
+        im = rotated.crop((margin_w, margin_h, w - margin_w, h - margin_h))
         metrics["tilt_deg"] = round(tilt_deg, 2)
 
         im.save(source_png, format="PNG", optimize=False)
