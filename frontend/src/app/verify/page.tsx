@@ -1,7 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { PageHeader } from "@/components/surfaces";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /* ─────────────────────────────────────────────────────────────────────── */
 /* Types                                                                     */
@@ -32,6 +31,24 @@ interface VerifyResponse {
   thumbnail_uri: string | null;
 }
 
+interface HealthResponse {
+  ok: boolean;
+  classifier_warm: boolean;
+  detectors: string[];
+  audit_count: number;
+}
+
+interface RecentItem {
+  ts: string;
+  artifact_id: string;
+  sha256: string;
+  operator: string;
+  source: string;
+  verdict_level: string;
+  verdict_confidence: number;
+  verdict_summary: string;
+}
+
 interface SessionEntry {
   artifactId: string;
   sha256Prefix: string;
@@ -43,422 +60,490 @@ interface SessionEntry {
   mimeType: string;
 }
 
+type DetectorState =
+  | { phase: "ready" }
+  | { phase: "running" }
+  | { phase: "done"; signal: DetectorSignal };
+
 /* ─────────────────────────────────────────────────────────────────────── */
-/* Verdict colors (inline styles — Tailwind v4 JIT may not generate tokens) */
+/* Constants                                                                 */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-const VERDICT_STYLES: Record<
-  Verdict["level"],
-  { pill: React.CSSProperties; badge: React.CSSProperties }
-> = {
-  AUTHENTIC: {
-    pill: {
-      background: "#16271c",
-      border: "1px solid #2d5a3a",
-      color: "#9be0a8",
-    },
-    badge: {
-      background: "#16271c",
-      border: "1px solid #2d5a3a",
-      color: "#9be0a8",
-    },
-  },
-  SUSPECT: {
-    pill: {
-      background: "#2e2410",
-      border: "1px solid #6b4f1c",
-      color: "#ffd591",
-    },
-    badge: {
-      background: "#2e2410",
-      border: "1px solid #6b4f1c",
-      color: "#ffd591",
-    },
-  },
-  SYNTHETIC: {
-    pill: {
-      background: "#3a1f1f",
-      border: "1px solid #6e2b2b",
-      color: "#ffb4b4",
-    },
-    badge: {
-      background: "#3a1f1f",
-      border: "1px solid #6e2b2b",
-      color: "#ffb4b4",
-    },
-  },
+const DETECTOR_LABELS: Record<string, string> = {
+  c2pa: "C2PA",
+  synthid: "SYNTH",
+  titan: "TITAN",
+  ai_classifier: "AI-GEN",
+  exif: "EXIF",
+  ela: "ELA",
+  phash: "PHASH",
 };
 
-const SEVERITY_STYLE: Record<DetectorSignal["severity"], React.CSSProperties> =
-  {
-    pass: { color: "#6cd690" },
-    warn: { color: "#e3b14a" },
-    fail: { color: "#e36b6b" },
-    "n/a": { color: "#6b7480" },
-  };
+const DETECTOR_ORDER = ["c2pa", "synthid", "titan", "ai_classifier", "exif", "ela", "phash"];
 
 /* ─────────────────────────────────────────────────────────────────────── */
-/* Dossier component                                                         */
+/* Severity / verdict inline styles                                          */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-function Dossier({
-  entry,
-  onVerifyAnother,
+const SV_PASS: React.CSSProperties = { background: "#16271c", border: "1px solid #2d5a3a", color: "#9be0a8" };
+const SV_WARN: React.CSSProperties = { background: "#2e2410", border: "1px solid #6b4f1c", color: "#ffd591" };
+const SV_FAIL: React.CSSProperties = { background: "#3a1f1f", border: "1px solid #6e2b2b", color: "#ffb4b4" };
+const SV_NA:   React.CSSProperties = { background: "#1a1f26", border: "1px solid #3a4048", color: "#9aa0a6" };
+const SV_READY: React.CSSProperties = { background: "#11151a", border: "1px solid #2a2f36", color: "#7a8088" };
+const SV_RUNNING: React.CSSProperties = { background: "#2e2410", border: "1px solid #6b4f1c", color: "#ffd591" };
+
+function severityStyle(sev: DetectorSignal["severity"]): React.CSSProperties {
+  if (sev === "pass") return SV_PASS;
+  if (sev === "warn") return SV_WARN;
+  if (sev === "fail") return SV_FAIL;
+  return SV_NA;
+}
+
+const VERDICT_PILL: Record<string, React.CSSProperties> = {
+  AUTHENTIC: SV_PASS,
+  SUSPECT: SV_WARN,
+  SYNTHETIC: SV_FAIL,
+};
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Helpers                                                                   */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function relativeTime(iso: string): string {
+  try {
+    const diff = Date.now() - new Date(iso).getTime();
+    const sec = Math.floor(diff / 1000);
+    if (sec < 60) return `${sec}s ago`;
+    const min = Math.floor(sec / 60);
+    if (min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    return `${hr}h ago`;
+  } catch {
+    return "—";
+  }
+}
+
+function tsZulu(iso: string): string {
+  try {
+    return new Date(iso).toISOString().slice(11, 19) + "Z";
+  } catch {
+    return "—";
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Status Bar                                                                */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function StatusBar({
+  health,
+  reachable,
+  lastVerdict,
 }: {
-  entry: SessionEntry;
-  onVerifyAnother: () => void;
+  health: HealthResponse | null;
+  reachable: boolean;
+  lastVerdict: RecentItem | null;
 }) {
-  const { response, dataUrl, fileName, fileSize, mimeType } = entry;
-  const { verdict, signals, submitted_at, operator, sha256 } = response;
+  const dotColor = !reachable
+    ? "#e36b6b"
+    : health?.classifier_warm
+    ? "#6cd690"
+    : "#e3b14a";
 
-  const verdictStyle = VERDICT_STYLES[verdict.level];
+  const dotLabel = !reachable
+    ? "API unreachable"
+    : `API live · 127.0.0.1:3001`;
 
-  const provenance = signals.filter((s) =>
-    ["c2pa", "synthid", "titan"].includes(s.detector),
-  );
-  const synthesis = signals.filter((s) =>
-    ["ai_classifier", "exif"].includes(s.detector),
-  );
-  const tamper = signals.filter((s) =>
-    ["ela", "phash"].includes(s.detector),
-  );
+  const engineLabel = !reachable
+    ? "Engine offline"
+    : health?.classifier_warm
+    ? "Engine warm"
+    : "Engine cold";
 
-  function provenanceConclusion(sigs: DetectorSignal[]): string {
-    const fails = sigs.filter((s) => s.severity === "fail");
-    const passes = sigs.filter((s) => s.severity === "pass");
-    if (fails.length > 0) {
-      return `Provenance chain compromised: ${fails.map((s) => s.detector).join(", ")} indicate manipulation.`;
-    }
-    if (passes.length > 0) {
-      return `Provenance chain intact across checked detectors.`;
-    }
-    return "No provenance signals detected — absence is expected for unembedded imagery.";
-  }
-
-  function synthesisConclusion(sigs: DetectorSignal[]): string {
-    const fails = sigs.filter((s) => s.severity === "fail");
-    if (fails.length > 0) {
-      return `Synthesis indicators positive: ${fails.map((s) => s.evidence).join("; ")}.`;
-    }
-    return "No synthesis indicators detected.";
-  }
-
-  function tamperConclusion(sigs: DetectorSignal[]): string {
-    const fails = sigs.filter((s) => s.severity === "fail");
-    if (fails.length > 0) {
-      return `Tamper evidence detected: ${fails.map((s) => s.evidence).join("; ")}.`;
-    }
-    return "No tamper evidence detected. ELA and perceptual hash within nominal bounds.";
-  }
-
-  const isoTs = new Date(submitted_at).toISOString();
+  const detectorCount = health?.detectors.length ?? 0;
+  const detectorsLabel = `${detectorCount}/7 detectors ready`;
 
   return (
     <div
       style={{
+        borderBottom: "1px solid var(--border-subtle, #232830)",
+        background: "var(--bg-elevated, #181c21)",
         fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-        fontSize: "12px",
-        color: "var(--fg-default, #e6e9ec)",
-        display: "flex",
-        flexDirection: "column",
-        gap: "0",
+        fontSize: "11px",
+        color: "var(--fg-muted, #9aa3ad)",
       }}
     >
-      {/* Verify Another button */}
+      {/* Top row: brand + title */}
       <div
         style={{
-          padding: "10px 16px",
-          borderBottom: "1px solid var(--border-subtle, #232830)",
           display: "flex",
+          alignItems: "center",
           justifyContent: "space-between",
-          alignItems: "center",
+          padding: "8px 16px 6px",
+          borderBottom: "1px solid var(--border-subtle, #232830)",
         }}
       >
-        <button
-          onClick={onVerifyAnother}
+        <span
           style={{
-            fontFamily: "inherit",
-            fontSize: "11px",
-            letterSpacing: "0.14em",
+            fontSize: "10px",
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
-            background: "transparent",
-            border: "1px solid var(--border-default, #2c333c)",
-            color: "var(--fg-muted, #9aa3ad)",
-            padding: "4px 12px",
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color =
-              "var(--fg-default, #e6e9ec)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color =
-              "var(--fg-muted, #9aa3ad)";
+            color: "var(--fg-faint, #6b7480)",
           }}
         >
-          Verify Another
-        </button>
-      </div>
-
-      {/* Dossier header */}
-      <div
-        style={{
-          padding: "10px 16px",
-          borderBottom: "1px solid var(--border-subtle, #232830)",
-          background: "var(--bg-elevated, #181c21)",
-          fontSize: "10px",
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color: "var(--fg-faint, #6b7480)",
-        }}
-      >
-        VERIFY · DOSSIER {isoTs} · OPERATOR {operator}
-      </div>
-
-      {/* Subject row */}
-      <div
-        style={{
-          padding: "12px 16px",
-          borderBottom: "1px solid var(--border-subtle, #232830)",
-          display: "flex",
-          gap: "16px",
-          alignItems: "flex-start",
-        }}
-      >
-        {/* Thumbnail */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={dataUrl}
-          alt="Subject image"
+          Defensive Arm · Counter-Deception
+        </span>
+        <span
           style={{
-            width: "90px",
-            height: "60px",
-            objectFit: "cover",
-            border: "1px solid var(--border-default, #2c333c)",
-            flexShrink: 0,
-          }}
-        />
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "96px 1fr",
-            gap: "4px 8px",
-            fontSize: "11px",
+            fontSize: "13px",
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            color: "var(--classified, #e05252)",
+            fontWeight: 600,
           }}
         >
-          <span style={{ color: "var(--fg-faint, #6b7480)", textTransform: "uppercase", letterSpacing: "0.12em", fontSize: "10px" }}>FILE</span>
-          <span style={{ color: "var(--fg-mono, #c4cad1)" }}>{fileName}</span>
-          <span style={{ color: "var(--fg-faint, #6b7480)", textTransform: "uppercase", letterSpacing: "0.12em", fontSize: "10px" }}>SHA256</span>
-          <span style={{ color: "var(--fg-mono, #c4cad1)" }}>{sha256.slice(0, 32)}…</span>
-          <span style={{ color: "var(--fg-faint, #6b7480)", textTransform: "uppercase", letterSpacing: "0.12em", fontSize: "10px" }}>MIME</span>
-          <span style={{ color: "var(--fg-mono, #c4cad1)" }}>{mimeType}</span>
-          <span style={{ color: "var(--fg-faint, #6b7480)", textTransform: "uppercase", letterSpacing: "0.12em", fontSize: "10px" }}>BYTES</span>
-          <span style={{ color: "var(--fg-mono, #c4cad1)" }}>
-            {fileSize.toLocaleString()}
-          </span>
-        </div>
+          VERIFY
+        </span>
       </div>
 
-      {/* §1 Provenance */}
-      <DossierSection
-        heading="§1 Provenance"
-        signals={provenance}
-        conclusion={provenanceConclusion(provenance)}
-      />
-
-      {/* §2 Synthesis Indicators */}
-      <DossierSection
-        heading="§2 Synthesis Indicators"
-        signals={synthesis}
-        conclusion={synthesisConclusion(synthesis)}
-      />
-
-      {/* §3 Tamper Evidence */}
-      <DossierSection
-        heading="§3 Tamper Evidence"
-        signals={tamper}
-        conclusion={tamperConclusion(tamper)}
-      />
-
-      {/* Footer verdict */}
+      {/* Status pills row */}
       <div
         style={{
-          padding: "12px 16px",
-          borderTop: "1px solid var(--border-default, #2c333c)",
-          background: "var(--bg-elevated, #181c21)",
           display: "flex",
           alignItems: "center",
-          gap: "16px",
+          gap: "20px",
+          padding: "6px 16px",
           flexWrap: "wrap",
         }}
       >
-        <span
-          style={{
-            ...verdictStyle.badge,
-            padding: "4px 12px",
-            fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-            fontSize: "11px",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-          }}
-        >
-          {verdict.level}
+        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span
+            style={{
+              width: "7px",
+              height: "7px",
+              borderRadius: "50%",
+              background: dotColor,
+              display: "inline-block",
+              flexShrink: 0,
+            }}
+          />
+          <span style={{ color: "var(--fg-default, #e6e9ec)" }}>{dotLabel}</span>
         </span>
-        <span style={{ color: "var(--fg-faint, #6b7480)", fontSize: "11px" }}>
-          confidence{" "}
-          <span style={{ color: "var(--fg-mono, #c4cad1)" }}>
-            {verdict.confidence.toFixed(2)}
+
+        {reachable && (
+          <>
+            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span
+                style={{
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  background: health?.classifier_warm ? "#6cd690" : "#e3b14a",
+                  display: "inline-block",
+                  flexShrink: 0,
+                }}
+              />
+              <span>{engineLabel}</span>
+            </span>
+
+            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span
+                style={{
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  background: detectorCount === 7 ? "#6cd690" : "#e3b14a",
+                  display: "inline-block",
+                  flexShrink: 0,
+                }}
+              />
+              <span>{detectorsLabel}</span>
+            </span>
+          </>
+        )}
+
+        {lastVerdict && (
+          <span
+            style={{
+              marginLeft: "auto",
+              color: "var(--fg-faint, #6b7480)",
+              fontSize: "10px",
+              letterSpacing: "0.1em",
+            }}
+          >
+            Last verdict:{" "}
+            <span style={{ color: "var(--fg-mono, #c4cad1)" }}>
+              {lastVerdict.sha256.slice(0, 4)}…{lastVerdict.sha256.slice(-4)}
+            </span>{" "}
+            <span
+              style={{
+                ...VERDICT_PILL[lastVerdict.verdict_level] ?? SV_NA,
+                padding: "1px 6px",
+                fontSize: "9px",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+              }}
+            >
+              {lastVerdict.verdict_level}
+            </span>{" "}
+            <span>{tsZulu(lastVerdict.ts)}</span>
           </span>
-        </span>
-        <span
-          style={{
-            color: "var(--fg-muted, #9aa3ad)",
-            fontSize: "12px",
-            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-            flex: "1",
-          }}
-        >
-          {verdict.summary}
-        </span>
+        )}
       </div>
     </div>
   );
 }
 
-function DossierSection({
-  heading,
-  signals,
-  conclusion,
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Activity Sidebar                                                          */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function ActivitySidebar({
+  items,
+  sessionEntries,
+  onSelectAuditItem,
+  onSelectSessionEntry,
+  activeArtifactId,
 }: {
-  heading: string;
-  signals: DetectorSignal[];
-  conclusion: string;
+  items: RecentItem[];
+  sessionEntries: SessionEntry[];
+  onSelectAuditItem: (item: RecentItem) => void;
+  onSelectSessionEntry: (entry: SessionEntry) => void;
+  activeArtifactId: string | null;
 }) {
   return (
-    <div
+    <aside
       style={{
-        borderBottom: "1px solid var(--border-subtle, #232830)",
-        padding: "12px 16px",
+        borderRight: "1px solid var(--border-subtle, #232830)",
+        background: "var(--bg-panel, #111418)",
+        display: "flex",
+        flexDirection: "column",
+        overflowY: "auto",
+        minWidth: 0,
       }}
     >
       <div
         style={{
+          padding: "7px 12px 6px",
+          borderBottom: "1px solid var(--border-subtle, #232830)",
+          background: "var(--bg-elevated, #181c21)",
+          fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
           fontSize: "10px",
           letterSpacing: "0.16em",
           textTransform: "uppercase",
           color: "var(--fg-faint, #6b7480)",
-          marginBottom: "8px",
+          flexShrink: 0,
         }}
       >
-        {heading}
+        Activity
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginBottom: "10px" }}>
-        {signals.map((s) => (
-          <div key={s.detector} style={{ display: "flex", gap: "12px", alignItems: "baseline" }}>
+
+      {/* Current session entries first */}
+      {sessionEntries.map((e) => {
+        const isActive = e.artifactId === activeArtifactId;
+        return (
+          <button
+            key={e.artifactId}
+            onClick={() => onSelectSessionEntry(e)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "2px",
+              padding: "7px 10px",
+              borderBottom: "1px solid var(--border-subtle, #232830)",
+              background: isActive ? "var(--bg-elevated, #181c21)" : "transparent",
+              borderLeft: isActive ? "2px solid #5fb8d6" : "2px solid transparent",
+              cursor: "pointer",
+              width: "100%",
+              textAlign: "left",
+              fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
+              <span style={{ fontSize: "10px", color: "var(--fg-mono, #c4cad1)" }}>
+                {e.sha256Prefix}
+              </span>
+              <span
+                style={{
+                  ...VERDICT_PILL[e.verdictLevel] ?? SV_NA,
+                  fontSize: "9px",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  padding: "1px 5px",
+                  flexShrink: 0,
+                }}
+              >
+                {e.verdictLevel}
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: "6px", fontSize: "9px", color: "var(--fg-faint, #6b7480)" }}>
+              <span>verify_tab</span>
+              <span>·</span>
+              <span style={{ color: "#5fb8d6" }}>this session</span>
+            </div>
+          </button>
+        );
+      })}
+
+      {/* Audit feed from API */}
+      {items.length === 0 && sessionEntries.length === 0 ? (
+        <div
+          style={{
+            padding: "16px 10px",
+            fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+            fontSize: "11px",
+            color: "var(--fg-faint, #6b7480)",
+            fontStyle: "italic",
+          }}
+        >
+          No verifications yet system-wide.
+        </div>
+      ) : (
+        items
+          .filter((item) => !sessionEntries.some((e) => e.artifactId === item.artifact_id))
+          .map((item) => {
+            const isActive = item.artifact_id === activeArtifactId;
+            return (
+              <button
+                key={item.artifact_id}
+                onClick={() => onSelectAuditItem(item)}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "2px",
+                  padding: "7px 10px",
+                  borderBottom: "1px solid var(--border-subtle, #232830)",
+                  background: isActive ? "var(--bg-elevated, #181c21)" : "transparent",
+                  borderLeft: isActive ? "2px solid #5fb8d6" : "2px solid transparent",
+                  cursor: "pointer",
+                  width: "100%",
+                  textAlign: "left",
+                  fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "6px" }}>
+                  <span style={{ fontSize: "10px", color: "var(--fg-mono, #c4cad1)" }}>
+                    {item.sha256.slice(0, 8)}
+                  </span>
+                  <span
+                    style={{
+                      ...VERDICT_PILL[item.verdict_level] ?? SV_NA,
+                      fontSize: "9px",
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                      padding: "1px 5px",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {item.verdict_level}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: "6px", fontSize: "9px", color: "var(--fg-faint, #6b7480)" }}>
+                  <span>{relativeTime(item.ts)}</span>
+                  <span>·</span>
+                  <span>{item.source}</span>
+                </div>
+              </button>
+            );
+          })
+      )}
+    </aside>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Detector Grid                                                             */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function DetectorGrid({ states }: { states: Record<string, DetectorState> }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: "8px",
+        padding: "12px",
+      }}
+    >
+      {DETECTOR_ORDER.map((key) => {
+        const state = states[key] ?? { phase: "ready" };
+        const label = DETECTOR_LABELS[key] ?? key.toUpperCase();
+
+        let cellStyle: React.CSSProperties;
+        let badgeStyle: React.CSSProperties;
+        let badgeText: string;
+        let evidenceText: string | null = null;
+
+        if (state.phase === "ready") {
+          cellStyle = { ...SV_READY, padding: "10px 8px", display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-start" };
+          badgeStyle = { ...SV_READY, fontSize: "9px", letterSpacing: "0.14em", padding: "2px 6px", textTransform: "uppercase" as const };
+          badgeText = "READY";
+        } else if (state.phase === "running") {
+          cellStyle = { ...SV_RUNNING, padding: "10px 8px", display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-start" };
+          badgeStyle = { ...SV_RUNNING, fontSize: "9px", letterSpacing: "0.14em", padding: "2px 6px", textTransform: "uppercase" as const };
+          badgeText = "RUNNING…";
+        } else {
+          const sig = state.signal;
+          const base = severityStyle(sig.severity);
+          cellStyle = { ...base, padding: "10px 8px", display: "flex", flexDirection: "column", gap: "5px", alignItems: "flex-start" };
+          badgeStyle = { ...base, fontSize: "9px", letterSpacing: "0.14em", padding: "2px 6px", textTransform: "uppercase" as const };
+          badgeText = sig.severity === "n/a" ? "N/A" : sig.severity.toUpperCase();
+          evidenceText = sig.severity === "n/a" ? "unavailable" : sig.evidence;
+        }
+
+        return (
+          <div
+            key={key}
+            style={{
+              ...cellStyle,
+              animation: state.phase === "running" ? "pulse 1.2s ease-in-out infinite" : undefined,
+            }}
+          >
             <span
               style={{
                 fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-                fontSize: "11px",
-                color: "var(--fg-muted, #9aa3ad)",
-                minWidth: "100px",
+                fontSize: "10px",
+                letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                letterSpacing: "0.1em",
+                color: cellStyle.color as string,
+                opacity: 0.8,
               }}
             >
-              {s.detector}
+              {label}
             </span>
-            <span style={{ ...SEVERITY_STYLE[s.severity], fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", minWidth: "40px" }}>
-              {s.severity}
-            </span>
-            <span style={{ color: "var(--fg-muted, #9aa3ad)", fontSize: "11px" }}>
-              {s.severity === "n/a" ? "detector unavailable" : s.evidence}
-            </span>
+            <span style={badgeStyle}>{badgeText}</span>
+            {evidenceText && (
+              <span
+                style={{
+                  fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+                  fontSize: "9px",
+                  color: cellStyle.color as string,
+                  opacity: 0.7,
+                  wordBreak: "break-all",
+                  lineHeight: "1.4",
+                }}
+              >
+                {evidenceText}
+              </span>
+            )}
           </div>
-        ))}
-      </div>
-      <p
-        style={{
-          fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-          fontSize: "12px",
-          color: "var(--fg-muted, #9aa3ad)",
-          lineHeight: "1.6",
-          margin: 0,
-        }}
-      >
-        {conclusion}
-      </p>
+        );
+      })}
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────────────────────────────── */
-/* Sidebar entry pill                                                        */
+/* Drop Zone + Sample Buttons                                                */
 /* ─────────────────────────────────────────────────────────────────────── */
 
-function SidebarRow({
-  entry,
-  isActive,
-  onClick,
-}: {
-  entry: SessionEntry;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  const verdictStyle = VERDICT_STYLES[entry.verdictLevel];
-  return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        padding: "8px 12px",
-        borderBottom: "1px solid var(--border-subtle, #232830)",
-        background: isActive
-          ? "var(--bg-elevated, #181c21)"
-          : "transparent",
-        borderLeft: isActive
-          ? "2px solid var(--info-fg, #5fb8d6)"
-          : "2px solid transparent",
-        cursor: "pointer",
-        width: "100%",
-        textAlign: "left",
-        fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-      }}
-    >
-      <span
-        style={{
-          fontSize: "10px",
-          color: "var(--fg-mono, #c4cad1)",
-          flex: 1,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {entry.sha256Prefix}
-      </span>
-      <span
-        style={{
-          ...verdictStyle.pill,
-          fontSize: "9px",
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          padding: "2px 6px",
-          flexShrink: 0,
-        }}
-      >
-        {entry.verdictLevel}
-      </span>
-    </button>
-  );
-}
+const SAMPLES = [
+  { key: "iphone", label: "iPhone (real)", path: "/samples/iphone.jpg", mime: "image/jpeg" },
+  { key: "dalle", label: "DALL-E (synthetic)", path: "/samples/dalle.jpg", mime: "image/jpeg" },
+  { key: "gemini", label: "Gemini (synthetic)", path: "/samples/gemini.png", mime: "image/png" },
+];
 
-/* ─────────────────────────────────────────────────────────────────────── */
-/* Drop zone                                                                 */
-/* ─────────────────────────────────────────────────────────────────────── */
-
-function DropZone({
+function DropZonePanel({
   onFile,
   isLoading,
   error,
@@ -475,9 +560,7 @@ function DropZone({
     setIsDragging(true);
   }, []);
 
-  const handleDragLeave = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+  const handleDragLeave = useCallback(() => setIsDragging(false), []);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -497,16 +580,31 @@ function DropZone({
     [onFile],
   );
 
+  const loadSample = useCallback(
+    async (path: string, mime: string, label: string) => {
+      try {
+        const res = await fetch(path);
+        const blob = await res.blob();
+        const ext = path.split(".").pop() ?? "jpg";
+        const file = new File([blob], `sample-${label}.${ext}`, { type: mime });
+        onFile(file);
+      } catch {
+        // ignore
+      }
+    },
+    [onFile],
+  );
+
   return (
-    <div style={{ padding: "24px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "12px" }}>
       {/* Error banner */}
       {error && (
         <div
           style={{
-            background: "var(--fail-bg, #2a1212)",
-            border: "1px solid var(--fail-border, #4a1f1f)",
-            color: "var(--fail-fg, #e36b6b)",
-            padding: "10px 14px",
+            background: "#2a1212",
+            border: "1px solid #4a1f1f",
+            color: "#e36b6b",
+            padding: "8px 12px",
             fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
             fontSize: "11px",
             letterSpacing: "0.1em",
@@ -519,7 +617,7 @@ function DropZone({
         </div>
       )}
 
-      {/* Drop zone box */}
+      {/* Drop zone */}
       <div
         role="button"
         tabIndex={0}
@@ -535,18 +633,18 @@ function DropZone({
           }
         }}
         style={{
-          border: `1px dashed ${isDragging ? "var(--info-fg, #5fb8d6)" : "var(--border-default, #2c333c)"}`,
-          background: isDragging
-            ? "var(--info-bg, #0e2530)"
-            : "var(--bg-panel, #111418)",
-          padding: "48px 24px",
+          border: `1px dashed ${isDragging ? "#5fb8d6" : "var(--border-default, #2c333c)"}`,
+          background: isDragging ? "#0e2530" : "var(--bg-panel, #111418)",
+          padding: "36px 24px",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          gap: "10px",
+          gap: "8px",
           cursor: isLoading ? "wait" : "pointer",
           transition: "border-color 0.15s, background 0.15s",
+          flex: "1",
+          minHeight: "120px",
         }}
       >
         {isLoading ? (
@@ -568,7 +666,7 @@ function DropZone({
                 fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
               }}
             >
-              (this may take a few seconds)
+              Running 7 detectors
             </span>
           </>
         ) : (
@@ -581,7 +679,7 @@ function DropZone({
                 letterSpacing: "0.1em",
               }}
             >
-              Drop image here or click to choose file
+              Drop image to verify
             </span>
             <span
               style={{
@@ -603,6 +701,238 @@ function DropZone({
         style={{ display: "none" }}
         onChange={handleChange}
       />
+
+      {/* Sample buttons */}
+      <div
+        style={{
+          borderTop: "1px solid var(--border-subtle, #232830)",
+          paddingTop: "10px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+            fontSize: "9px",
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: "var(--fg-faint, #6b7480)",
+            marginBottom: "2px",
+          }}
+        >
+          TRY:
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+          {SAMPLES.map((s) => (
+            <button
+              key={s.key}
+              disabled={isLoading}
+              onClick={() => loadSample(s.path, s.mime, s.label)}
+              style={{
+                fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+                fontSize: "10px",
+                letterSpacing: "0.12em",
+                background: "transparent",
+                border: "1px solid var(--border-default, #2c333c)",
+                color: isLoading ? "var(--fg-faint, #6b7480)" : "var(--fg-muted, #9aa3ad)",
+                padding: "4px 10px",
+                cursor: isLoading ? "not-allowed" : "pointer",
+                transition: "color 0.1s, border-color 0.1s",
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-default, #e6e9ec)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = "#5fb8d6";
+                }
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-muted, #9aa3ad)";
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-default, #2c333c)";
+              }}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/* Dossier                                                                   */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+function Dossier({
+  entry,
+  onVerifyAnother,
+}: {
+  entry: SessionEntry;
+  onVerifyAnother: () => void;
+}) {
+  const { response, dataUrl, fileName, fileSize, mimeType } = entry;
+  const { verdict, signals, submitted_at, operator, sha256 } = response;
+
+  const verdictPill = VERDICT_PILL[verdict.level] ?? SV_NA;
+
+  const provenance = signals.filter((s) => ["c2pa", "synthid", "titan"].includes(s.detector));
+  const synthesis = signals.filter((s) => ["ai_classifier", "exif"].includes(s.detector));
+  const tamper = signals.filter((s) => ["ela", "phash"].includes(s.detector));
+
+  function provenanceConclusion(sigs: DetectorSignal[]): string {
+    const fails = sigs.filter((s) => s.severity === "fail");
+    const passes = sigs.filter((s) => s.severity === "pass");
+    if (fails.length > 0) return `Provenance chain compromised: ${fails.map((s) => s.detector).join(", ")} indicate manipulation.`;
+    if (passes.length > 0) return "Provenance chain intact across checked detectors.";
+    return "No provenance signals detected — absence expected for unembedded imagery.";
+  }
+
+  function synthesisConclusion(sigs: DetectorSignal[]): string {
+    const fails = sigs.filter((s) => s.severity === "fail");
+    if (fails.length > 0) return `Synthesis indicators positive: ${fails.map((s) => s.evidence).join("; ")}.`;
+    return "No synthesis indicators detected.";
+  }
+
+  function tamperConclusion(sigs: DetectorSignal[]): string {
+    const fails = sigs.filter((s) => s.severity === "fail");
+    if (fails.length > 0) return `Tamper evidence detected: ${fails.map((s) => s.evidence).join("; ")}.`;
+    return "No tamper evidence detected. ELA and perceptual hash within nominal bounds.";
+  }
+
+  const SEV_COLOR: Record<DetectorSignal["severity"], string> = {
+    pass: "#6cd690",
+    warn: "#e3b14a",
+    fail: "#e36b6b",
+    "n/a": "#6b7480",
+  };
+
+  return (
+    <div
+      style={{
+        fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+        fontSize: "12px",
+        color: "var(--fg-default, #e6e9ec)",
+      }}
+    >
+      {/* Back button */}
+      <div
+        style={{
+          padding: "8px 14px",
+          borderBottom: "1px solid var(--border-subtle, #232830)",
+          display: "flex",
+          alignItems: "center",
+          gap: "10px",
+        }}
+      >
+        <button
+          onClick={onVerifyAnother}
+          style={{
+            fontFamily: "inherit",
+            fontSize: "10px",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            background: "transparent",
+            border: "1px solid var(--border-default, #2c333c)",
+            color: "var(--fg-muted, #9aa3ad)",
+            padding: "3px 10px",
+            cursor: "pointer",
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#e6e9ec"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-muted, #9aa3ad)"; }}
+        >
+          ← Back
+        </button>
+        <span style={{ fontSize: "10px", color: "var(--fg-faint, #6b7480)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+          Dossier · {new Date(submitted_at).toISOString()} · {operator}
+        </span>
+      </div>
+
+      {/* Subject */}
+      <div
+        style={{
+          padding: "10px 14px",
+          borderBottom: "1px solid var(--border-subtle, #232830)",
+          display: "flex",
+          gap: "14px",
+          alignItems: "flex-start",
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={dataUrl}
+          alt="Subject"
+          style={{ width: "80px", height: "54px", objectFit: "cover", border: "1px solid var(--border-default, #2c333c)", flexShrink: 0 }}
+        />
+        <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "3px 8px", fontSize: "10px" }}>
+          {[
+            ["FILE", fileName],
+            ["SHA256", sha256.slice(0, 32) + "…"],
+            ["MIME", mimeType],
+            ["BYTES", fileSize.toLocaleString()],
+          ].map(([l, v]) => (
+            <>
+              <span key={`l-${l}`} style={{ color: "var(--fg-faint, #6b7480)", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "9px" }}>{l}</span>
+              <span key={`v-${l}`} style={{ color: "var(--fg-mono, #c4cad1)" }}>{v}</span>
+            </>
+          ))}
+        </div>
+      </div>
+
+      {/* Sections */}
+      {[
+        { heading: "§1 Provenance", sigs: provenance, conclusion: provenanceConclusion(provenance) },
+        { heading: "§2 Synthesis Indicators", sigs: synthesis, conclusion: synthesisConclusion(synthesis) },
+        { heading: "§3 Tamper Evidence", sigs: tamper, conclusion: tamperConclusion(tamper) },
+      ].map(({ heading, sigs, conclusion }) => (
+        <div key={heading} style={{ borderBottom: "1px solid var(--border-subtle, #232830)", padding: "10px 14px" }}>
+          <div style={{ fontSize: "9px", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--fg-faint, #6b7480)", marginBottom: "7px" }}>
+            {heading}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginBottom: "8px" }}>
+            {sigs.map((s) => (
+              <div key={s.detector} style={{ display: "flex", gap: "10px", alignItems: "baseline" }}>
+                <span style={{ fontSize: "10px", color: "var(--fg-muted, #9aa3ad)", minWidth: "84px", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                  {s.detector}
+                </span>
+                <span style={{ color: SEV_COLOR[s.severity], fontSize: "9px", letterSpacing: "0.12em", textTransform: "uppercase", minWidth: "34px" }}>
+                  {s.severity}
+                </span>
+                <span style={{ color: "var(--fg-muted, #9aa3ad)", fontSize: "10px" }}>
+                  {s.severity === "n/a" ? "detector unavailable" : s.evidence}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontFamily: "var(--font-geist-sans), system-ui, sans-serif", fontSize: "11px", color: "var(--fg-muted, #9aa3ad)", lineHeight: "1.6", margin: 0 }}>
+            {conclusion}
+          </p>
+        </div>
+      ))}
+
+      {/* Verdict footer */}
+      <div
+        style={{
+          padding: "10px 14px",
+          background: "var(--bg-elevated, #181c21)",
+          display: "flex",
+          alignItems: "center",
+          gap: "14px",
+          flexWrap: "wrap",
+        }}
+      >
+        <span style={{ ...verdictPill, padding: "3px 10px", fontSize: "10px", letterSpacing: "0.18em", textTransform: "uppercase" }}>
+          {verdict.level}
+        </span>
+        <span style={{ color: "var(--fg-faint, #6b7480)", fontSize: "10px" }}>
+          confidence{" "}
+          <span style={{ color: "var(--fg-mono, #c4cad1)" }}>{verdict.confidence.toFixed(2)}</span>
+        </span>
+        <span style={{ color: "var(--fg-muted, #9aa3ad)", fontSize: "11px", fontFamily: "var(--font-geist-sans), system-ui, sans-serif", flex: 1 }}>
+          {verdict.summary}
+        </span>
+      </div>
     </div>
   );
 }
@@ -612,203 +942,344 @@ function DropZone({
 /* ─────────────────────────────────────────────────────────────────────── */
 
 export default function VerifyPage() {
+  // Health / recent state
+  const [health, setHealth] = useState<HealthResponse | null>(null);
+  const [reachable, setReachable] = useState(true);
+  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
+
+  // Verify state
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<{ code: string; message: string } | null>(
-    null,
+  const [error, setError] = useState<{ code: string; message: string } | null>(null);
+  const [detectorStates, setDetectorStates] = useState<Record<string, DetectorState>>(
+    Object.fromEntries(DETECTOR_ORDER.map((k) => [k, { phase: "ready" }])),
   );
+
+  // Session / active dossier
   const [session, setSession] = useState<SessionEntry[]>([]);
-  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const [activeEntry, setActiveEntry] = useState<SessionEntry | null>(null);
+  const [activeAuditItem, setActiveAuditItem] = useState<RecentItem | null>(null);
 
-  const activeEntry = activeIdx !== null ? session[activeIdx] : null;
-
-  const handleFile = useCallback(async (file: File) => {
-    setIsLoading(true);
-    setError(null);
-
-    // Read as data URL for thumbnail display (done before the fetch so the UI
-    // can render the thumbnail even if we need to show the dossier right away)
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsDataURL(file);
-    });
-
-    const form = new FormData();
-    form.append("image", file);
-
-    let data: VerifyResponse;
+  // Poll health
+  const fetchHealth = useCallback(async () => {
     try {
-      const res = await fetch("/api/verify", {
-        method: "POST",
-        body: form,
+      const res = await fetch("/api/verify/health", { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as HealthResponse;
+        setHealth(data);
+        setReachable(true);
+      } else {
+        setReachable(false);
+      }
+    } catch {
+      setReachable(false);
+    }
+  }, []);
+
+  // Poll recent
+  const fetchRecent = useCallback(async () => {
+    try {
+      const res = await fetch("/api/verify/recent", { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as { items: RecentItem[] };
+        setRecentItems(data.items);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHealth();
+    fetchRecent();
+    const healthTimer = setInterval(fetchHealth, 30_000);
+    const recentTimer = setInterval(fetchRecent, 15_000);
+    return () => {
+      clearInterval(healthTimer);
+      clearInterval(recentTimer);
+    };
+  }, [fetchHealth, fetchRecent]);
+
+  // Handle file verify
+  const handleFile = useCallback(
+    async (file: File) => {
+      setIsLoading(true);
+      setError(null);
+      setActiveEntry(null);
+      setActiveAuditItem(null);
+
+      // Set all detectors to RUNNING
+      setDetectorStates(Object.fromEntries(DETECTOR_ORDER.map((k) => [k, { phase: "running" }])));
+
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
       });
 
-      if (!res.ok) {
-        let code = "api_error";
-        let message = `HTTP ${res.status}`;
-        try {
-          const json = (await res.json()) as {
-            detail?: { code?: string; error?: string } | string;
-          };
-          if (typeof json.detail === "object" && json.detail !== null) {
-            code = json.detail.code ?? code;
-            message = json.detail.error ?? message;
-          } else if (typeof json.detail === "string") {
-            message = json.detail;
+      const form = new FormData();
+      form.append("image", file);
+
+      let data: VerifyResponse;
+      try {
+        const res = await fetch("/api/verify", { method: "POST", body: form });
+
+        if (!res.ok) {
+          let code = "api_error";
+          let message = `HTTP ${res.status}`;
+          try {
+            const json = (await res.json()) as {
+              detail?: { code?: string; error?: string } | string;
+            };
+            if (typeof json.detail === "object" && json.detail !== null) {
+              code = json.detail.code ?? code;
+              message = json.detail.error ?? message;
+            } else if (typeof json.detail === "string") {
+              message = json.detail;
+            }
+          } catch {
+            // keep defaults
           }
-        } catch {
-          // keep defaults
+          setError({ code, message });
+          setDetectorStates(Object.fromEntries(DETECTOR_ORDER.map((k) => [k, { phase: "ready" }])));
+          setIsLoading(false);
+          return;
         }
-        setError({ code, message });
+
+        data = (await res.json()) as VerifyResponse;
+      } catch (err) {
+        setError({
+          code: "network_error",
+          message: err instanceof Error ? err.message : String(err),
+        });
+        setDetectorStates(Object.fromEntries(DETECTOR_ORDER.map((k) => [k, { phase: "ready" }])));
         setIsLoading(false);
         return;
       }
 
-      data = (await res.json()) as VerifyResponse;
-    } catch (err) {
-      setError({
-        code: "network_error",
-        error: err instanceof Error ? err.message : String(err),
-      } as unknown as { code: string; message: string });
+      // Update detector states with results
+      const newStates: Record<string, DetectorState> = {};
+      for (const key of DETECTOR_ORDER) {
+        const sig = data.signals.find((s) => s.detector === key);
+        if (sig) {
+          newStates[key] = { phase: "done", signal: sig };
+        } else {
+          newStates[key] = {
+            phase: "done",
+            signal: { detector: key, severity: "n/a", score: null, evidence: "not run", latency_ms: 0 },
+          };
+        }
+      }
+      setDetectorStates(newStates);
+
+      const entry: SessionEntry = {
+        artifactId: data.artifact_id,
+        sha256Prefix: data.sha256.slice(0, 8),
+        verdictLevel: data.verdict.level,
+        response: data,
+        dataUrl,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+      };
+
+      setSession((prev) => [entry, ...prev]);
+      setActiveEntry(entry);
       setIsLoading(false);
-      return;
-    }
 
-    const entry: SessionEntry = {
-      artifactId: data.artifact_id,
-      sha256Prefix: data.sha256.slice(0, 8),
-      verdictLevel: data.verdict.level,
-      response: data,
-      dataUrl,
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type,
-    };
-
-    setSession((prev) => {
-      const next = [entry, ...prev];
-      setActiveIdx(0);
-      return next;
-    });
-    setIsLoading(false);
-  }, []);
+      // Refresh activity feed after verify
+      fetchRecent();
+    },
+    [fetchRecent],
+  );
 
   const handleVerifyAnother = useCallback(() => {
-    setActiveIdx(null);
+    setActiveEntry(null);
+    setActiveAuditItem(null);
     setError(null);
+    setDetectorStates(Object.fromEntries(DETECTOR_ORDER.map((k) => [k, { phase: "ready" }])));
   }, []);
+
+  const handleSelectAuditItem = useCallback(async (item: RecentItem) => {
+    // Try to fetch full response from in-process cache via proxy
+    setActiveAuditItem(item);
+    setActiveEntry(null);
+    // We can only show cached data for session entries; for cross-session items
+    // we show a read-only summary view (see below)
+  }, []);
+
+  const handleSelectSessionEntry = useCallback((entry: SessionEntry) => {
+    setActiveEntry(entry);
+    setActiveAuditItem(null);
+  }, []);
+
+  // The active artifact ID for sidebar highlighting
+  const activeArtifactId =
+    activeEntry?.artifactId ?? activeAuditItem?.artifact_id ?? null;
+
+  // Determine what to show in the main area
+  const showDossier = activeEntry !== null;
+  const showAuditReadOnly = !showDossier && activeAuditItem !== null;
+  const showDropZone = !showDossier && !showAuditReadOnly;
 
   return (
     <>
-      <PageHeader
-        eyebrow="Defensive arm · Counter-deception"
-        title="VERIFY"
-        brief="Drop an inbound image to run the full seven-detector provenance and synthesis stack. Every verification is recorded in the audit log."
-      />
+      {/* Pulse keyframe injected once */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.45; }
+        }
+      `}</style>
 
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "220px 1fr",
+          display: "flex",
+          flexDirection: "column",
           flex: "1",
           minHeight: "0",
           overflow: "hidden",
         }}
       >
-        {/* Sidebar */}
-        <aside
-          style={{
-            borderRight: "1px solid var(--border-subtle, #232830)",
-            background: "var(--bg-panel, #111418)",
-            display: "flex",
-            flexDirection: "column",
-            overflowY: "auto",
-          }}
-        >
-          <div
-            style={{
-              padding: "8px 12px 6px",
-              borderBottom: "1px solid var(--border-subtle, #232830)",
-              background: "var(--bg-elevated, #181c21)",
-              fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
-              fontSize: "10px",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: "var(--fg-faint, #6b7480)",
-            }}
-          >
-            Session
-          </div>
-          {session.length === 0 ? (
-            <div
-              style={{
-                padding: "20px 12px",
-                fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-                fontSize: "12px",
-                color: "var(--fg-faint, #6b7480)",
-                fontStyle: "italic",
-              }}
-            >
-              No verifications yet.
-            </div>
-          ) : (
-            session.map((entry, idx) => (
-              <SidebarRow
-                key={entry.artifactId}
-                entry={entry}
-                isActive={idx === activeIdx}
-                onClick={() => setActiveIdx(idx)}
-              />
-            ))
-          )}
-        </aside>
+        {/* Status bar */}
+        <StatusBar
+          health={health}
+          reachable={reachable}
+          lastVerdict={recentItems[0] ?? null}
+        />
 
-        {/* Main content area */}
-        <main
+        {/* Three-column layout */}
+        <div
           style={{
+            display: "grid",
+            gridTemplateColumns: "180px 1fr 240px",
             flex: "1",
             minHeight: "0",
-            overflowY: "auto",
-            background: "var(--bg-base, #0a0c0e)",
+            overflow: "hidden",
           }}
         >
-          {activeEntry ? (
-            <div
-              style={{
-                border: "1px solid var(--border-default, #2c333c)",
-                margin: "16px",
-                background: "var(--bg-panel, #111418)",
-              }}
-            >
-              <Dossier
-                entry={activeEntry}
-                onVerifyAnother={handleVerifyAnother}
-              />
-            </div>
-          ) : (
-            <div>
-              <DropZone
+          {/* Left: Activity */}
+          <ActivitySidebar
+            items={recentItems}
+            sessionEntries={session}
+            onSelectAuditItem={handleSelectAuditItem}
+            onSelectSessionEntry={handleSelectSessionEntry}
+            activeArtifactId={activeArtifactId}
+          />
+
+          {/* Centre: Drop zone or Dossier */}
+          <main
+            style={{
+              flex: "1",
+              minHeight: "0",
+              overflowY: "auto",
+              background: "var(--bg-base, #0a0c0e)",
+              borderRight: "1px solid var(--border-subtle, #232830)",
+            }}
+          >
+            {showDossier && activeEntry ? (
+              <div
+                style={{
+                  border: "1px solid var(--border-default, #2c333c)",
+                  margin: "12px",
+                  background: "var(--bg-panel, #111418)",
+                }}
+              >
+                <Dossier entry={activeEntry} onVerifyAnother={handleVerifyAnother} />
+              </div>
+            ) : showAuditReadOnly && activeAuditItem ? (
+              <div
+                style={{
+                  margin: "12px",
+                  border: "1px solid var(--border-default, #2c333c)",
+                  background: "var(--bg-panel, #111418)",
+                  fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+                  fontSize: "11px",
+                  color: "var(--fg-default, #e6e9ec)",
+                }}
+              >
+                <div style={{ padding: "8px 14px", borderBottom: "1px solid var(--border-subtle, #232830)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: "10px", color: "var(--fg-faint, #6b7480)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                    Audit Record · {activeAuditItem.artifact_id.slice(0, 8)}…
+                  </span>
+                  <button
+                    onClick={handleVerifyAnother}
+                    style={{ fontFamily: "inherit", fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", background: "transparent", border: "1px solid var(--border-default, #2c333c)", color: "var(--fg-muted, #9aa3ad)", padding: "3px 10px", cursor: "pointer" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#e6e9ec"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--fg-muted, #9aa3ad)"; }}
+                  >
+                    ← Back
+                  </button>
+                </div>
+                <div style={{ padding: "12px 14px", display: "grid", gridTemplateColumns: "90px 1fr", gap: "5px 10px", fontSize: "10px" }}>
+                  {[
+                    ["TIME", new Date(activeAuditItem.ts).toISOString()],
+                    ["SHA256", activeAuditItem.sha256.slice(0, 32) + "…"],
+                    ["OPERATOR", activeAuditItem.operator],
+                    ["SOURCE", activeAuditItem.source],
+                    ["VERDICT", activeAuditItem.verdict_level],
+                    ["CONFIDENCE", activeAuditItem.verdict_confidence.toFixed(2)],
+                    ["SUMMARY", activeAuditItem.verdict_summary],
+                  ].map(([l, v]) => (
+                    <>
+                      <span key={`l-${l}`} style={{ color: "var(--fg-faint, #6b7480)", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "9px" }}>{l}</span>
+                      <span key={`v-${l}`} style={{ color: "var(--fg-mono, #c4cad1)" }}>{v}</span>
+                    </>
+                  ))}
+                </div>
+                <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border-subtle, #232830)" }}>
+                  <span
+                    style={{
+                      ...VERDICT_PILL[activeAuditItem.verdict_level] ?? SV_NA,
+                      padding: "3px 10px",
+                      fontSize: "10px",
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {activeAuditItem.verdict_level}
+                  </span>
+                  <span style={{ fontSize: "11px", color: "var(--fg-faint, #6b7480)", marginLeft: "12px", fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}>
+                    Full dossier only available for images verified this session.
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <DropZonePanel
                 onFile={handleFile}
                 isLoading={isLoading}
                 error={error}
               />
-              {/* Bottom note */}
-              <div
-                style={{
-                  padding: "0 24px 24px",
-                  fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-                  fontSize: "11px",
-                  color: "var(--fg-faint, #6b7480)",
-                  lineHeight: "1.6",
-                }}
-              >
-                Detector stack: C2PA · SynthID · Titan · AI-gen · EXIF · ELA ·
-                pHash. Each verification is recorded in the audit log.
-              </div>
+            )}
+          </main>
+
+          {/* Right: Detector stack */}
+          <aside
+            style={{
+              background: "var(--bg-panel, #111418)",
+              display: "flex",
+              flexDirection: "column",
+              overflowY: "auto",
+            }}
+          >
+            <div
+              style={{
+                padding: "7px 12px 6px",
+                borderBottom: "1px solid var(--border-subtle, #232830)",
+                background: "var(--bg-elevated, #181c21)",
+                fontFamily: "var(--font-geist-mono), ui-monospace, monospace",
+                fontSize: "10px",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "var(--fg-faint, #6b7480)",
+                flexShrink: 0,
+              }}
+            >
+              Detector Stack
             </div>
-          )}
-        </main>
+            <DetectorGrid states={detectorStates} />
+          </aside>
+        </div>
       </div>
     </>
   );
