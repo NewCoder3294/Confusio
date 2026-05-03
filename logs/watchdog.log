@@ -90,3 +90,5 @@
 [2026-05-03 07:19:52] flipped 2 failed → approved
 [2026-05-03 07:31:43] cycle=38 posted=47 approved=0 pending=0 failed=2
 [2026-05-03 07:31:43] flipped 2 failed → approved
+[2026-05-03 07:36:43] cycle=39 posted=49 approved=0 pending=0 failed=0
+[2026-05-03 07:36:43] DONE: all corroborators settled. posted=49 seed_pending=0

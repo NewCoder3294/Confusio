@@ -20,12 +20,31 @@ WEIGHTS: dict[str, float] = {
 
 
 def _level(signals: list[DetectorSignal]) -> VerdictLevel:
-    severities = {s.severity for s in signals}
-    if Severity.fail in severities:
+    """Weighted-vote verdict.
+
+    A single noisy classifier (e.g. ai_classifier flipping on a real iPhone
+    photo because of HDR / WebP re-encoding) must NOT decide the verdict on
+    its own when other detectors disagree. We sum weights of pass vs fail
+    signals; the net score lands the verdict in one of three bands:
+
+      net >= +0.15  → AUTHENTIC  (clear lean toward authentic)
+      net <= -0.15  → SYNTHETIC  (clear lean toward synthetic)
+      else          → SUSPECT    (mixed or weak signals — honest "unsure")
+
+    Severity.warn and Severity.na contribute zero. The thresholds were
+    chosen so that a single high-weight detector (gemini_visual = 0.30,
+    ai_classifier = 0.20) can land an authoritative verdict alone, but
+    that the verdict flips to SUSPECT whenever a fail and a pass disagree
+    enough to make the net stay inside the ±0.15 band.
+    """
+    pass_w = sum(WEIGHTS.get(s.detector, 0.0) for s in signals if s.severity is Severity.pass_)
+    fail_w = sum(WEIGHTS.get(s.detector, 0.0) for s in signals if s.severity is Severity.fail)
+    net = pass_w - fail_w
+    if net >= 0.15:
+        return VerdictLevel.AUTHENTIC
+    if net <= -0.15:
         return VerdictLevel.SYNTHETIC
-    if Severity.warn in severities:
-        return VerdictLevel.SUSPECT
-    return VerdictLevel.AUTHENTIC
+    return VerdictLevel.SUSPECT
 
 
 def _confidence(signals: list[DetectorSignal], level: VerdictLevel) -> float:
