@@ -37,6 +37,17 @@ def _level(signals: list[DetectorSignal]) -> VerdictLevel:
     that the verdict flips to SUSPECT whenever a fail and a pass disagree
     enough to make the net stay inside the ±0.15 band.
     """
+    # Decisive override: a cryptographically signed C2PA manifest declaring
+    # an AI producer (OpenAI, Google, Adobe, Stability, etc.) is conclusive.
+    # The producer themselves attested to AI generation — no CV-based detector
+    # can plausibly outvote a signed claim from the source. Skips the
+    # weighted-vote band entirely.
+    for s in signals:
+        if s.detector == "c2pa" and s.severity is Severity.fail:
+            ev = (s.evidence or "").lower()
+            if "ai producer" in ev or "ai source" in ev:
+                return VerdictLevel.SYNTHETIC
+
     pass_w = sum(WEIGHTS.get(s.detector, 0.0) for s in signals if s.severity is Severity.pass_)
     fail_w = sum(WEIGHTS.get(s.detector, 0.0) for s in signals if s.severity is Severity.fail)
     net = pass_w - fail_w
