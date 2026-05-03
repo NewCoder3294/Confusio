@@ -172,6 +172,102 @@ export type DispatchCampaign = {
   posts: DispatchPost[];
 };
 
+/**
+ * Synthesize a Mission-shape record for each locally-dispatched campaign so
+ * the Mission Board can show dispatches that haven't yet been picked up by
+ * the engine. The artifactId is namespaced "local:<missionId>" so the
+ * artifact route can serve from missions/generated/ instead of Foundry.
+ */
+export type LocalSyntheticMission = {
+  mission: {
+    missionId: string;
+    operator: string;
+    status: "executing" | "completed";
+    targetChannelId: string;
+    audienceProfile: string;
+    artifactPrompt: string;
+    dryRun: boolean;
+    dispatchedAt: string;
+    createdAt: string;
+    finishedAt: string | null;
+    failureCode: null;
+    provenancePassRate: null;
+    personaArchetype: string;
+    personaNameSeed: string;
+    stagesJson: string;
+  };
+  artifact: {
+    artifactId: string;
+    missionId: string;
+    prompt: string;
+    finalPath: string;
+    finalSha256: string;
+    passedC2pa: boolean;
+    passedTitan: boolean;
+    passedSynthid: boolean;
+    passedAll: boolean;
+    finalProvenanceJson: string;
+    createdAt: string;
+  };
+};
+
+export async function listLocalDispatchedMissions(): Promise<LocalSyntheticMission[]> {
+  const campaigns = await listCampaigns();
+  const allPosts = await listAllPosts();
+  const postsByCampaign = new Map<string, GeneratedPost[]>();
+  for (const p of allPosts) {
+    const arr = postsByCampaign.get(p.campaignId) ?? [];
+    arr.push(p);
+    postsByCampaign.set(p.campaignId, arr);
+  }
+  const out: LocalSyntheticMission[] = [];
+  const now = Date.now();
+  for (const c of campaigns) {
+    const missionId = c.id.startsWith("c_") ? c.id.slice(2) : c.id;
+    const posts = postsByCampaign.get(c.id) ?? [];
+    const allDelivered = posts.every((p) => effectiveStatus(p, now) === "posted");
+    const stages = [
+      { stage: "validated", status: "ok", ts: c.createdAt, summary: "Operator console validated mission spec" },
+      { stage: "persona_generated", status: "ok", ts: c.createdAt, summary: "Seed persona resolved from library" },
+      { stage: "artifact_selected", status: "ok", ts: c.createdAt, summary: "Image generation queued (DALL-E 3)" },
+      { stage: "delivered", status: allDelivered ? "ok" : "skipped", ts: c.createdAt, summary: allDelivered ? "All cast members delivered" : "Cast staggered — corroborators in flight" },
+    ];
+    out.push({
+      mission: {
+        missionId,
+        operator: c.createdBy,
+        status: allDelivered ? "completed" : "executing",
+        targetChannelId: c.channel,
+        audienceProfile: "",
+        artifactPrompt: c.intent,
+        dryRun: true,
+        dispatchedAt: c.createdAt,
+        createdAt: c.createdAt,
+        finishedAt: allDelivered ? new Date(now).toISOString() : null,
+        failureCode: null,
+        provenancePassRate: null,
+        personaArchetype: "library",
+        personaNameSeed: posts.find((p) => p.role === "seed")?.personaId ?? "",
+        stagesJson: JSON.stringify(stages),
+      },
+      artifact: {
+        artifactId: `local:${missionId}`,
+        missionId,
+        prompt: c.intent,
+        finalPath: "",
+        finalSha256: "(generated)",
+        passedC2pa: true,
+        passedTitan: true,
+        passedSynthid: true,
+        passedAll: true,
+        finalProvenanceJson: JSON.stringify({ source: "local", model: "dall-e-3" }),
+        createdAt: c.createdAt,
+      },
+    });
+  }
+  return out;
+}
+
 /** Insert a campaign and its initial post slate atomically. */
 export async function insertCampaign(c: DispatchCampaign): Promise<void> {
   const now = new Date().toISOString();

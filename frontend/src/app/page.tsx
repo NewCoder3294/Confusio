@@ -14,6 +14,7 @@ import { StatusPill } from "@/components/status-pill";
 import { DetectorPill } from "@/components/detector-pill";
 import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
 import { DispatchButton } from "@/components/dispatch-button";
+import { AutoRefresh } from "@/components/auto-refresh";
 
 type ArtifactVariant = "source" | "stripped" | "clean";
 
@@ -59,6 +60,7 @@ export default async function MissionBoardPage({
 
   return (
     <>
+      <AutoRefresh intervalMs={6000} />
       <PageHeader
         eyebrow="Offensive — Mission ledger"
         title="Mission Board"
@@ -426,7 +428,11 @@ function ArtifactPanel({
       <div className="bg-bg-base flex items-center justify-center overflow-hidden border-b border-border-subtle h-[320px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/api/artifact/${encodeURIComponent(artifact.artifactId)}?variant=${variant}`}
+          src={
+            artifact.artifactId.startsWith("local:")
+              ? `/api/campaign-image/${encodeURIComponent(artifact.artifactId.slice(6))}`
+              : `/api/artifact/${encodeURIComponent(artifact.artifactId)}?variant=${variant}`
+          }
           alt={`Mission ${mission.missionId} artifact (${variant})`}
           className="max-h-full max-w-full object-contain"
           style={{ imageOrientation: "from-image" }}

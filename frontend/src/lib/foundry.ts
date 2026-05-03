@@ -202,15 +202,29 @@ export type DashboardSnapshot = {
 };
 
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
-  const [missions, artifacts, detections, channels] = await Promise.all([
+  // Lazy import to avoid the campaigns.ts → personas.ts side-effect graph
+  // running for every Foundry-only call site.
+  const { listLocalDispatchedMissions } = await import("@/lib/campaigns");
+
+  const [missions, artifacts, detections, channels, local] = await Promise.all([
     listMissions(),
     listArtifacts(),
     listDetectionResults(),
     listChannels(),
+    listLocalDispatchedMissions(),
   ]);
+
+  // Merge synthetic local dispatches in front of Foundry data so freshly-
+  // dispatched missions show up immediately on the Mission Board.
+  const localMissions = local.map((l) => l.mission as Mission);
+  const localArtifacts = local.map((l) => l.artifact as Artifact);
+  const allMissions = [...localMissions, ...missions].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  );
 
   const artifactByMission = new Map<string, Artifact>();
   for (const a of artifacts) artifactByMission.set(a.missionId, a);
+  for (const a of localArtifacts) artifactByMission.set(a.missionId, a);
 
   const detectionsByArtifact = new Map<string, DetectionResult[]>();
   for (const d of detections) {
@@ -230,7 +244,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   for (const c of channels) channelById.set(c.channel_id, c);
 
   return {
-    missions,
+    missions: allMissions,
     artifactByMission,
     detectionsByArtifact,
     channelById,
