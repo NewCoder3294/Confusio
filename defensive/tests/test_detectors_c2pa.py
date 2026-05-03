@@ -8,14 +8,15 @@ from defensive.engine.verdict import Severity
 
 
 class TestC2pa:
-    def test_no_manifest_returns_warn(self, tiny_jpeg_bytes):
+    def test_no_manifest_returns_na(self, tiny_jpeg_bytes):
+        # Absence of a C2PA manifest is the norm — should not poison verdict.
         with patch(
             "defensive.engine.detectors.c2pa.read_c2pa",
             return_value={"status": "manifest_not_found"},
         ):
             sig = c2pa_run(tiny_jpeg_bytes, mime_type="image/jpeg")
         assert sig.detector == "c2pa"
-        assert sig.severity is Severity.warn
+        assert sig.severity is Severity.na
         assert "manifest" in sig.evidence.lower()
 
     def test_valid_manifest_returns_pass(self, tiny_jpeg_bytes):

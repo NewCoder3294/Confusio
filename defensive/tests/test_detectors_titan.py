@@ -25,11 +25,13 @@ class TestTitan:
         assert sig.severity is Severity.fail
         assert "titan" in sig.evidence.lower()
 
-    def test_watermark_absent_returns_warn(self, tiny_jpeg_bytes):
+    def test_watermark_absent_returns_na(self, tiny_jpeg_bytes):
+        # Only Bedrock-generated images carry the watermark; absence is the
+        # norm and must not be treated as evidence of synthesis.
         with patch(
             "defensive.engine.detectors.titan.detect_titan_watermark",
             return_value={"detection": "WATERMARK_NOT_DETECTED"},
         ):
             sig = titan_run(tiny_jpeg_bytes)
-        assert sig.severity is Severity.warn
+        assert sig.severity is Severity.na
         assert "absent" in sig.evidence.lower()
