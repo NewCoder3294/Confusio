@@ -563,9 +563,42 @@ def _stage_select_artifact(spec: MissionSpec, work_dir: Path) -> StageRecord:
                 stage="artifact_selected",
             ) from exc
 
+        # Seed the user's prompt with the anti-detection scaffold unless the
+        # spec explicitly opts out. The wrapper pins capture plausibility and
+        # — if an EXIF template is configured — pulls camera/lighting cues
+        # from it so the rendered pixels stay consistent with the EXIF claim.
+        seeded_prompt = prompt
+        if not art.get("skip_system_prompt"):
+            try:
+                from forensic.system_prompt import (
+                    parse_camera_hint_from_path,
+                    wrap_artifact_prompt,
+                    CameraHint,
+                )
+                cam_hint: CameraHint | None = None
+                tpl = art.get("exif_template")
+                if tpl:
+                    tpl_path = (REPO_ROOT / tpl).resolve()
+                    try:
+                        tpl_path.relative_to(REPO_ROOT.resolve())
+                    except ValueError:
+                        tpl_path = None  # ignore malformed; not security-critical here
+                    if tpl_path and tpl_path.exists():
+                        cam_hint = parse_camera_hint_from_path(tpl_path)
+                seeded_prompt = wrap_artifact_prompt(
+                    prompt,
+                    camera_hint=cam_hint,
+                    persona_archetype=(spec.persona or {}).get("archetype"),
+                )
+            except Exception as exc:
+                # Never block generation on a wrapper failure — fall through
+                # to the raw user prompt and surface the issue in the record.
+                log.warning("artifact prompt wrapper failed (%s); using raw prompt", exc)
+                seeded_prompt = prompt
+
         try:
             gen = generate_image(
-                prompt=prompt,
+                prompt=seeded_prompt,
                 output_path=target,
                 size=art.get("size", "1024x1024"),
                 quality=art.get("quality", "standard"),
@@ -587,7 +620,9 @@ def _stage_select_artifact(spec: MissionSpec, work_dir: Path) -> StageRecord:
                 "model": gen.model,
                 "size": gen.size,
                 "quality": gen.quality,
-                "prompt": gen.prompt,
+                "user_prompt": prompt,
+                "prompt": gen.prompt,  # seeded prompt actually sent to DALL-E
+                "system_prompt_applied": seeded_prompt is not prompt,
                 "revised_prompt": gen.revised_prompt,
                 "work_path": str(target),
                 "sha256": _sha256(target),
@@ -716,13 +751,120 @@ def _stage_exif_transplant(spec: MissionSpec, work_dir: Path) -> StageRecord:
     )
 
 
+def _stage_anti_detection(spec: MissionSpec, work_dir: Path) -> StageRecord:
+    """Run the forensic anti-detection chain: cascade laundering → optional
+    PRNU injection → optional signature match → multi-detector self-check.
+
+    Skipped when ``artifact.anti_detection`` is explicitly false. Reads the
+    most recent artifact (``artifact_clean.jpg`` if EXIF transplant ran,
+    else falls back) and writes ``artifact_final.jpg``.
+
+    Spec fields (all optional):
+        artifact.anti_detection: bool                 — toggle (default true)
+        artifact.cascade: bool                        — pixel laundering (default true)
+        artifact.donor_jpeg: <repo-relative>          — JPEG signature donor
+        artifact.prnu_pattern: <repo-relative>        — .npy PRNU pattern
+        artifact.prnu_alpha: float                    — PRNU strength (default 0.025)
+        artifact.max_p_ai: float                      — abort threshold (default 0.40)
+        artifact.self_check_strict: bool              — abort on threshold (default true)
+    """
+    art = spec.artifact
+    if art.get("anti_detection") is False:
+        return StageRecord(
+            stage="anti_detection",
+            status="skipped",
+            ts=_now_iso(),
+            detail={"reason": "artifact.anti_detection=false"},
+        )
+
+    candidates = ["artifact_clean.jpg", "artifact_stripped.jpg", "artifact_source.jpg"]
+    src = next((work_dir / c for c in candidates if (work_dir / c).exists()), None)
+    if src is None:
+        raise MissionExecutionError(
+            "no artifact present at anti_detection stage",
+            code="generation_failed",
+            stage="anti_detection",
+        )
+    out = work_dir / "artifact_final.jpg"
+
+    def _resolve_repo_path(rel: str | None) -> Path | None:
+        if not rel:
+            return None
+        p = (REPO_ROOT / rel).resolve()
+        try:
+            p.relative_to(REPO_ROOT.resolve())
+        except ValueError:
+            raise MissionExecutionError(
+                f"anti_detection: path {rel!r} resolves outside the repo root",
+                code="generation_failed",
+                stage="anti_detection",
+            )
+        return p
+
+    donor = _resolve_repo_path(art.get("donor_jpeg"))
+    prnu_pattern = _resolve_repo_path(art.get("prnu_pattern"))
+
+    try:
+        from forensic.integration import (
+            AntiDetectionAbort,
+            AntiDetectionOptions,
+            apply_anti_detection_chain,
+        )
+    except ImportError as exc:
+        raise MissionExecutionError(
+            f"forensic.integration not importable: {exc}",
+            code="generation_failed",
+            stage="anti_detection",
+        ) from exc
+
+    opts = AntiDetectionOptions(
+        cascade=bool(art.get("cascade", True)),
+        prnu_pattern=prnu_pattern,
+        prnu_alpha=float(art.get("prnu_alpha", 0.025)),
+        donor_jpeg=donor,
+        self_check=bool(art.get("self_check", True)),
+        max_p_ai=float(art.get("max_p_ai", 0.40)),
+        strict=bool(art.get("self_check_strict", True)),
+    )
+
+    try:
+        report = apply_anti_detection_chain(src, out, options=opts)
+    except AntiDetectionAbort as exc:
+        return StageRecord(
+            stage="anti_detection",
+            status="error",
+            ts=_now_iso(),
+            detail={
+                "reason": str(exc),
+                "report": exc.report,
+                "before_sha": _sha256(src),
+            },
+        )
+
+    return StageRecord(
+        stage="anti_detection",
+        status="ok",
+        ts=_now_iso(),
+        detail={
+            "before_sha": _sha256(src),
+            "after_sha": _sha256(out),
+            "report": report,
+        },
+    )
+
+
 def _stage_provenance_check(
     spec: MissionSpec, work_dir: Path, *, run_titan: bool, run_google: bool
 ) -> tuple[StageRecord, dict[str, Any]]:
     """Run the C2PA + (optional) Titan + (optional) Google provenance pipeline.
     Returns (stage_record, provenance_report).
     """
-    candidates = ["artifact_clean.jpg", "artifact_stripped.jpg", "artifact_source.jpg"]
+    candidates = [
+        "artifact_final.jpg",
+        "artifact_clean.jpg",
+        "artifact_stripped.jpg",
+        "artifact_source.jpg",
+    ]
     artifact_path = next(
         (work_dir / c for c in candidates if (work_dir / c).exists()), None
     )
@@ -1025,6 +1167,20 @@ def execute_mission(
         result.stages.append(_stage_select_artifact(spec, work_dir))
         result.stages.append(_stage_watermark_strip(spec, work_dir))
         result.stages.append(_stage_exif_transplant(spec, work_dir))
+
+        anti_stage = _stage_anti_detection(spec, work_dir)
+        result.stages.append(anti_stage)
+        if anti_stage.status == "error":
+            # Self-check abort gate fired (or chain failed). Don't ship.
+            result.status = "failed"
+            result.error = {
+                "stage": "anti_detection",
+                "code": "self_check_refused",
+                "message": (anti_stage.detail or {}).get(
+                    "reason", "anti-detection chain refused output"
+                ),
+            }
+            return result
 
         prov_stage, prov_report = _stage_provenance_check(
             spec, work_dir, run_titan=run_titan, run_google=run_google
