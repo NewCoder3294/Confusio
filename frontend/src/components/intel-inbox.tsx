@@ -90,7 +90,7 @@ export function IntelInbox() {
   }
 
   return (
-    <div className="grid grid-cols-[320px_1fr] gap-3 h-full min-h-0">
+    <div className="grid grid-cols-[320px_1fr] gap-3 items-start">
       <Card title="Submit">
         <div className="p-4 flex flex-col gap-3">
           <input

@@ -66,7 +66,7 @@ export default async function MissionBoardPage({
         }
       />
 
-      <div className="flex-1 min-h-0 max-w-[1400px] w-full mx-auto px-6 py-3 grid grid-cols-[280px_1fr] gap-3">
+      <div className="max-w-[1400px] w-full mx-auto px-6 py-3 grid grid-cols-[280px_1fr] gap-3 items-start">
         <Card title="Missions" meta={`${snap.missions.length}`}>
           <MissionList
             missions={snap.missions}
