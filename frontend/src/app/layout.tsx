@@ -9,7 +9,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Mendacity — Operator Console",
+  title: "Confusio — Operator Console",
   description:
     "Title 10 §1631 synthetic-deception toolchain. Operator console for INSCOM-aligned mission planning.",
 };
@@ -37,7 +37,7 @@ function NavBar() {
       <div className="mx-auto px-6 h-12 flex items-center justify-between">
         <div className="flex items-baseline gap-6">
           <Link href="/" className="font-mono text-fg-default tracking-wider text-sm">
-            <span className="text-classified">/</span>MENDACITY
+            <span className="text-classified">/</span>CONFUSIO
           </Link>
           <span className="text-fg-faint text-[11px] font-mono uppercase tracking-widest">
             Operator Console
