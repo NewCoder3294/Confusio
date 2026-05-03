@@ -378,3 +378,40 @@ def test_validate_result_dict_null_error_is_ok():
     issues = _validate_result_dict(d)
     # error=None is the success-shape; no issues from that.
     assert not any("error" in i for i in issues)
+
+
+# ---------------------------------------------------------------------------
+# Path traversal guards (security)
+# ---------------------------------------------------------------------------
+
+
+def test_fixture_path_traversal_rejected(tmp_path):
+    """A spec that tries to read /etc/passwd via fixture: must be rejected."""
+    from mendacity.mission import (
+        MissionExecutionError,
+        _stage_select_artifact,
+    )
+    d = _good_spec_dict()
+    d["artifact"]["source"] = "fixture:../../../../etc/passwd"
+    spec = MissionSpec.from_dict(d)
+    with pytest.raises(MissionExecutionError) as exc:
+        _stage_select_artifact(spec, tmp_path)
+    assert "outside the repo root" in str(exc.value)
+    assert exc.value.code == "artifact_source_missing"
+
+
+def test_exif_template_path_traversal_rejected(tmp_path):
+    """A spec that points exif_template outside REPO_ROOT must be rejected."""
+    from mendacity.mission import (
+        MissionExecutionError,
+        _stage_exif_transplant,
+    )
+    # Need an existing source file in work_dir so we get past the
+    # "missing artifact_source.jpg" check.
+    (tmp_path / "artifact_source.jpg").write_bytes(b"\xff\xd8\xff" + b"\x00" * 100)
+    d = _good_spec_dict()
+    d["artifact"]["exif_template"] = "../../../../etc/passwd"
+    spec = MissionSpec.from_dict(d)
+    with pytest.raises(MissionExecutionError) as exc:
+        _stage_exif_transplant(spec, tmp_path)
+    assert "outside the repo root" in str(exc.value)

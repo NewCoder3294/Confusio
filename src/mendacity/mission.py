@@ -282,17 +282,10 @@ def validate_spec(spec: MissionSpec) -> None:
     """
     issues = _schema_check(spec)
     if issues:
-        # Distinguish authorization issues from generic schema for the right code.
-        auth_issues = [
-            i for i in issues
-            if "authority" in i or "target_class" in i
-        ]
         msg = (
             f"schema validation failed with {len(issues)} issue(s):\n  - "
             + "\n  - ".join(issues)
         )
-        # If the only failures are sandbox-channel-related, prefer that code;
-        # otherwise validation_failed.
         raise MissionValidationError(msg, code="validation_failed")
 
     chan = spec.target.get("channel")
@@ -522,7 +515,17 @@ def _stage_select_artifact(spec: MissionSpec, work_dir: Path) -> StageRecord:
 
     # Fixture path
     if src.startswith("fixture:"):
-        src_path = REPO_ROOT / src[len("fixture:") :]
+        src_path = (REPO_ROOT / src[len("fixture:") :]).resolve()
+        # Path traversal guard: spec-supplied path must resolve INSIDE REPO_ROOT.
+        # Without this, a malicious spec could read /etc/passwd via ../../etc/passwd.
+        try:
+            src_path.relative_to(REPO_ROOT.resolve())
+        except ValueError:
+            raise MissionExecutionError(
+                f"fixture path {src!r} resolves outside the repo root",
+                code="artifact_source_missing",
+                stage="artifact_selected",
+            )
         if not src_path.exists():
             raise MissionExecutionError(
                 f"fixture not found: {src_path}",
@@ -659,7 +662,16 @@ def _stage_exif_transplant(spec: MissionSpec, work_dir: Path) -> StageRecord:
             detail={"reason": "no exif_template specified"},
         )
 
-    template_path = REPO_ROOT / template
+    template_path = (REPO_ROOT / template).resolve()
+    # Path traversal guard: spec-supplied template must stay inside the repo.
+    try:
+        template_path.relative_to(REPO_ROOT.resolve())
+    except ValueError:
+        raise MissionExecutionError(
+            f"exif_template {template!r} resolves outside the repo root",
+            code="artifact_source_missing",
+            stage="exif_transplant",
+        )
     if not template_path.exists():
         raise MissionExecutionError(
             f"EXIF template missing: {template_path}",
@@ -1274,8 +1286,6 @@ def watch_inbox(
             else:
                 # Concurrent path. Track in-flight so the next sweep doesn't
                 # re-pick the same file while it's processing.
-                from concurrent.futures import Future
-
                 def _wrap(p: Path) -> None:
                     try:
                         _process_one_inbox_file(

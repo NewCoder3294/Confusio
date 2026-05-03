@@ -180,7 +180,7 @@ def _cmd_audit(args: argparse.Namespace) -> int:
     print(f"  C2PA:    {d['provenance_after'].get('c2pa', {}).get('status')}")
     print()
     pix = d["transform"].get("pixel_diff", {})
-    print(f"TRANSFORM")
+    print("TRANSFORM")
     print(f"  pixels modified : {pix.get('pct_modified')}%")
     print(f"  mean RGB delta  : {pix.get('mean_delta')}")
     print(f"  EXIF template   : {d['transform'].get('exif_template')}")
@@ -260,7 +260,7 @@ def _cmd_personas(args: argparse.Namespace) -> int:
     print()
     expired = [pid for pid, s in statuses.items() if s != "AUTHORIZED"]
     if expired:
-        print(f"To re-login expired personas, run interactively:")
+        print("To re-login expired personas, run interactively:")
         for pid in expired:
             print(f"  python -m social.scripts.login_persona {pid}")
     return 0
@@ -324,7 +324,7 @@ def _cmd_audit_mission(args: argparse.Namespace) -> int:
         "detail", {}
     ).get("work_path")
     if not src:
-        print(f"no source path in artifact_selected stage", file=sys.stderr)
+        print("no source path in artifact_selected stage", file=sys.stderr)
         return 2
     src_p = Path(src)
     if not src_p.exists():
