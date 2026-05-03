@@ -16,9 +16,18 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Streamlit's script runner only puts the script's own directory on sys.path,
+# not the project root. Prepend the project root so `from social.…` works
+# whether the app is launched via `streamlit run social/app.py` or via the
+# headless test harness.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 import streamlit as st
 
@@ -212,14 +221,26 @@ html, body, [data-testid="stAppViewContainer"] {
   color: var(--paper) !important;
   font-family: var(--sans);
 }
-[data-testid="stHeader"] { background: transparent !important; }
-[data-testid="stToolbar"] { display: none !important; }
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+[data-testid="stStatusWidget"],
+[data-testid="stDecoration"],
+[data-testid="stAppDeployButton"],
+.stDeployButton,
+.stAppDeployButton,
+.stMainMenu {
+  display: none !important;
+  visibility: hidden !important;
+}
 .block-container {
-  padding-top: 0.5rem !important;
-  padding-bottom: 4rem !important;
-  max-width: 1280px !important;
+  padding-top: 0.25rem !important;
+  padding-bottom: 3rem !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  max-width: 1640px !important;
 }
 footer { visibility: hidden; }
+[data-testid="stMainBlockContainer"] { gap: 0 !important; }
 
 /* Type system */
 body, p, div, span, li, label {
@@ -233,10 +254,13 @@ code, pre, kbd, .mono { font-family: var(--mono); }
 
 /* ──── classification banner ──── */
 .banner {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
-  padding: 10px 14px 8px 14px;
-  margin-bottom: 24px;
+  padding: 10px 16px 8px 16px;
+  margin: -0.25rem -1.5rem 18px -1.5rem;
   background: var(--ink-1);
   font-family: var(--mono);
   font-size: 11.5px;
@@ -244,24 +268,51 @@ code, pre, kbd, .mono { font-family: var(--mono); }
   color: var(--paper-muted);
   display: flex;
   flex-wrap: wrap;
-  gap: 14px 22px;
+  gap: 6px 18px;
   align-items: center;
 }
 .banner .b-title {
   color: var(--paper);
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.20em;
 }
 .banner .b-sep {
   color: var(--paper-faint);
   user-select: none;
+  opacity: 0.7;
 }
-.banner .b-key { color: var(--paper-faint); }
+.banner .b-key { color: var(--paper-faint); font-size: 10.5px; }
 .banner .b-val { color: var(--paper); font-weight: 500; }
+.banner .spacer { flex: 1 1 auto; }
+
+/* KPI strip on the right side of the banner */
+.kpis { display: inline-flex; gap: 2px; align-items: stretch; }
+.kpi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--rule);
+  background: var(--ink-0);
+  padding: 4px 11px 3px 11px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--paper-faint);
+  text-transform: uppercase;
+}
+.kpi .n { color: var(--paper); font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.kpi.pending  { color: var(--pending);  border-color: color-mix(in oklch, var(--pending) 40%, var(--rule)); }
+.kpi.pending .n  { color: var(--pending); }
+.kpi.posted   { color: var(--posted);   border-color: color-mix(in oklch, var(--posted) 40%, var(--rule)); }
+.kpi.posted .n   { color: var(--posted); }
+.kpi.failed   { color: var(--failed);   border-color: color-mix(in oklch, var(--failed) 40%, var(--rule)); }
+.kpi.failed .n   { color: var(--failed); }
+.kpi.active   { color: var(--paper-muted); }
+.kpi.active .n   { color: var(--paper); }
 
 .system-armed     { color: var(--approved) !important; }
 .system-stale     { color: var(--pending) !important; }
-.system-offline   { color: var(--failed) !important; }
+.system-offline   { color: var(--paper-faint) !important; }
 .system-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 50%;
   background: currentColor; margin-right: 6px; vertical-align: middle;
@@ -270,13 +321,14 @@ code, pre, kbd, .mono { font-family: var(--mono); }
 
 /* ──── section headers (dossier markers) ──── */
 .section-head {
-  display: flex; align-items: baseline; gap: 14px;
+  display: flex; align-items: baseline; gap: 12px;
   border-top: 1px solid var(--rule);
-  padding-top: 18px;
-  margin: 32px 0 18px 0;
+  padding: 12px 14px 10px 14px;
+  margin: 0 0 8px 0;
+  background: var(--ink-1);
   font-family: var(--mono);
-  font-size: 11.5px;
-  letter-spacing: 0.20em;
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
   color: var(--paper-muted);
   text-transform: uppercase;
 }
@@ -326,8 +378,8 @@ code, pre, kbd, .mono { font-family: var(--mono); }
 .dcard {
   background: var(--ink-1);
   border: 1px solid var(--rule);
-  border-left-width: 1px;       /* explicit — never side-stripe */
-  margin-bottom: 18px;
+  border-left-width: 1px;
+  margin: 0;
   padding: 0;
 }
 .dcard-head {
@@ -425,12 +477,27 @@ code, pre, kbd, .mono { font-family: var(--mono); }
   border-radius: 1px !important;
   color: var(--paper) !important;
   font-family: var(--mono) !important;
-  font-size: 11px !important;
-  letter-spacing: 0.20em !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.18em !important;
   text-transform: uppercase !important;
-  padding: 9px 16px !important;
+  padding: 6px 12px !important;
+  min-height: 0 !important;
+  line-height: 1 !important;
+  height: 30px !important;
   font-weight: 600 !important;
   transition: background-color 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out;
+}
+[data-testid="stButton"] > button p,
+[data-testid="stFormSubmitButton"] > button p,
+[data-testid="stButton"] > button [data-testid="stMarkdownContainer"],
+[data-testid="stFormSubmitButton"] > button [data-testid="stMarkdownContainer"] {
+  margin: 0 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+[data-testid="stButton"] > button,
+[data-testid="stFormSubmitButton"] > button {
+  white-space: nowrap !important;
 }
 [data-testid="stButton"] > button:hover,
 [data-testid="stFormSubmitButton"] > button:hover {
@@ -550,18 +617,102 @@ code, pre, kbd, .mono { font-family: var(--mono); }
 .roster-row .pname { color: var(--paper); font-size: 13px; }
 .roster-row .pid { color: var(--paper-faint); font-family: var(--mono); font-size: 11px; }
 
+/* ──── dashboard column shells ──── */
+[data-testid="stMain"] [data-testid="stVerticalBlock"] {
+  gap: 0.5rem !important;
+}
+.panel {
+  border: 1px solid var(--rule);
+  background: var(--ink-1);
+  margin-bottom: 14px;
+}
+.panel > .section-head {
+  border-top: none;
+  margin: 0;
+  border-bottom: 1px solid var(--rule);
+}
+.panel-body { padding: 14px 14px 12px 14px; }
+.rail .dcard { margin-bottom: 0; }
+.rail .dcard-body { font-size: 14px; padding: 12px 14px 12px 14px; }
+.rail .dcard-meta { padding: 10px 14px 10px 14px; grid-template-columns: 90px 1fr; row-gap: 3px; }
+.rail .dcard-foot { padding: 8px 14px; }
+
+/* Compact column gutters in Streamlit's column blocks */
+[data-testid="stHorizontalBlock"] { gap: 8px !important; }
+
+/* Buttons that immediately follow a dcard should attach to it visually */
+.rail [data-testid="stHorizontalBlock"] {
+  margin-top: -1px !important;
+  margin-bottom: 14px;
+}
+.rail [data-testid="stHorizontalBlock"] [data-testid="stButton"] > button {
+  border-radius: 0 !important;
+  width: 100% !important;
+}
+
+/* In-card actions row */
+.dcard-actions {
+  display: flex; gap: 8px;
+  padding: 10px 14px 14px 14px;
+  border-top: 1px solid var(--rule-soft);
+}
+
+/* Streamlit elements that follow a dcard should hug it (no big gap) */
+.tight + [data-testid="stHorizontalBlock"],
+.tight + [data-testid="stButton"] { margin-top: -8px; }
+
+/* Section row separators */
+[data-testid="stExpander"] {
+  border: 1px solid var(--rule) !important;
+  border-radius: 1px !important;
+  background: var(--ink-1) !important;
+}
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] details > summary {
+  font-family: var(--mono) !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.20em !important;
+  text-transform: uppercase !important;
+  color: var(--paper) !important;
+  padding: 12px 14px !important;
+}
+
 /* Reduce motion */
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
 </style>
 """
-    st.markdown(css, unsafe_allow_html=True)
+    # Strip CSS comments — Streamlit's markdown processor treats indented CSS
+    # like a code block and silently truncates the rest of the rule set.
+    # st.html bypasses markdown entirely; we still strip comments as belt-and-
+    # suspenders against any future renderer that might trip on them.
+    import re
+    cleaned = re.sub(r"/\*.*?\*/", "", css, flags=re.DOTALL)
+    st.html(cleaned)
 
 
 # ────────────────────────────────────────────────────────────────────────
 # Banner
 # ────────────────────────────────────────────────────────────────────────
+
+
+def _live_counts() -> dict[str, int]:
+    """Pull KPI counts from sqlite for the banner strip."""
+    orch = _get_orchestrator()
+    pending = len(_run(orch.storage.list_pending()))
+    active = _run(orch.storage.list_active_campaigns())
+    posted = 0
+    failed = 0
+    for c in active:
+        posted += len(
+            _run(orch.storage.list_posts_for_campaign(c.id, statuses=("posted",)))
+        )
+        failed += len(
+            _run(orch.storage.list_posts_for_campaign(c.id, statuses=("failed",)))
+        )
+    running = sum(1 for c in active if c.status == "running")
+    return {"pending": pending, "posted": posted, "failed": failed, "active": running}
 
 
 def render_banner() -> None:
@@ -576,24 +727,31 @@ def render_banner() -> None:
     allowed = _allowed_channels()
     if allowed:
         channel_short = _short_channel(allowed[0])
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
     operator = _operator_id().upper()
+    k = _live_counts()
 
     html = f"""
 <div class="banner">
-  <span class="b-title">// MENDACITY OPERATOR CONSOLE</span>
+  <span class="b-title">// MENDACITY</span>
   <span class="b-sep">//</span>
-  <span><span class="b-key">OPERATOR</span> <span class="b-val">{operator}</span></span>
+  <span><span class="b-key">OP</span> <span class="b-val">{operator}</span></span>
   <span class="b-sep">//</span>
-  <span><span class="b-key">CHANNEL</span> <span class="b-val mono">{channel_short}</span></span>
+  <span><span class="b-key">CH</span> <span class="b-val mono">{channel_short}</span></span>
   <span class="b-sep">//</span>
-  <span><span class="b-key">SYSTEM</span> <span class="b-val {sys_class}"><span class="system-dot"></span>{sys_status}</span> <span class="b-key">({age_str})</span></span>
+  <span><span class="b-key">SYS</span> <span class="b-val {sys_class}"><span class="system-dot"></span>{sys_status}</span> <span class="b-key mono">{age_str}</span></span>
   <span class="b-sep">//</span>
   <span class="b-key mono">{now}</span>
-  <span class="b-sep">//</span>
+  <span class="spacer"></span>
+  <span class="kpis">
+    <span class="kpi pending"><span class="n">{k["pending"]}</span> Pending</span>
+    <span class="kpi posted"><span class="n">{k["posted"]}</span> Posted</span>
+    <span class="kpi failed"><span class="n">{k["failed"]}</span> Failed</span>
+    <span class="kpi active"><span class="n">{k["active"]}</span> Active</span>
+  </span>
 </div>
 """
-    st.markdown(html, unsafe_allow_html=True)
+    st.html(html)
 
 
 # ────────────────────────────────────────────────────────────────────────
@@ -610,60 +768,91 @@ def _section_head(numeral: str, title: str, sub: str = "") -> None:
     )
 
 
-def section_operational_directive() -> None:
+def section_active_campaigns() -> None:
+    """Right-rail panel: list of active campaigns with PAUSE/ABORT inside the card."""
+    orch = _get_orchestrator()
+    personas = _get_personas()
+    active = _run(orch.storage.list_active_campaigns())
+    running = [c for c in active if c.status in ("running", "paused")]
+
+    sub = f"{len(running)}" if running else "—"
+    _section_head("II", "ACTIVE CAMPAIGNS", sub)
+
+    if not running:
+        st.html(
+            '<div class="standby" style="padding:18px 14px;">'
+            '// NO ACTIVE DIRECTIVE //'
+            '</div>'
+        )
+        return
+
+    for c in running:
+        roster_lines = "".join(
+            f'<div class="roster-row">'
+            f'<span class="glyph">{ROLE_GLYPH.get(role, "·")}</span>'
+            f'<span class="pname">{personas[pid].name if pid in personas else pid}</span>'
+            f'<span class="mono" style="color:var(--paper-faint);font-size:10.5px;text-align:right;">'
+            f'{role.upper()}</span>'
+            f'<span class="mono" style="color:var(--paper-faint);font-size:10.5px;text-align:right;">'
+            f'{personas[pid].language.upper() if pid in personas else "—"}</span>'
+            f'</div>'
+            for pid, role in c.roster.items()
+        )
+        stamp_class = "approved" if c.status == "running" else "pending"
+        stamp_label = c.status.upper()
+        st.html(
+            f"""
+<div class="dcard">
+  <div class="dcard-head">
+    <div><span class="stamp {stamp_class}"><span class="dot"></span>{stamp_label}</span></div>
+    <div class="mono" style="color:var(--paper-faint);font-size:10.5px;letter-spacing:0.10em;text-align:right;">
+      {c.id[-8:]}<br>{_format_ts_short(c.created_at)}
+    </div>
+  </div>
+  <div class="dcard-body" style="font-size:14px;padding:12px 14px;">
+    {c.intent}
+  </div>
+  <div class="dcard-meta">
+    <div class="k">CHANNEL</div>  <div class="v mono" style="font-size:11px;">{_short_channel(c.channel)}</div>
+    <div class="k">DELAY</div>    <div class="v mono">{c.delay_range_seconds[0]}–{c.delay_range_seconds[1]} s</div>
+  </div>
+  <div style="padding:6px 14px 0 14px;">
+    {roster_lines}
+  </div>
+</div>
+"""
+        )
+        cols = st.columns(2)
+        with cols[0]:
+            label = "RESUME" if c.status == "paused" else "PAUSE"
+            if st.button(label, key=f"pp_{c.id}", use_container_width=True):
+                if c.status == "paused":
+                    _run(orch.resume(c.id))
+                else:
+                    _run(orch.pause(c.id))
+                st.rerun()
+        with cols[1]:
+            if st.button("ABORT", key=f"ab_{c.id}", use_container_width=True):
+                _run(orch.abort(c.id))
+                st.rerun()
+
+
+def section_new_directive() -> None:
+    """Right-rail collapsible: new directive form."""
     orch = _get_orchestrator()
     personas = _get_personas()
     allowed = _allowed_channels()
-    active = _run(orch.storage.list_active_campaigns())
-    running = [c for c in active if c.status == "running"]
+    running_count = sum(
+        1 for c in _run(orch.storage.list_active_campaigns()) if c.status == "running"
+    )
 
-    sub = "ISSUE NEW DIRECTIVE" if not running else f"{len(running)} ACTIVE"
-    _section_head("I", "OPERATIONAL DIRECTIVE", sub)
-
-    if running:
-        for c in running:
-            roster_summary = ", ".join(
-                f"{personas[pid].name if pid in personas else pid} ({role})"
-                for pid, role in c.roster.items()
-            )
-            st.markdown(
-                f"""
-<div class="dcard">
-  <div class="dcard-head">
-    <div>
-      <span class="stamp pending"><span class="dot"></span>{STATUS_LABEL.get(c.status, c.status.upper())}</span>
-    </div>
-    <div class="mono" style="color:var(--paper-faint);font-size:11px;letter-spacing:0.10em;">
-      {c.id} · ISSUED {_format_ts_full(c.created_at)}
-    </div>
-  </div>
-  <div class="dcard-meta">
-    <div class="k">INTENT</div>     <div class="v">{c.intent}</div>
-    <div class="k">CHANNEL</div>    <div class="v mono">{_short_channel(c.channel)}</div>
-    <div class="k">ROSTER</div>     <div class="v">{roster_summary}</div>
-    <div class="k">DELAY WIN.</div> <div class="v mono">{c.delay_range_seconds[0]}–{c.delay_range_seconds[1]} s</div>
-  </div>
-</div>
-""",
-                unsafe_allow_html=True,
-            )
-            cols = st.columns([1, 1, 1, 6])
-            with cols[0]:
-                if st.button("PAUSE", key=f"pause_{c.id}"):
-                    _run(orch.pause(c.id))
-                    st.rerun()
-            with cols[1]:
-                if st.button("ABORT", key=f"abort_{c.id}"):
-                    _run(orch.abort(c.id))
-                    st.rerun()
-
-    with st.expander("ISSUE NEW DIRECTIVE" if running else "OPEN DIRECTIVE FORM",
-                     expanded=not running):
+    _section_head("III", "ISSUE DIRECTIVE", "")
+    with st.expander("OPEN FORM", expanded=(running_count == 0)):
         with st.form("new_campaign", clear_on_submit=False):
             intent = st.text_area(
-                "INTENT — what must be conveyed (operator's words)",
-                placeholder="e.g. unusual movement on the M-04 highway around dawn",
-                height=90,
+                "INTENT (operator's words)",
+                placeholder="e.g. unusual movement on M-04 around dawn",
+                height=80,
             )
 
             if allowed:
@@ -671,13 +860,12 @@ def section_operational_directive() -> None:
             else:
                 channel = st.text_input("CHANNEL", value="")
 
-            st.markdown(
+            st.html(
                 '<div style="font-family:var(--mono);font-size:10.5px;'
                 'letter-spacing:0.18em;color:var(--paper-faint);'
                 'text-transform:uppercase;margin:14px 0 6px 0;">'
-                'ROSTER &mdash; assign exactly one SEED'
-                '</div>',
-                unsafe_allow_html=True,
+                'ROSTER &mdash; exactly one SEED'
+                '</div>'
             )
             roster: dict[str, str] = {}
             persona_list = list(personas.items())
@@ -688,11 +876,10 @@ def section_operational_directive() -> None:
                         " ", value=True, key=f"inc_{pid}", label_visibility="collapsed"
                     )
                 with cols[1]:
-                    st.markdown(
+                    st.html(
                         f'<div style="padding-top:6px;font-size:13px;color:var(--paper);">'
                         f'{p.name} <span class="mono" style="color:var(--paper-faint);font-size:11px;">'
-                        f'{pid}</span></div>',
-                        unsafe_allow_html=True,
+                        f'{pid}</span></div>'
                     )
                 with cols[2]:
                     role = st.selectbox(
@@ -702,22 +889,22 @@ def section_operational_directive() -> None:
                         label_visibility="collapsed",
                     )
                 with cols[3]:
-                    st.markdown(
+                    st.html(
                         f'<div style="padding-top:8px;font-family:var(--mono);'
                         f'font-size:10.5px;color:var(--paper-faint);text-align:right;">'
-                        f'{p.language.upper()}</div>',
-                        unsafe_allow_html=True,
+                        f'{p.language.upper()}</div>'
                     )
                 if included:
                     roster[pid] = role
 
-            cdelay1, cdelay2, _spacer = st.columns([1, 1, 4])
+            cdelay1, cdelay2 = st.columns(2)
             with cdelay1:
                 delay_min = st.number_input("DELAY MIN (s)", min_value=0, value=300, step=30)
             with cdelay2:
                 delay_max = st.number_input("DELAY MAX (s)", min_value=0, value=1800, step=60)
 
-            submitted = st.form_submit_button("ISSUE DIRECTIVE", type="primary")
+            submitted = st.form_submit_button("ISSUE DIRECTIVE", type="primary",
+                                              use_container_width=True)
             if submitted:
                 try:
                     c = Campaign.new(
@@ -760,7 +947,7 @@ def section_approval_queue() -> None:
     personas = _get_personas()
     pending = _run(orch.storage.list_pending())
     sub = f"{len(pending)} AWAITING DECISION" if pending else "STANDBY"
-    _section_head("II", "APPROVAL QUEUE", sub)
+    _section_head("I", "APPROVAL QUEUE", sub)
 
     if not pending:
         st.markdown(
@@ -820,7 +1007,7 @@ def section_approval_queue() -> None:
             unsafe_allow_html=True,
         )
 
-        action_cols = st.columns([1.4, 1.4, 1, 1, 4])
+        action_cols = st.columns([1.2, 1.7, 1, 1, 3.5])
         with action_cols[0]:
             if not is_armed:
                 if st.button("APPROVE", key=f"ap_{post.id}", type="primary"):
@@ -877,7 +1064,7 @@ _EVENT_TONE = {
 def section_audit_trace() -> None:
     orch = _get_orchestrator()
     personas = _get_personas()
-    _section_head("III", "AUDIT TRACE", "APPEND-ONLY · SOURCE OF TRUTH")
+    _section_head("IV", "AUDIT TRACE", "APPEND-ONLY")
 
     tabs = st.tabs(["CHANNEL", "EVENTS", "CAMPAIGNS"])
 
@@ -999,9 +1186,19 @@ def main() -> None:
     )
     _inject_style()
     render_banner()
-    section_operational_directive()
-    section_approval_queue()
-    section_audit_trace()
+
+    # Dashboard: two-column layout. Approval queue is the primary workspace
+    # (left, ~60%); right rail stacks active campaigns, the new-directive
+    # form, and the audit trace.
+    primary, rail = st.columns([1.6, 1], gap="medium")
+    with primary:
+        section_approval_queue()
+    with rail:
+        st.markdown('<div class="rail">', unsafe_allow_html=True)
+        section_active_campaigns()
+        section_new_directive()
+        section_audit_trace()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 main()
