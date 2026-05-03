@@ -542,7 +542,7 @@ function DetectorGrid({ states }: { states: Record<string, DetectorState> }) {
 /* ─────────────────────────────────────────────────────────────────────── */
 
 const SAMPLES = [
-  { key: "truck-convoy", label: "01 · truck convoy", path: "/samples/01-truck-convoy.png", mime: "image/png" },
+  { key: "b2-bomber", label: "01 · B2 bomber", path: "/samples/01-b2-bomber.png", mime: "image/png" },
   { key: "shadow-fox-003", label: "02 · SHADOW-FOX-003", path: "/samples/02-shadow-fox-003.jpg", mime: "image/jpeg" },
   { key: "shadow-fox-004", label: "03 · SHADOW-FOX-004", path: "/samples/03-shadow-fox-004.jpg", mime: "image/jpeg" },
 ];
