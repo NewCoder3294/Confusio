@@ -83,6 +83,7 @@ export default async function MissionBoardPage({
                   ) ?? []
                 : []
             }
+            variant={variant}
           />
         ) : (
           <EmptyDetail />
@@ -181,11 +182,13 @@ function MissionDetail({
   channel,
   artifact,
   detections,
+  variant,
 }: {
   mission: Mission;
   channel: Channel | undefined;
   artifact: Artifact | undefined;
   detections: DetectionResult[];
+  variant: ArtifactVariant;
 }) {
   const stages = parseStages(mission.stagesJson);
 
@@ -264,7 +267,11 @@ function MissionDetail({
             title="Artifact"
             subtitle={`sha256:${artifact.finalSha256.slice(0, 16)}…`}
           >
-            <ArtifactCard artifact={artifact} mission={mission} />
+            <ArtifactCard
+              artifact={artifact}
+              mission={mission}
+              variant={variant}
+            />
           </Section>
         )}
 
