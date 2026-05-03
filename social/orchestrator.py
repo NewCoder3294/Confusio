@@ -48,7 +48,7 @@ load_dotenv(_ENV_PATH)
 
 log = logging.getLogger(__name__)
 
-POLL_INTERVAL_SECONDS = 3.0
+POLL_INTERVAL_SECONDS = 1.5
 
 
 def _load_allowed_channels() -> list[str]:
@@ -356,14 +356,15 @@ class Orchestrator:
                         post.id, error=f"no agent for persona {post.persona_id}"
                     )
                     continue
-                # Image-bearing seed: defer until the artifact is on disk so
-                # the seed always rides on the image rather than racing it.
-                if post.role == "seed" and self._campaign_expects_image(campaign):
-                    image_path = self._seed_image_for(campaign, post)
+                # Image-bearing campaigns: every cast member rides on their
+                # own perspective image. Defer the send until the image is on
+                # disk so a post never races its artifact.
+                if self._campaign_expects_image(campaign):
+                    image_path = self._image_for(campaign, post)
                     if image_path is None:
                         log.info(
-                            "deferring seed for %s — image not ready yet",
-                            campaign.id,
+                            "deferring %s post for %s/%s — image not ready",
+                            post.role, campaign.id, post.persona_id,
                         )
                         continue
                 else:
@@ -449,23 +450,26 @@ class Orchestrator:
         artifact. Their ids are namespaced as ``c_SHADOW-FOX-...``."""
         return campaign.id.startswith("c_SHADOW-FOX-")
 
-    def _seed_image_for(self, campaign: Campaign, post: GeneratedPost) -> Path | None:
+    def _image_for(self, campaign: Campaign, post: GeneratedPost) -> Path | None:
         """Return the artifact image path to attach when sending `post`, or
-        None for a text-only send. Only seed posts ride on the artifact image;
-        corroborators reply in-thread (text only). The image is searched for
-        by mission id (campaign.id without the leading ``c_``) under
-        ``missions/generated/`` — preferring the EXIF-transplanted JPEG, then
-        the raw PNG."""
-        if post.role != "seed":
-            return None
+        None if it isn't ready yet. Seed posts ride on the seed artifact
+        ``missions/generated/{mission_id}.{jpg|png}``. Corroborator posts
+        ride on their own perspective image
+        ``missions/generated/{mission_id}-{persona_id}.{jpg|png}`` (produced
+        by ``mendacity.cascade_images``). JPEG preferred over PNG."""
         mission_id = (
             campaign.id[2:] if campaign.id.startswith("c_") else campaign.id
         )
         gen_dir = Path(__file__).resolve().parent.parent / "missions" / "generated"
-        for ext in ("jpg", "png"):
-            candidate = gen_dir / f"{mission_id}.{ext}"
-            if candidate.exists() and candidate.stat().st_size > 0:
-                return candidate
+        if post.role == "seed":
+            stems = [mission_id]
+        else:
+            stems = [f"{mission_id}-{post.persona_id}"]
+        for stem in stems:
+            for ext in ("jpg", "png"):
+                candidate = gen_dir / f"{stem}.{ext}"
+                if candidate.exists() and candidate.stat().st_size > 0:
+                    return candidate
         return None
 
     def _seed_persona(self, campaign: Campaign) -> str:

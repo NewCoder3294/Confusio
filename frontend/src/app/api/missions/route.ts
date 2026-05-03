@@ -16,18 +16,43 @@ const INBOX = path.join(REPO_ROOT, "missions/inbox");
 const GENERATED_DIR = path.join(REPO_ROOT, "missions/generated");
 const PYTHON_BIN = process.env.MENDACITY_PYTHON || "python3";
 
+function cascadeImagesCmd(
+  missionId: string,
+  prompt: string,
+  corroboratorIds: string[],
+): string {
+  if (corroboratorIds.length === 0) return "";
+  return [
+    PYTHON_BIN,
+    "-m",
+    "mendacity.cascade_images",
+    "--mission-id",
+    missionId,
+    "--seed-prompt",
+    JSON.stringify(prompt),
+    "--personas",
+    JSON.stringify(corroboratorIds.join(",")),
+    "--out-dir",
+    GENERATED_DIR,
+  ].join(" ");
+}
+
 async function spawnImageGen(
   missionId: string,
   prompt: string,
   channel: string,
+  corroboratorIds: string[],
 ): Promise<void> {
   await mkdir(GENERATED_DIR, { recursive: true });
   const outPath = path.join(GENERATED_DIR, `${missionId}.png`);
-  // Two-stage subprocess: image_gen writes the raw PNG, then process_artifact
-  // produces .jpg (EXIF transplanted) + .steg.png (LSB-embedded) +
-  // .meta.json (sidecar metadata for the Injection tab). Chained via shell
-  // && so steg+exif only run on a successful generation.
-  const cmd = [
+  // Three-stage subprocess: image_gen writes the seed PNG, process_artifact
+  // produces .jpg (EXIF transplanted) + .steg.png + .meta.json, then
+  // cascade_images generates one Gemini image per corroborator from their
+  // POV. The cascade step runs in the background after the seed is ready
+  // so the seed posts immediately while corroborator images are still
+  // rendering — orchestrator defers each corroborator's send until its
+  // image is on disk.
+  const seed = [
     PYTHON_BIN,
     "-m",
     "mendacity.image_gen",
@@ -50,6 +75,8 @@ async function spawnImageGen(
     "--prompt",
     JSON.stringify(prompt),
   ].join(" ");
+  const cascade = cascadeImagesCmd(missionId, prompt, corroboratorIds);
+  const cmd = cascade ? `${seed} && ${cascade}` : seed;
   const child = spawn("sh", ["-c", cmd], {
     cwd: REPO_ROOT,
     env: { ...process.env },
@@ -63,12 +90,14 @@ async function spawnProcessUploadedArtifact(
   missionId: string,
   prompt: string,
   channel: string,
+  corroboratorIds: string[],
 ): Promise<void> {
   await mkdir(GENERATED_DIR, { recursive: true });
   const outPath = path.join(GENERATED_DIR, `${missionId}.png`);
-  // Operator uploaded the raw artifact themselves. Run only the
-  // process_artifact stage (steg + EXIF transplant) on it.
-  const cmd = [
+  // Operator uploaded the raw artifact. Skip seed image gen, run only the
+  // post-process chain (steg + EXIF transplant) on the upload, then the
+  // per-corroborator perspective generation.
+  const seed = [
     PYTHON_BIN,
     "-m",
     "mendacity.process_artifact",
@@ -83,6 +112,8 @@ async function spawnProcessUploadedArtifact(
     "--prompt",
     JSON.stringify(prompt),
   ].join(" ");
+  const cascade = cascadeImagesCmd(missionId, prompt, corroboratorIds);
+  const cmd = cascade ? `${seed} && ${cascade}` : seed;
   const child = spawn("sh", ["-c", cmd], {
     cwd: REPO_ROOT,
     env: { ...process.env },
@@ -357,11 +388,15 @@ export async function POST(req: Request) {
   // generates seed + corroborator content via LLM and posts to Telegram
   // (image attached for the seed). No pre-faked posts.
   const campaignId = `c_${v.missionId}`;
-  const delayRange: [number, number] = [5, 15];
+  // Tight stagger so the cascade reads as fast in the demo. Orchestrator
+  // already defers each post until its image is on disk, so the floor is
+  // image-gen latency rather than this jitter.
+  const delayRange: [number, number] = [2, 4];
   const roster: Record<string, "seed" | "corroborator"> = {
     [v.seedPersona.id]: "seed",
   };
   for (const c of v.corroborators) roster[c.id] = "corroborator";
+  const corroboratorIds = v.corroborators.map((c) => c.id);
 
   let campaignError: string | null = null;
   try {
@@ -379,8 +414,9 @@ export async function POST(req: Request) {
     campaignError = (e as Error).message.slice(0, 300);
   }
 
-  // Either generate the image, or use the operator-uploaded one.
-  // In both cases the post-processing chain (steg + EXIF transplant) runs.
+  // Either generate the image, or use the operator-uploaded one. In both
+  // cases the post-processing chain (steg + EXIF transplant) runs and the
+  // cascade per-corroborator perspective images render right after.
   try {
     if (uploadedImage) {
       await mkdir(GENERATED_DIR, { recursive: true });
@@ -390,9 +426,15 @@ export async function POST(req: Request) {
         v.missionId,
         v.artifactPrompt,
         v.targetChannel,
+        corroboratorIds,
       );
     } else {
-      await spawnImageGen(v.missionId, v.artifactPrompt, v.targetChannel);
+      await spawnImageGen(
+        v.missionId,
+        v.artifactPrompt,
+        v.targetChannel,
+        corroboratorIds,
+      );
     }
   } catch {
     // image step is best-effort; campaign still dispatches.
