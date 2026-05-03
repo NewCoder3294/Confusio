@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated, Literal
@@ -42,6 +43,16 @@ async def verify(
             status_code=400,
             detail={"code": "image_too_large", "max_bytes": MAX_BYTES},
         )
+
+    try:
+        from PIL import Image as _PIL_Image, UnidentifiedImageError
+        with _PIL_Image.open(io.BytesIO(image_bytes)) as _probe:
+            _probe.verify()
+    except (UnidentifiedImageError, OSError) as e:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "image_invalid", "error": type(e).__name__},
+        ) from e
 
     try:
         verdict: Verdict = composite_run(image_bytes, mime_type=image.content_type)
