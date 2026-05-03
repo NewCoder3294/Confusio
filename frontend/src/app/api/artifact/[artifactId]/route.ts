@@ -1,7 +1,34 @@
 import "server-only";
 import { readFile, stat } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import path from "node:path";
 import { listArtifacts } from "@/lib/foundry";
+
+const REPO_ROOT = path.resolve(
+  process.env.MENDACITY_REPO_ROOT ||
+    path.join(process.env.HOME || "", "Mendacity"),
+);
+const PYTHON_BIN = process.env.MENDACITY_PYTHON || "python3";
+
+/**
+ * One-shot orientation normalization. Idempotent — `forensic.normalize`
+ * writes a `.normalized` marker and short-circuits on subsequent runs, so
+ * this is fast (<10ms) for already-normalized files.
+ */
+async function normalizeOnDisk(filePath: string): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const child = spawn(
+      PYTHON_BIN,
+      ["-m", "forensic.normalize", filePath],
+      { cwd: REPO_ROOT, stdio: "ignore" },
+    );
+    const finish = () => resolve();
+    child.on("exit", finish);
+    child.on("error", finish);
+    // Hard cap so a hung subprocess never blocks an artifact load.
+    setTimeout(finish, 1500);
+  });
+}
 
 const ROOT = path.resolve(
   process.env.MENDACITY_ARTIFACTS_ROOT ||
@@ -72,6 +99,7 @@ export async function GET(
     return new Response("Not a file", { status: 404 });
   }
 
+  await normalizeOnDisk(resolved);
   const bytes = await readFile(resolved);
   const ext = path.extname(resolved).toLowerCase();
   const mime = sniffMime(bytes) || MIME[ext] || "application/octet-stream";
@@ -81,9 +109,55 @@ export async function GET(
     headers: {
       "Content-Type": mime,
       "Content-Length": String(bytes.length),
-      // Short cache — mission state is mutable in dev, but the bytes for
-      // a given (artifactId, variant) are immutable once written.
-      "Cache-Control": "private, max-age=60",
+      // No cache — operator may rotate the file via the rotate route and we
+      // want the next image render to reflect that immediately.
+      "Cache-Control": "no-store",
     },
   });
+}
+
+export async function POST(
+  req: Request,
+  ctx: RouteContext<"/api/artifact/[artifactId]">,
+) {
+  const { artifactId } = await ctx.params;
+  const url = new URL(req.url);
+  const variantParam = url.searchParams.get("variant");
+  const variant: Variant = VARIANTS.includes(variantParam as Variant)
+    ? (variantParam as Variant)
+    : "clean";
+  const degrees = Number(url.searchParams.get("degrees") || "90");
+  if (![90, 180, 270].includes(degrees)) {
+    return Response.json({ error: "degrees must be 90, 180, or 270" }, { status: 400 });
+  }
+
+  const artifacts = await listArtifacts();
+  const artifact = artifacts.find((a) => a.artifactId === artifactId);
+  if (!artifact || !artifact.finalPath) {
+    return Response.json({ error: "Not found" }, { status: 404 });
+  }
+  const cleanPath = artifact.finalPath;
+  const dir = path.dirname(cleanPath);
+  const filePath =
+    variant === "clean"
+      ? cleanPath
+      : path.join(dir, `artifact_${variant}.jpg`);
+  const resolved = path.resolve(filePath);
+  if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(
+      PYTHON_BIN,
+      ["-m", "forensic.normalize", resolved, "--rotate", String(degrees), "--force"],
+      { cwd: REPO_ROOT, stdio: "ignore" },
+    );
+    child.on("exit", (code) =>
+      code === 0 ? resolve() : reject(new Error(`normalize exit ${code}`)),
+    );
+    child.on("error", reject);
+  });
+
+  return Response.json({ ok: true, rotated: degrees });
 }

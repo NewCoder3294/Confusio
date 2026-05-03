@@ -266,7 +266,11 @@ export async function POST(req: Request) {
   // immediately; corroborators are scheduled with a stagger so the timeline
   // visibly progresses.
   const campaignId = `c_${v.missionId}`;
-  const delayRange: [number, number] = [45, 180];
+  // Short stagger so the mission visibly lands and completes within the
+  // demo refresh window — operator sees corroborators flip in quickly,
+  // then status moves to completed. Prevents a backlog of "executing"
+  // missions piling up when the operator dispatches several in sequence.
+  const delayRange: [number, number] = [5, 15];
   const now = Date.now();
   const posts: DispatchPost[] = [];
   const roster: Record<string, "seed" | "corroborator"> = {};
