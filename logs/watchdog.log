@@ -4,3 +4,10 @@
 [2026-05-03 04:08:42] flipped 10 failed → approved
 [2026-05-03 04:08:48] cycle=1 posted=16 approved=10 pending=5 failed=0
 [2026-05-03 04:11:49] cycle=2 posted=27 approved=0 pending=7 failed=0
+[2026-05-03 04:14:49] cycle=3 posted=27 approved=0 pending=7 failed=0
+[2026-05-03 04:16:10] redirected 3 campaign(s) to https://t.me/+2la3xpus5vRmYmIx
+[2026-05-03 04:16:10] approved 6 pending corroborator(s)
+[2026-05-03 04:16:10] cycle=1 posted=27 approved=6 pending=1 failed=0
+[2026-05-03 04:18:10] cycle=2 posted=33 approved=0 pending=1 failed=0
+[2026-05-03 04:18:10] DONE: all corroborators settled. posted=33 seed_pending=1
+[2026-05-03 04:18:10] watchdog exiting (cycle=2)
