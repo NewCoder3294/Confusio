@@ -59,6 +59,8 @@ export function NewMissionModal({
     seedPersonaId: personas[0]?.id ?? "",
     corroboratorPersonaIds: [] as string[],
     artifactPrompt: "",
+    artifactMode: "generate" as "generate" | "upload",
+    artifactFile: null as File | null,
   });
 
   const personasById = useMemo(
@@ -123,7 +125,9 @@ export function NewMissionModal({
   const canAdvance: Record<Step, boolean> = {
     target: Boolean(form.targetChannel && form.audienceProfile.trim()),
     persona: Boolean(form.seedPersonaId),
-    artifact: form.artifactPrompt.trim().length > 0,
+    artifact:
+      form.artifactPrompt.trim().length > 0 &&
+      (form.artifactMode === "generate" || form.artifactFile !== null),
     review: true,
   };
 
@@ -140,18 +144,33 @@ export function NewMissionModal({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/missions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          operator: form.operator,
-          targetChannel: form.targetChannel,
-          audienceProfile: form.audienceProfile,
-          seedPersonaId: form.seedPersonaId,
-          corroboratorPersonaIds: form.corroboratorPersonaIds,
-          artifactPrompt: form.artifactPrompt,
-        }),
-      });
+      let res: Response;
+      if (form.artifactMode === "upload" && form.artifactFile) {
+        const fd = new FormData();
+        fd.set("operator", form.operator);
+        fd.set("targetChannel", form.targetChannel);
+        fd.set("audienceProfile", form.audienceProfile);
+        fd.set("seedPersonaId", form.seedPersonaId);
+        for (const cid of form.corroboratorPersonaIds) {
+          fd.append("corroboratorPersonaIds", cid);
+        }
+        fd.set("artifactPrompt", form.artifactPrompt);
+        fd.set("artifactImage", form.artifactFile);
+        res = await fetch("/api/missions", { method: "POST", body: fd });
+      } else {
+        res = await fetch("/api/missions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            operator: form.operator,
+            targetChannel: form.targetChannel,
+            audienceProfile: form.audienceProfile,
+            seedPersonaId: form.seedPersonaId,
+            corroboratorPersonaIds: form.corroboratorPersonaIds,
+            artifactPrompt: form.artifactPrompt,
+          }),
+        });
+      }
       const body = await res.json();
       if (!res.ok) {
         setError(body.error || `HTTP ${res.status}`);
@@ -234,8 +253,16 @@ export function NewMissionModal({
               {step === "artifact" && (
                 <ArtifactStep
                   prompt={form.artifactPrompt}
-                  onChange={(v) =>
+                  onChangePrompt={(v) =>
                     setForm((f) => ({ ...f, artifactPrompt: v }))
+                  }
+                  mode={form.artifactMode}
+                  onChangeMode={(m) =>
+                    setForm((f) => ({ ...f, artifactMode: m }))
+                  }
+                  file={form.artifactFile}
+                  onChangeFile={(file) =>
+                    setForm((f) => ({ ...f, artifactFile: file }))
                   }
                 />
               )}
@@ -483,29 +510,170 @@ function PersonaStep({
 
 function ArtifactStep({
   prompt,
-  onChange,
+  onChangePrompt,
+  mode,
+  onChangeMode,
+  file,
+  onChangeFile,
 }: {
   prompt: string;
-  onChange: (v: string) => void;
+  onChangePrompt: (v: string) => void;
+  mode: "generate" | "upload";
+  onChangeMode: (m: "generate" | "upload") => void;
+  file: File | null;
+  onChangeFile: (f: File | null) => void;
 }) {
   return (
     <div className="flex flex-col gap-4">
+      {/* Mode toggle */}
+      <div className="flex border border-border-default">
+        {(
+          [
+            { key: "generate", label: "Generate from prompt" },
+            { key: "upload", label: "Upload image" },
+          ] as const
+        ).map((opt, i) => {
+          const active = mode === opt.key;
+          return (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => onChangeMode(opt.key)}
+              className={`flex-1 px-3 py-2 font-mono text-[10px] uppercase tracking-[0.16em] ${
+                i > 0 ? "border-l border-border-default" : ""
+              } ${
+                active
+                  ? "bg-info-bg text-info-fg"
+                  : "text-fg-muted hover:bg-bg-hover"
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {mode === "upload" && (
+        <Field
+          label="Artifact image"
+          hint="Drop a JPEG or PNG. Steg + EXIF transplant will run on dispatch; engine still verifies C2PA + Titan + SynthID."
+        >
+          <ArtifactDropZone file={file} onChangeFile={onChangeFile} />
+        </Field>
+      )}
+
       <Field
-        label="Image prompt"
-        hint="Persona-consistent, low-fidelity, plausible. Engine will run C2PA + Titan + SynthID against the output."
+        label={mode === "upload" ? "Caption / intent" : "Image prompt"}
+        hint={
+          mode === "upload"
+            ? "Short line that describes what the image purports to show — used for the seed post caption and persona context."
+            : "Persona-consistent, low-fidelity, plausible. Engine will run C2PA + Titan + SynthID against the output."
+        }
       >
         <textarea
-          rows={5}
+          rows={mode === "upload" ? 3 : 5}
           value={prompt}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="e.g. leaked regiment movement order, smudged unit stamp, low-light phone photo"
+          onChange={(e) => onChangePrompt(e.target.value)}
+          placeholder={
+            mode === "upload"
+              ? "e.g. unmarked aircraft over residential district at dawn"
+              : "e.g. leaked regiment movement order, smudged unit stamp, low-light phone photo"
+          }
           className="border border-border-default bg-bg-base px-3 py-2 text-[12px] text-fg-default focus:outline-none focus:border-info-fg resize-none"
         />
       </Field>
+
       <div className="border border-warn-border bg-warn-bg/20 px-3 py-2 text-[10px] text-warn-fg leading-5 font-mono">
         Sandbox enforcement — delivery.dry_run = true unconditionally.
       </div>
     </div>
+  );
+}
+
+function ArtifactDropZone({
+  file,
+  onChangeFile,
+}: {
+  file: File | null;
+  onChangeFile: (f: File | null) => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const inputId = "mission-artifact-file";
+  const previewUrl = useMemo(() => {
+    if (!file) return null;
+    return URL.createObjectURL(file);
+  }, [file]);
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+  return (
+    <label
+      htmlFor={inputId}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        const dropped = e.dataTransfer.files?.[0];
+        if (dropped) onChangeFile(dropped);
+      }}
+      className={`flex flex-col items-center justify-center gap-2 cursor-pointer border border-dashed px-4 py-6 text-[11px] font-mono transition-colors ${
+        dragging
+          ? "border-info-fg bg-info-bg/30 text-info-fg"
+          : "border-border-default bg-bg-base text-fg-muted hover:border-info-border"
+      }`}
+    >
+      <input
+        id={inputId}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0] ?? null;
+          onChangeFile(f);
+        }}
+      />
+      {file && previewUrl ? (
+        <div className="flex items-center gap-3 w-full">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewUrl}
+            alt={file.name}
+            className="w-20 h-20 object-cover border border-border-default"
+          />
+          <div className="flex-1 min-w-0">
+            <div className="text-fg-default truncate">{file.name}</div>
+            <div className="text-fg-faint text-[10px] mt-1">
+              {(file.size / 1024).toFixed(1)} KB · {file.type || "image"}
+            </div>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onChangeFile(null);
+              }}
+              className="mt-2 text-fail-fg uppercase tracking-[0.14em] text-[10px] hover:underline"
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <span className="uppercase tracking-[0.16em] text-[10px]">
+            Drop image here
+          </span>
+          <span className="text-fg-faint text-[10px]">
+            or click to choose · PNG / JPEG / WebP
+          </span>
+        </>
+      )}
+    </label>
   );
 }
 

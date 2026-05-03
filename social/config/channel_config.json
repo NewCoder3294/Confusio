@@ -1,4 +1,9 @@
 {
   "default_channel": "https://t.me/+2la3xpus5vRmYmIx",
-  "allowed_channels": ["https://t.me/+2la3xpus5vRmYmIx"]
+  "allowed_channels": [
+    "https://t.me/+2la3xpus5vRmYmIx",
+    "@hackathon_sandbox_alpha",
+    "@mendacity_sandbox_demo",
+    "@inscom_lab_sandbox"
+  ]
 }
