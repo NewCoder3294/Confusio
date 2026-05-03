@@ -356,12 +356,23 @@ class Orchestrator:
                         post.id, error=f"no agent for persona {post.persona_id}"
                     )
                     continue
+                # Image-bearing seed: defer until the artifact is on disk so
+                # the seed always rides on the image rather than racing it.
+                if post.role == "seed" and self._campaign_expects_image(campaign):
+                    image_path = self._seed_image_for(campaign, post)
+                    if image_path is None:
+                        log.info(
+                            "deferring seed for %s — image not ready yet",
+                            campaign.id,
+                        )
+                        continue
+                else:
+                    image_path = None
                 try:
                     join_key = (agent.id, campaign.channel)
                     if join_key not in self._joined:
                         await agent.join(campaign.channel)
                         self._joined.add(join_key)
-                    image_path = self._seed_image_for(campaign, post)
                     if image_path is not None:
                         result = await agent.post_image(
                             str(image_path), post.final_content, campaign.channel
@@ -432,6 +443,11 @@ class Orchestrator:
                 )
             )
         return out
+
+    def _campaign_expects_image(self, campaign: Campaign) -> bool:
+        """Operator-console-dispatched campaigns always carry a generated
+        artifact. Their ids are namespaced as ``c_SHADOW-FOX-...``."""
+        return campaign.id.startswith("c_SHADOW-FOX-")
 
     def _seed_image_for(self, campaign: Campaign, post: GeneratedPost) -> Path | None:
         """Return the artifact image path to attach when sending `post`, or
