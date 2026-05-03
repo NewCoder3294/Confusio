@@ -107,12 +107,39 @@ def test_schema_check_requires_prompt_when_generate():
     assert any("prompt" in i for i in _schema_check(spec))
 
 
-def test_schema_check_requires_persona_id_when_live():
+def test_schema_check_requires_persona_id_or_archetype_when_live():
+    """When dry_run=false the spec must supply EITHER an explicit persona_id
+    OR a persona.archetype the engine can resolve via the matcher."""
     d = _good_spec_dict()
     d["delivery"]["dry_run"] = False
     d["delivery"]["persona_id"] = ""
+    d["persona"]["archetype"] = ""
     spec = MissionSpec.from_dict(d)
-    assert any("persona_id" in i for i in _schema_check(spec))
+    issues = _schema_check(spec)
+    assert any("persona_id" in i or "archetype" in i for i in issues)
+
+
+def test_schema_check_archetype_alone_is_ok_when_live():
+    """Archetype set + persona_id empty + dry_run=false should pass schema —
+    preflight will resolve persona_id from archetype via the matcher."""
+    d = _good_spec_dict()
+    d["delivery"]["dry_run"] = False
+    d["delivery"]["persona_id"] = ""
+    d["persona"]["archetype"] = "frustrated-quartermaster"
+    spec = MissionSpec.from_dict(d)
+    issues = _schema_check(spec)
+    assert not any("persona_id" in i for i in issues)
+
+
+def test_schema_check_persona_id_alone_is_ok_when_live():
+    """persona_id set + archetype empty should pass schema."""
+    d = _good_spec_dict()
+    d["delivery"]["dry_run"] = False
+    d["delivery"]["persona_id"] = "anton_kh"
+    d["persona"]["archetype"] = ""
+    spec = MissionSpec.from_dict(d)
+    issues = _schema_check(spec)
+    assert not any("persona_id" in i for i in issues)
 
 
 def test_schema_check_collects_multiple_issues():
@@ -277,3 +304,77 @@ def test_mission_result_failure_has_structured_error():
     d = r.to_dict()
     assert d["error"]["code"] == "validation_failed"
     assert d["error"]["stage"] == "validated"
+
+
+# ---------------------------------------------------------------------------
+# Result-emit contract validator
+# ---------------------------------------------------------------------------
+
+
+def test_validate_result_dict_happy_path():
+    from mendacity.mission import _validate_result_dict
+    r = MissionResult(
+        mission_id="TEST-OK",
+        operator="op",
+        status="completed",
+        started_at="2026-05-03T00:00:00+00:00",
+        finished_at="2026-05-03T00:00:01+00:00",
+        stages=[StageRecord(stage="validated", status="ok", ts="t")],
+    )
+    assert _validate_result_dict(r.to_dict()) == []
+
+
+def test_validate_result_dict_catches_bad_status():
+    from mendacity.mission import _validate_result_dict
+    d = {
+        "mission_id": "X",
+        "operator": "op",
+        "status": "weird",
+        "started_at": "t",
+        "stages": [],
+    }
+    issues = _validate_result_dict(d)
+    assert any("status" in i for i in issues)
+
+
+def test_validate_result_dict_catches_bad_stage_shape():
+    from mendacity.mission import _validate_result_dict
+    d = {
+        "mission_id": "X",
+        "operator": "op",
+        "status": "completed",
+        "started_at": "t",
+        "stages": [{"name": "missing-stage-key"}],
+    }
+    issues = _validate_result_dict(d)
+    assert any("stage" in i for i in issues)
+
+
+def test_validate_result_dict_catches_missing_error_fields():
+    from mendacity.mission import _validate_result_dict
+    d = {
+        "mission_id": "X",
+        "operator": "op",
+        "status": "failed",
+        "started_at": "t",
+        "stages": [],
+        "error": {"stage": "validated"},   # missing code + message
+    }
+    issues = _validate_result_dict(d)
+    assert any("error.code" in i for i in issues)
+    assert any("error.message" in i for i in issues)
+
+
+def test_validate_result_dict_null_error_is_ok():
+    from mendacity.mission import _validate_result_dict
+    d = {
+        "mission_id": "X",
+        "operator": "op",
+        "status": "completed",
+        "started_at": "t",
+        "stages": [],
+        "error": None,
+    }
+    issues = _validate_result_dict(d)
+    # error=None is the success-shape; no issues from that.
+    assert not any("error" in i for i in issues)

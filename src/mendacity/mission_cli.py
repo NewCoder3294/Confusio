@@ -24,7 +24,11 @@ from mendacity.mission import (
     watch_inbox,
     write_result,
 )
-from mendacity.mission_planner import PlannerError, plan_mission_yaml
+from mendacity.mission_planner import (
+    PlannerError,
+    match_archetype_to_persona,
+    plan_mission_yaml,
+)
 
 
 def _setup_logging(verbose: bool) -> None:
@@ -117,6 +121,7 @@ def _cmd_watch(args: argparse.Namespace) -> int:
         run_titan=args.titan,
         run_google=args.google,
         once=args.once,
+        workers=args.workers,
     )
     return 0
 
@@ -261,6 +266,98 @@ def _cmd_personas(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_status(args: argparse.Namespace) -> int:
+    """Compact one-line status for a mission_id."""
+    p = MISSIONS_DIR / "results" / f"{args.mission_id}.json"
+    if not p.exists():
+        print(f"no result for mission_id {args.mission_id!r} at {p}", file=sys.stderr)
+        return 2
+    d = json.loads(p.read_text(encoding="utf-8"))
+    status = d.get("status", "unknown")
+    err = d.get("error") or {}
+    err_str = ""
+    if err:
+        err_str = f"  [{err.get('code')}@{err.get('stage')}: {err.get('message','')[:80]}]"
+    prov_stage = next(
+        (s for s in d.get("stages", []) if s.get("stage") == "provenance_check"),
+        None,
+    )
+    grade = ""
+    if prov_stage:
+        passed = prov_stage.get("detail", {}).get("passed", {})
+        if passed.get("all_passed"):
+            grade = " | provenance: ALL PASS"
+        else:
+            grade = " | provenance: BLOCKED"
+    deliv = next(
+        (s for s in d.get("stages", []) if s.get("stage") == "delivered"),
+        None,
+    )
+    deliv_str = ""
+    if deliv:
+        if deliv.get("status") == "ok":
+            tmid = deliv.get("detail", {}).get("telegram_message_id")
+            deliv_str = f" | delivered: msg_id={tmid}"
+        elif deliv.get("status") == "skipped":
+            deliv_str = " | delivery: dry_run"
+    print(
+        f"{args.mission_id}: {status.upper()}{grade}{deliv_str}{err_str}"
+    )
+    return 0
+
+
+def _cmd_audit_mission(args: argparse.Namespace) -> int:
+    """Re-audit a completed mission's source artifact (before/after report)."""
+    p = MISSIONS_DIR / "results" / f"{args.mission_id}.json"
+    if not p.exists():
+        print(f"no result for mission_id {args.mission_id!r}", file=sys.stderr)
+        return 2
+    d = json.loads(p.read_text(encoding="utf-8"))
+    selected = next(
+        (s for s in d.get("stages", []) if s.get("stage") == "artifact_selected"),
+        None,
+    )
+    if not selected:
+        print(f"no artifact_selected stage in {p}", file=sys.stderr)
+        return 2
+    src = selected.get("detail", {}).get("source_fixture") or selected.get(
+        "detail", {}
+    ).get("work_path")
+    if not src:
+        print(f"no source path in artifact_selected stage", file=sys.stderr)
+        return 2
+    src_p = Path(src)
+    if not src_p.exists():
+        print(f"source artifact missing on disk: {src_p}", file=sys.stderr)
+        return 2
+
+    print(f"[audit-mission] re-auditing {args.mission_id} from {src_p}", file=sys.stderr)
+    args.image = str(src_p)
+    args.exif_template = None
+    return _cmd_audit(args)
+
+
+def _cmd_match_persona(args: argparse.Namespace) -> int:
+    """Score archetype against available personas, print best match."""
+    try:
+        pid, meta = match_archetype_to_persona(
+            args.archetype,
+            audience_profile=args.audience or "",
+            language_hint=args.language or "",
+        )
+    except PlannerError as exc:
+        print(f"[matcher] {exc}", file=sys.stderr)
+        return 2
+    if args.json:
+        print(json.dumps({"persona_id": pid, "meta": meta}, indent=2))
+    else:
+        print(f"persona_id: {pid}")
+        print(f"  source:   {meta.get('source')}")
+        if meta.get("model"):
+            print(f"  model:    {meta.get('model')}")
+    return 0
+
+
 def _cmd_plan(args: argparse.Namespace) -> int:
     try:
         text = plan_mission_yaml(
@@ -311,6 +408,10 @@ def main(argv: list[str] | None = None) -> int:
     p_watch.add_argument("--titan", action="store_true")
     p_watch.add_argument("--google", action="store_true")
     p_watch.add_argument("--once", action="store_true", help="single sweep, then exit")
+    p_watch.add_argument(
+        "--workers", type=int, default=1,
+        help="parallel mission workers (default 1, serial). 4-8 recommended for batched submissions.",
+    )
     p_watch.set_defaults(func=_cmd_watch)
 
     p_grade = sub.add_parser("grade", help="print summary of a completed result JSON")
@@ -357,6 +458,39 @@ def main(argv: list[str] | None = None) -> int:
         help="list available personas and their Telegram session auth status",
     )
     p_personas.set_defaults(func=_cmd_personas)
+
+    p_status = sub.add_parser(
+        "status", help="compact one-line status for a completed mission",
+    )
+    p_status.add_argument("mission_id", help="mission_id to look up under missions/results/")
+    p_status.set_defaults(func=_cmd_status)
+
+    p_audit_mission = sub.add_parser(
+        "audit-mission",
+        help="re-audit a completed mission's source artifact (before/after report)",
+    )
+    p_audit_mission.add_argument(
+        "mission_id", help="mission_id whose source artifact to re-audit"
+    )
+    p_audit_mission.add_argument("--titan", action="store_true")
+    p_audit_mission.add_argument("--google", action="store_true")
+    p_audit_mission.add_argument("--json", action="store_true")
+    p_audit_mission.set_defaults(func=_cmd_audit_mission)
+
+    p_match = sub.add_parser(
+        "match-persona",
+        help="resolve an archetype to the best-matching available persona_id",
+    )
+    p_match.add_argument(
+        "archetype",
+        help="archetype description (e.g., 'frustrated battalion quartermaster')",
+    )
+    p_match.add_argument("--audience", help="audience profile hint")
+    p_match.add_argument(
+        "--language", help="2-letter language code hint (ru, uk, fa, etc.)"
+    )
+    p_match.add_argument("--json", action="store_true")
+    p_match.set_defaults(func=_cmd_match_persona)
 
     args = parser.parse_args(argv)
     _setup_logging(args.verbose)

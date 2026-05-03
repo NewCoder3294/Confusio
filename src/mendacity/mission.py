@@ -259,10 +259,16 @@ def _schema_check(spec: MissionSpec) -> list[str]:
         issues.append(
             f"delivery.dry_run must be bool (got {type(delivery['dry_run']).__name__})"
         )
-    if delivery.get("dry_run") is False and not (delivery.get("persona_id") or "").strip():
-        issues.append(
-            "delivery.persona_id required when delivery.dry_run is false"
-        )
+    # When dry_run=false we need either an explicit persona_id OR an
+    # archetype the engine can auto-resolve via mission_planner.match_*.
+    if delivery.get("dry_run") is False:
+        has_pid = bool((delivery.get("persona_id") or "").strip())
+        has_arch = bool(((spec.persona or {}).get("archetype") or "").strip())
+        if not (has_pid or has_arch):
+            issues.append(
+                "delivery requires either delivery.persona_id OR persona.archetype "
+                "when delivery.dry_run is false"
+            )
 
     return issues
 
@@ -349,6 +355,7 @@ def _stage_preflight(spec: MissionSpec) -> StageRecord:
         ) from exc
 
     persona_id = delivery.get("persona_id")
+    resolution_meta: dict[str, Any] = {}
     if persona_id:
         if persona_id not in personas:
             raise MissionExecutionError(
@@ -358,8 +365,40 @@ def _stage_preflight(spec: MissionSpec) -> StageRecord:
                 stage="preflight",
             )
         persona = personas[persona_id]
+        resolution_meta = {"source": "spec"}
     else:
-        persona = next(iter(personas.values()))
+        # No explicit persona_id — auto-resolve from archetype via the matcher.
+        archetype = (spec.persona or {}).get("archetype") or ""
+        audience = (spec.target or {}).get("audience_profile") or ""
+        if archetype:
+            try:
+                from mendacity.mission_planner import (
+                    PlannerError,
+                    match_archetype_to_persona,
+                )
+                resolved_id, meta = match_archetype_to_persona(
+                    archetype,
+                    audience_profile=audience,
+                )
+                resolution_meta = {"source": "matcher", **meta, "archetype": archetype}
+                persona_id = resolved_id
+                if persona_id not in personas:
+                    raise MissionExecutionError(
+                        f"matcher resolved {persona_id!r} but it's not loaded; "
+                        f"available: {sorted(personas)}",
+                        code="delivery_failed",
+                        stage="preflight",
+                    )
+                persona = personas[persona_id]
+            except PlannerError as exc:
+                raise MissionExecutionError(
+                    f"archetype-to-persona matcher failed: {exc}",
+                    code="delivery_failed",
+                    stage="preflight",
+                ) from exc
+        else:
+            persona = next(iter(personas.values()))
+            resolution_meta = {"source": "first-fallback"}
 
     async def _probe() -> None:
         client = PersonaTelegramClient(persona.resolved_session_path())
@@ -384,6 +423,9 @@ def _stage_preflight(spec: MissionSpec) -> StageRecord:
             stage="preflight",
         ) from exc
 
+    # Stash the resolved persona_id back onto the spec so _stage_delivery
+    # uses the same one without re-running the matcher.
+    spec.delivery["persona_id"] = persona.id
     return StageRecord(
         stage="preflight",
         status="ok",
@@ -392,6 +434,7 @@ def _stage_preflight(spec: MissionSpec) -> StageRecord:
             "persona_id": persona.id,
             "session_path": str(persona.resolved_session_path()),
             "checked": "session_authorized",
+            "resolution": resolution_meta,
         },
     )
 
@@ -1058,17 +1101,80 @@ def execute_mission(
         result.finished_at = _now_iso()
 
 
+def _validate_result_dict(d: dict[str, Any]) -> list[str]:
+    """Lightweight contract check on a serialized MissionResult dict.
+
+    Returns a list of issues; empty = OK. The bridge in palantir/aip/
+    result_ingester.py reads exactly these fields — drift here breaks
+    Foundry hydration silently. We log loudly on any drift.
+    """
+    issues: list[str] = []
+    required_top = {
+        "mission_id": str,
+        "operator": str,
+        "status": str,
+        "started_at": str,
+        "stages": list,
+    }
+    for key, want in required_top.items():
+        if key not in d:
+            issues.append(f"missing required key: {key}")
+        elif not isinstance(d[key], want):
+            issues.append(
+                f"{key} must be {want.__name__} (got {type(d[key]).__name__})"
+            )
+    valid_status = {"completed", "failed", "aborted", "executing"}
+    if d.get("status") not in valid_status:
+        issues.append(f"status must be one of {sorted(valid_status)} (got {d.get('status')!r})")
+    err = d.get("error")
+    if err is not None:
+        if not isinstance(err, dict):
+            issues.append(f"error must be dict|null (got {type(err).__name__})")
+        else:
+            for k in ("stage", "code", "message"):
+                if k not in err:
+                    issues.append(f"error.{k} missing")
+    if isinstance(d.get("stages"), list):
+        for i, s in enumerate(d["stages"]):
+            if not isinstance(s, dict):
+                issues.append(f"stages[{i}] must be dict")
+                continue
+            for k in ("stage", "status", "ts"):
+                if k not in s:
+                    issues.append(f"stages[{i}].{k} missing")
+            if s.get("status") not in {"ok", "skipped", "error"}:
+                issues.append(
+                    f"stages[{i}].status invalid: {s.get('status')!r}"
+                )
+    return issues
+
+
 def write_result(result: MissionResult, *, results_dir: Path | None = None) -> Path:
     """Atomic-write the result JSON: write to <name>.tmp, fsync, rename to final.
 
     Watchers MUST ignore .tmp files; they only act on names without that suffix.
     Convention coordinated with the Foundry bridge (PALANTIR_REQUESTS.md §1.3).
+
+    Pre-write contract check: validates the serialized shape against the
+    schema the bridge consumes (palantir/aip/result_ingester.py). Logs
+    warnings on drift but still writes — Foundry's parser is tolerant of
+    missing fields, and we'd rather get a partial result than silently
+    drop a mission.
     """
     out_dir = results_dir or (MISSIONS_DIR / "results")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{result.mission_id}.json"
     tmp_path = out_path.with_suffix(out_path.suffix + ".tmp")
-    payload = json.dumps(result.to_dict(), indent=2)
+
+    payload_dict = result.to_dict()
+    issues = _validate_result_dict(payload_dict)
+    if issues:
+        log.warning(
+            "result schema drift on %s (%d issues): %s",
+            result.mission_id, len(issues), issues,
+        )
+
+    payload = json.dumps(payload_dict, indent=2)
     with open(tmp_path, "w", encoding="utf-8") as f:
         f.write(payload)
         f.flush()
@@ -1086,6 +1192,38 @@ def write_result(result: MissionResult, *, results_dir: Path | None = None) -> P
 # ---------------------------------------------------------------------------
 
 
+def _process_one_inbox_file(
+    path: Path,
+    inbox: Path,
+    results_dir: Path,
+    *,
+    run_titan: bool,
+    run_google: bool,
+) -> None:
+    """Process a single inbox spec file end-to-end. Used by both serial
+    and concurrent watcher paths."""
+    log.info("picked up %s", path.name)
+    try:
+        spec = MissionSpec.from_yaml_path(path)
+    except Exception as exc:
+        log.error("failed to parse %s: %s", path, exc)
+        bad_dir = inbox / "malformed"
+        bad_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            path.replace(bad_dir / path.name)
+        except OSError:
+            pass
+        return
+
+    result = execute_mission(spec, run_titan=run_titan, run_google=run_google)
+    out = write_result(result, results_dir=results_dir)
+    try:
+        path.unlink()
+    except OSError as exc:
+        log.warning("could not unlink %s: %s", path, exc)
+    log.info("mission %s -> %s (%s)", spec.mission_id, result.status, out)
+
+
 def watch_inbox(
     inbox: Path | None = None,
     results_dir: Path | None = None,
@@ -1094,43 +1232,68 @@ def watch_inbox(
     run_titan: bool = False,
     run_google: bool = False,
     once: bool = False,
+    workers: int = 1,
 ) -> None:
-    """Poll the inbox for new YAML specs, execute them, write results."""
+    """Poll the inbox for new YAML specs, execute them, write results.
+
+    With ``workers > 1``, missions found in a single sweep run concurrently
+    in a thread pool — useful when Foundry's bridge writes a batch of
+    specs at once. Stages that subprocess (SynthIDBye, EXIF, DALL-E) are
+    safe to parallelize; Telethon is per-session so concurrency is bounded
+    by available authorized personas.
+    """
     inbox = inbox or (MISSIONS_DIR / "inbox")
     results_dir = results_dir or (MISSIONS_DIR / "results")
     inbox.mkdir(parents=True, exist_ok=True)
     results_dir.mkdir(parents=True, exist_ok=True)
 
-    log.info("watching inbox=%s results=%s", inbox, results_dir)
+    log.info(
+        "watching inbox=%s results=%s workers=%d", inbox, results_dir, workers
+    )
 
-    while True:
-        for path in sorted(inbox.glob("*.yaml")):
-            # Skip atomic-write tempfiles per coordination convention.
-            if path.name.endswith(".tmp"):
-                continue
-            log.info("picked up %s", path.name)
-            try:
-                spec = MissionSpec.from_yaml_path(path)
-            except Exception as exc:
-                log.error("failed to parse %s: %s", path, exc)
-                # Move malformed spec aside so we don't infinite-loop.
-                bad_dir = inbox / "malformed"
-                bad_dir.mkdir(parents=True, exist_ok=True)
-                path.replace(bad_dir / path.name)
-                continue
-            result = execute_mission(
-                spec, run_titan=run_titan, run_google=run_google
-            )
-            out = write_result(result, results_dir=results_dir)
-            # Lifecycle (b): delete the consumed spec so the inbox always
-            # represents unprocessed work. PALANTIR_REQUESTS.md §1.4.
-            try:
-                path.unlink()
-            except OSError as exc:
-                log.warning("could not unlink %s: %s", path, exc)
-            log.info(
-                "mission %s -> %s (%s)", spec.mission_id, result.status, out
-            )
-        if once:
-            return
-        time.sleep(poll_seconds)
+    pool: Any = None
+    if workers > 1:
+        from concurrent.futures import ThreadPoolExecutor
+        pool = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mendacity-mission")
+
+    in_flight: set[str] = set()
+    try:
+        while True:
+            paths = [
+                p
+                for p in sorted(inbox.glob("*.yaml"))
+                if not p.name.endswith(".tmp") and p.name not in in_flight
+            ]
+
+            if pool is None:
+                for path in paths:
+                    _process_one_inbox_file(
+                        path, inbox, results_dir,
+                        run_titan=run_titan, run_google=run_google,
+                    )
+            else:
+                # Concurrent path. Track in-flight so the next sweep doesn't
+                # re-pick the same file while it's processing.
+                from concurrent.futures import Future
+
+                def _wrap(p: Path) -> None:
+                    try:
+                        _process_one_inbox_file(
+                            p, inbox, results_dir,
+                            run_titan=run_titan, run_google=run_google,
+                        )
+                    finally:
+                        in_flight.discard(p.name)
+
+                for path in paths:
+                    in_flight.add(path.name)
+                    pool.submit(_wrap, path)
+
+            if once:
+                if pool is not None:
+                    pool.shutdown(wait=True)
+                return
+            time.sleep(poll_seconds)
+    finally:
+        if pool is not None:
+            pool.shutdown(wait=False)

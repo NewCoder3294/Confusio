@@ -280,3 +280,117 @@ def plan_mission_yaml(intent: str, **kwargs: Any) -> str:
     """Convenience: plan and serialize to a YAML string."""
     spec = plan_mission(intent, **kwargs)
     return yaml.safe_dump(spec, sort_keys=False, allow_unicode=True)
+
+
+# ---------------------------------------------------------------------------
+# Archetype → persona_id matcher
+# ---------------------------------------------------------------------------
+
+
+def _persona_summaries() -> list[dict[str, Any]]:
+    """Build compact persona summaries for the matcher LLM prompt."""
+    if not PERSONAS_DIR.is_dir():
+        return []
+    out: list[dict[str, Any]] = []
+    for f in sorted(PERSONAS_DIR.glob("*.json")):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        out.append({
+            "id": data.get("id"),
+            "language": data.get("language"),
+            "geo_anchor": data.get("geo_anchor"),
+            "bio_short": data.get("bio_short"),
+            "style": data.get("style"),
+            "topic_focus": data.get("topic_focus"),
+        })
+    return out
+
+
+def match_archetype_to_persona(
+    archetype: str,
+    *,
+    audience_profile: str = "",
+    language_hint: str = "",
+    available: list[dict[str, Any]] | None = None,
+    api_key: str | None = None,
+) -> tuple[str, dict[str, Any]]:
+    """Return ``(best_persona_id, meta)``. Uses LLM to score available personas
+    against the archetype + audience.
+
+    Falls back to first persona alphabetically if LLM is unavailable.
+    """
+    personas = available if available is not None else _persona_summaries()
+    if not personas:
+        raise PlannerError("no personas available to match against")
+    valid_ids = [p["id"] for p in personas if p.get("id")]
+
+    key = api_key or os.getenv("OPENAI_API_KEY")
+    if not key:
+        # Fallback: deterministic by language match if we have a hint
+        log.warning("OPENAI_API_KEY not set; using language-hint fallback")
+        if language_hint:
+            for p in personas:
+                if p.get("language", "").lower() == language_hint.lower():
+                    return p["id"], {"source": "language-hint-fallback"}
+        return valid_ids[0], {"source": "first-fallback"}
+
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise PlannerError(f"openai sdk not installed: {exc}") from exc
+
+    summaries_text = "\n".join(
+        f"- {p['id']}: lang={p.get('language')}, "
+        f"loc={p.get('geo_anchor')!r}, "
+        f"bio={p.get('bio_short')!r}, "
+        f"style={p.get('style')!r}, "
+        f"topics={p.get('topic_focus')}"
+        for p in personas
+    )
+    prompt = (
+        f"You are picking the most credible delivery persona for a covert "
+        f"information-operations post. Score each persona below against the "
+        f"archetype + audience and return ONLY the single best persona_id.\n\n"
+        f"ARCHETYPE: {archetype}\n"
+        f"AUDIENCE: {audience_profile or 'unspecified'}\n"
+        f"LANGUAGE HINT: {language_hint or 'derive from audience'}\n\n"
+        f"AVAILABLE PERSONAS:\n{summaries_text}\n\n"
+        f"Selection criteria, in priority order:\n"
+        f"1. LANGUAGE MATCH — persona must be able to post natively in the "
+        f"audience's language. This is the hardest constraint.\n"
+        f"2. STYLE ALIGNMENT — would this person plausibly post the kind of "
+        f"image+caption implied by the archetype?\n"
+        f"3. TOPIC PLAUSIBILITY — does the persona's topic_focus overlap with "
+        f"what the archetype would naturally post about?\n"
+        f"4. GEOGRAPHIC PLAUSIBILITY — does the persona's geo_anchor make "
+        f"sense for the audience?\n\n"
+        f"Output exactly one persona_id from this set: {valid_ids}\n"
+        f"No quotes, no explanation, no preamble."
+    )
+
+    client = OpenAI(api_key=key)
+    log.info("matching archetype to persona: %s", archetype[:60])
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=50,
+        )
+    except Exception as exc:
+        raise PlannerError(f"LLM call failed: {exc}") from exc
+
+    text = (resp.choices[0].message.content or "").strip().strip("'\"`").splitlines()[0].strip()
+    # Tolerate "persona_id: anton_kh" or "anton_kh" forms
+    if ":" in text:
+        text = text.split(":", 1)[1].strip()
+    if text not in valid_ids:
+        # LLM hallucinated — fall back to first valid
+        log.warning("matcher LLM returned unknown id %r; falling back", text)
+        return valid_ids[0], {
+            "source": "fallback-after-hallucination",
+            "llm_raw": text,
+        }
+    return text, {"source": "llm", "model": "gpt-4o"}
