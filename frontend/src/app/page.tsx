@@ -345,12 +345,6 @@ function MissionDetail({
               ]
             : []),
           {
-            id: "provenance",
-            label: "Provenance",
-            count: detections.length,
-            panel: <ProvenancePanel detections={detections} artifact={artifact} />,
-          },
-          {
             id: "timeline",
             label: "Timeline",
             count: stages.length + campaignEvents.length,

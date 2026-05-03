@@ -69,22 +69,29 @@ export function NewMissionModal({
   );
   const seed = personasById.get(form.seedPersonaId);
 
-  // Suggested corroborators = the seed's known graph, minus seed.
+  // Suggested corroborators: seed's known graph first (highest-affinity),
+  // then the rest of the library so the operator has a full pool to draw
+  // from when the demo wants a broad cascade.
   const suggested = useMemo(() => {
     if (!seed) return [];
-    return seed.knows
+    const knownIds = new Set(seed.knows);
+    const known = seed.knows
       .map((id) => personasById.get(id))
       .filter((p): p is PersonaLite => Boolean(p));
-  }, [seed, personasById]);
+    const rest = personas.filter(
+      (p) => p.id !== seed.id && !knownIds.has(p.id),
+    );
+    return [...known, ...rest];
+  }, [seed, personasById, personas]);
 
-  // When seed changes, default to a single corroborator (the first
-  // suggested). Operator can add more in the cast step. Default cast of
-  // (seed + 1) gives the typical "claim + one supporting witness" cascade
-  // that reads cleanest in the demo; multi-corroborator runs are opt-in.
+  // Default cast: seed + 10 corroborators (11 messages total — one
+  // image-bearing claim, plus a chorus of text-only replies). Reads as a
+  // genuine grass-roots cascade in the demo. The first corroborator is the
+  // only one that gets a perspective image; the rest are text replies.
   useEffect(() => {
     setForm((f) => ({
       ...f,
-      corroboratorPersonaIds: suggested.slice(0, 1).map((p) => p.id),
+      corroboratorPersonaIds: suggested.slice(0, 10).map((p) => p.id),
     }));
   }, [suggested]);
 

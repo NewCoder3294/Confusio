@@ -356,12 +356,14 @@ class Orchestrator:
                         post.id, error=f"no agent for persona {post.persona_id}"
                     )
                     continue
-                # Image-bearing campaigns: every cast member rides on their
-                # own perspective image. Defer the send until the image is on
-                # disk so a post never races its artifact.
+                # Image-bearing campaigns: the seed always rides on the
+                # generated artifact, so defer until that file lands. For
+                # corroborators we attach a perspective image only if one
+                # exists on disk — text-only replies are valid (and expected)
+                # for the chorus around the single supporting image.
                 if self._campaign_expects_image(campaign):
                     image_path = self._image_for(campaign, post)
-                    if image_path is None:
+                    if post.role == "seed" and image_path is None:
                         log.info(
                             "deferring %s post for %s/%s — image not ready",
                             post.role, campaign.id, post.persona_id,

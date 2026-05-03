@@ -54,14 +54,18 @@ GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
 def _perspective_for(persona_id: str) -> str:
     pid = persona_id.lower()
     if "olga" in pid:
-        return "looking down from a second-floor apartment window through partly-drawn curtains"
+        return "from the opposite side of the street at sidewalk level, a parked car partly visible in the foreground"
     if "anton" in pid:
         return "from the driver's seat of a parked old sedan, dashboard visible at the bottom"
     if "dmitry" in pid:
         return "from across the street near a small auto shop, wires and a power pole in the upper foreground"
     if "news" in pid or "aggregator" in pid:
         return "as a re-shared screenshot of a chat-app message — letterbox bars, extra JPEG compression"
-    return "from a different bystander angle, handheld phone, slight motion blur"
+    if "mariya" in pid:
+        return "from across a small park looking past a low fence, slight foreground blur from chain-link"
+    if "pavel" in pid:
+        return "from a slightly elevated vantage point further down the street, telephoto compression"
+    return "from a different bystander angle on the same scene, handheld phone, slight motion blur, no window or curtain framing"
 
 
 def _prompt_for(seed_prompt: str, persona_id: str, has_reference: bool) -> str:

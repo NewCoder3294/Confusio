@@ -21,7 +21,12 @@ function cascadeImagesCmd(
   prompt: string,
   corroboratorIds: string[],
 ): string {
+  // Only the first corroborator gets a perspective image. The rest of the
+  // chorus replies as text — keeps the cascade fast, cheap, and matches the
+  // "claim + one supporting witness picture + lots of text reactions" shape
+  // of a real grass-roots cascade.
   if (corroboratorIds.length === 0) return "";
+  const imagedCorroborator = corroboratorIds[0];
   return [
     PYTHON_BIN,
     "-m",
@@ -31,7 +36,7 @@ function cascadeImagesCmd(
     "--seed-prompt",
     JSON.stringify(prompt),
     "--personas",
-    JSON.stringify(corroboratorIds.join(",")),
+    JSON.stringify(imagedCorroborator),
     "--out-dir",
     GENERATED_DIR,
   ].join(" ");
