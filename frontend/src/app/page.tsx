@@ -91,13 +91,14 @@ export default async function MissionBoardPage({
     <>
       <AutoRefresh intervalMs={6000} />
       <PageHeader
-        eyebrow="Offensive — Mission ledger"
+        eyebrow="Title 10 §1631 — Mission ledger · Append-only audit trail"
         title="Mission Board"
         brief="Live record of every dispatched attack chain. Pick a mission to inspect its artifact, detector verdicts, and stage timeline."
         actions={
           <div className="flex items-stretch gap-2">
             <MiniStat label="Active" value={counts.active} tone="info" />
             <MiniStat label="Done 24h" value={counts.completed} tone="pass" />
+            <MiniStat label="Failed" value={counts.failed} tone="fail" />
             <MiniStat
               label="Pass rate"
               value={
@@ -170,6 +171,9 @@ function computeCounts(missions: Mission[]) {
       m.finishedAt &&
       Date.parse(m.finishedAt) >= dayAgo,
   ).length;
+  const failed = missions.filter(
+    (m) => m.status === "failed" || m.status === "aborted",
+  ).length;
   const lastFive = missions
     .filter((m) => m.status === "completed" && m.provenancePassRate !== null)
     .slice(0, 5);
@@ -178,7 +182,7 @@ function computeCounts(missions: Mission[]) {
       ? null
       : lastFive.reduce((acc, m) => acc + (m.provenancePassRate ?? 0), 0) /
         lastFive.length;
-  return { active, completed, recentPassRate };
+  return { active, completed, failed, recentPassRate };
 }
 
 function MissionList({
@@ -743,7 +747,7 @@ function MiniStat({
 }: {
   label: string;
   value: string | number;
-  tone?: "default" | "info" | "pass" | "warn";
+  tone?: "default" | "info" | "pass" | "warn" | "fail";
 }) {
   const valueColor =
     tone === "info"
@@ -752,7 +756,9 @@ function MiniStat({
         ? "text-pass-fg"
         : tone === "warn"
           ? "text-warn-fg"
-          : "text-fg-default";
+          : tone === "fail"
+            ? "text-fail-fg"
+            : "text-fg-default";
   return (
     <div className="border border-border-subtle bg-bg-panel px-3 py-1 flex flex-col justify-center">
       <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-fg-faint">

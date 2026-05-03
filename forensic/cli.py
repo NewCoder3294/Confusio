@@ -135,6 +135,25 @@ def _add_launder_cascade(sub):
     return p
 
 
+def _add_anti_detect(sub):
+    p = sub.add_parser(
+        "anti-detect",
+        help="Full chain: cascade laundering → optional PRNU inject → optional signature match → multi-detector self-check",
+    )
+    p.add_argument("--target", required=True, type=Path)
+    p.add_argument("--output", required=True, type=Path)
+    p.add_argument("--donor", type=Path, help="real-camera JPEG for signature transplant")
+    p.add_argument("--prnu", type=Path, help=".npy PRNU pattern from prnu-extract")
+    p.add_argument("--prnu-alpha", type=float, default=0.025)
+    p.add_argument("--no-cascade", action="store_true", help="skip laundering cascade")
+    p.add_argument("--no-self-check", action="store_true", help="skip surrogate scoring")
+    p.add_argument("--max-p-ai", type=float, default=0.40,
+                   help="abort if worst-detector p_ai exceeds this (default 0.40)")
+    p.add_argument("--no-strict", action="store_true",
+                   help="don't abort on threshold; just warn")
+    return p
+
+
 def cmd_signature_match(args):
     from forensic.signature import full_signature_match
     status = full_signature_match(args.target, args.donor, args.output)
@@ -336,6 +355,36 @@ def cmd_launder_cascade(args):
     return 0
 
 
+def cmd_anti_detect(args):
+    from forensic.integration import (
+        AntiDetectionAbort,
+        AntiDetectionOptions,
+        apply_anti_detection_chain,
+    )
+
+    opts = AntiDetectionOptions(
+        cascade=not args.no_cascade,
+        prnu_pattern=args.prnu,
+        prnu_alpha=args.prnu_alpha,
+        donor_jpeg=args.donor,
+        self_check=not args.no_self_check,
+        max_p_ai=args.max_p_ai,
+        strict=not args.no_strict,
+    )
+    try:
+        report = apply_anti_detection_chain(args.target, args.output, options=opts)
+    except AntiDetectionAbort as exc:
+        print(json.dumps({
+            "ok": False,
+            "aborted": True,
+            "message": str(exc),
+            "report": exc.report,
+        }, indent=2))
+        return 2
+    print(json.dumps({"ok": True, "report": report}, indent=2))
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="mendacity-forensic", description=__doc__.split("\n\n")[0])
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -351,6 +400,7 @@ def main(argv=None):
     _add_launder_compare(sub)
     _add_launder_sweep(sub)
     _add_launder_cascade(sub)
+    _add_anti_detect(sub)
 
     args = parser.parse_args(argv)
     handlers = {
@@ -366,6 +416,7 @@ def main(argv=None):
         "launder-score": cmd_launder_score,
         "launder-compare": cmd_launder_compare,
         "launder-sweep": cmd_launder_sweep,
+        "anti-detect": cmd_anti_detect,
     }
     return handlers[args.cmd](args)
 

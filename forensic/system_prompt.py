@@ -195,14 +195,99 @@ def parse_camera_hint(exif_template: Mapping[str, Any]) -> CameraHint:
     )
 
 
+def _looks_like_piexif_dump(data: Mapping[str, Any]) -> bool:
+    """Detect the project's standard piexif dump format.
+
+    Piexif dumps look like:
+        {"0th": {"271": {"__b64__": "..."}, "272": ..., ...}, "Exif": {...}, ...}
+    where the keys "0th"/"Exif"/"GPS"/"1st"/"thumbnail" hold tag-id maps.
+    """
+    return any(k in data for k in ("0th", "Exif", "GPS", "1st"))
+
+
+def _piexif_decode_value(v: Any) -> Any:
+    """Best-effort decoding of one piexif-style field.
+
+    - {"__b64__": "..."} → decoded UTF-8 string (or hex if non-text)
+    - [num, den]         → float division (rational)
+    - [num]              → first int
+    - leave other shapes alone
+    """
+    import base64
+
+    if isinstance(v, Mapping) and "__b64__" in v:
+        try:
+            raw = base64.b64decode(v["__b64__"])
+            try:
+                return raw.decode("utf-8").rstrip("\x00")
+            except UnicodeDecodeError:
+                return raw.hex()
+        except Exception:
+            return None
+    if isinstance(v, list):
+        if len(v) == 2 and all(isinstance(x, (int, float)) for x in v):
+            num, den = v
+            if den == 0:
+                return None
+            return num / den
+        if len(v) == 1 and isinstance(v[0], (int, float)):
+            return v[0]
+    return v
+
+
+# Piexif tag IDs we care about. See https://github.com/hMatoba/Piexif/blob/master/piexif/_exif.py
+_TAGS_0TH = {271: "Make", 272: "Model"}
+_TAGS_EXIF = {
+    33434: "ExposureTime",
+    33437: "FNumber",
+    34855: "ISOSpeedRatings",
+    36867: "DateTimeOriginal",
+    37386: "FocalLength",
+}
+
+
+def _flatten_piexif_dump(data: Mapping[str, Any]) -> dict[str, Any]:
+    """Convert a piexif tag-id dump into a flat ``{Name: decoded_value}``."""
+    flat: dict[str, Any] = {}
+
+    ifd0 = data.get("0th", {})
+    if isinstance(ifd0, Mapping):
+        for tid, name in _TAGS_0TH.items():
+            v = ifd0.get(str(tid)) if str(tid) in ifd0 else ifd0.get(tid)
+            if v is None:
+                continue
+            decoded = _piexif_decode_value(v)
+            if decoded is not None:
+                flat[name] = decoded
+
+    exif = data.get("Exif", {})
+    if isinstance(exif, Mapping):
+        for tid, name in _TAGS_EXIF.items():
+            v = exif.get(str(tid)) if str(tid) in exif else exif.get(tid)
+            if v is None:
+                continue
+            decoded = _piexif_decode_value(v)
+            if decoded is not None:
+                flat[name] = decoded
+
+    return flat
+
+
 def parse_camera_hint_from_path(path: Path) -> CameraHint:
-    """Convenience: read JSON and parse."""
+    """Convenience: read JSON and parse.
+
+    Auto-detects the project's piexif dump format (keyed by 0th/Exif IFDs
+    with numeric tag ids) and falls back to flat ExifTool-style dicts.
+    """
     try:
         data = json.loads(Path(path).read_text())
     except (OSError, json.JSONDecodeError):
         return CameraHint()
     if not isinstance(data, Mapping):
         return CameraHint()
+    if _looks_like_piexif_dump(data):
+        flat = _flatten_piexif_dump(data)
+        return parse_camera_hint(flat)
     return parse_camera_hint(data)
 
 

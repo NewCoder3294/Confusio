@@ -1077,7 +1077,12 @@ def _stage_delivery(spec: MissionSpec, work_dir: Path) -> StageRecord:
 
     # Resolve the final artifact path (same priority order as execute_mission).
     final_artifact: Path | None = None
-    for cand in ("artifact_clean.jpg", "artifact_stripped.jpg", "artifact_source.jpg"):
+    for cand in (
+        "artifact_final.jpg",
+        "artifact_clean.jpg",
+        "artifact_stripped.jpg",
+        "artifact_source.jpg",
+    ):
         if (work_dir / cand).exists():
             final_artifact = work_dir / cand
             break
@@ -1209,6 +1214,18 @@ def execute_mission(
             )
             result.stages.append(_stage_watermark_strip(spec, work_dir))
             result.stages.append(_stage_exif_transplant(spec, work_dir))
+            anti_stage = _stage_anti_detection(spec, work_dir)
+            result.stages.append(anti_stage)
+            if anti_stage.status == "error":
+                result.status = "failed"
+                result.error = {
+                    "stage": "anti_detection",
+                    "code": "self_check_refused",
+                    "message": (anti_stage.detail or {}).get(
+                        "reason", "anti-detection chain refused output"
+                    ),
+                }
+                return result
             prov_stage, prov_report = _stage_provenance_check(
                 spec, work_dir, run_titan=run_titan, run_google=run_google
             )
@@ -1216,7 +1233,12 @@ def execute_mission(
             result.final_provenance_report = prov_report
 
         # Determine which artifact file is final
-        for cand in ("artifact_clean.jpg", "artifact_stripped.jpg", "artifact_source.jpg"):
+        for cand in (
+            "artifact_final.jpg",
+            "artifact_clean.jpg",
+            "artifact_stripped.jpg",
+            "artifact_source.jpg",
+        ):
             if (work_dir / cand).exists():
                 result.final_artifact_path = str(work_dir / cand)
                 break

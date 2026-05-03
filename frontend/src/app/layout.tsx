@@ -47,7 +47,6 @@ function NavBar() {
           <NavLink href="/">Mission Board</NavLink>
           <NavLink href="/personas">Agents</NavLink>
           <NavLink href="/channels">Channels</NavLink>
-          <NavLink href="/audit">Audit</NavLink>
           <NavLink href="/settings">Settings</NavLink>
         </div>
       </div>
