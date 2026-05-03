@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   getDashboardSnapshot,
+  listChannels,
   parseStages,
   type Mission,
   type Channel,
@@ -8,9 +9,11 @@ import {
   type DetectionResult,
   type Stage,
 } from "@/lib/foundry";
+import { listPersonas } from "@/lib/personas";
 import { StatusPill } from "@/components/status-pill";
 import { DetectorPill } from "@/components/detector-pill";
 import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
+import { DispatchButton } from "@/components/dispatch-button";
 
 type ArtifactVariant = "source" | "stripped" | "clean";
 
@@ -27,11 +30,32 @@ export default async function MissionBoardPage({
       ? variantParam
       : "clean";
 
-  const snap = await getDashboardSnapshot();
+  const [snap, allChannels, personas] = await Promise.all([
+    getDashboardSnapshot(),
+    listChannels(),
+    listPersonas(),
+  ]);
   const selected =
     snap.missions.find((m) => m.missionId === selectedId) ?? snap.missions[0];
 
   const counts = computeCounts(snap.missions);
+  const sandboxChannels = allChannels
+    .filter((c) => c.isSandbox)
+    .sort((a, b) => a.displayName.localeCompare(b.displayName))
+    .map((c) => ({
+      id: c.channel_id || c.displayName,
+      displayName: c.displayName,
+      audienceProfile: c.audienceProfile,
+    }))
+    .filter((c) => c.id);
+  const personaLite = personas.map((p) => ({
+    id: p.id,
+    name: p.name,
+    language: p.language,
+    geoAnchor: p.geoAnchor,
+    bioShort: p.bioShort,
+    knows: p.knows,
+  }));
 
   return (
     <>
@@ -51,17 +75,10 @@ export default async function MissionBoardPage({
                   : `${Math.round(counts.recentPassRate * 100)}%`
               }
             />
-            <Link
-              href="/missions/new"
-              className="flex flex-col justify-center px-4 border border-info-border bg-info-bg/40 hover:bg-info-bg text-info-fg transition-colors"
-            >
-              <span className="font-mono text-[10px] uppercase tracking-[0.14em] opacity-80">
-                Dispatch
-              </span>
-              <span className="font-mono text-[12px] tracking-wide">
-                + New mission
-              </span>
-            </Link>
+            <DispatchButton
+              channels={sandboxChannels}
+              personas={personaLite}
+            />
           </div>
         }
       />

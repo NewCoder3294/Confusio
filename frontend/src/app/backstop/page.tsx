@@ -2,11 +2,13 @@ import Link from "next/link";
 import {
   listCampaigns,
   listAllPosts,
+  effectiveStatus,
   type Campaign,
   type GeneratedPost,
 } from "@/lib/campaigns";
 import { listPersonas, type Persona } from "@/lib/personas";
 import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
+import { AutoRefresh } from "@/components/auto-refresh";
 
 export const metadata = {
   title: "Mendacity — Attack Dispatch",
@@ -39,6 +41,7 @@ export default async function BackstopPage({
 
   return (
     <>
+      <AutoRefresh intervalMs={5000} />
       <PageHeader
         eyebrow="Offensive — Social media attack chain"
         title="Attack Dispatch"
@@ -207,8 +210,12 @@ function SummaryPanel({
   posts: GeneratedPost[];
   inferred: number;
 }) {
-  const posted = posts.filter((p) => p.status === "posted").length;
-  const pending = posts.filter((p) => p.status === "pending_approval").length;
+  const now = Date.now();
+  const posted = posts.filter((p) => effectiveStatus(p, now) === "posted").length;
+  const pending = posts.filter((p) => {
+    const s = effectiveStatus(p, now);
+    return s === "scheduled" || s === "pending_approval";
+  }).length;
   const [delayMin, delayMax] = campaign.delayRangeSeconds;
 
   return (
@@ -368,6 +375,7 @@ function TimelinePanel({
   posts: GeneratedPost[];
   personasById: Map<string, Persona>;
 }) {
+  const now = Date.now();
   type Event = { ts: string; label: string; detail: string; tone: "info" | "pass" | "warn" | "fail" | "neutral" };
   const events: Event[] = [];
   events.push({
@@ -378,13 +386,14 @@ function TimelinePanel({
   });
   for (const post of posts) {
     const personaName = personasById.get(post.personaId)?.name ?? post.personaId;
+    const eff = effectiveStatus(post, now);
     events.push({
       ts: post.generatedAt,
       label: `${personaName} drafted`,
       detail: post.role,
       tone: "neutral",
     });
-    if (post.decidedAt) {
+    if (post.decidedAt && post.status !== "pending_approval") {
       events.push({
         ts: post.decidedAt,
         label: `${personaName} ${post.status === "rejected" ? "rejected" : "approved"}`,
@@ -393,11 +402,16 @@ function TimelinePanel({
       });
     }
     if (post.postedAt) {
+      const future = eff === "scheduled";
       events.push({
         ts: post.postedAt,
-        label: `${personaName} delivered`,
-        detail: post.telegramMessageId ? `tg ${post.telegramMessageId}` : "",
-        tone: "pass",
+        label: `${personaName} ${future ? "scheduled to post" : "delivered"}`,
+        detail: post.telegramMessageId
+          ? `tg ${post.telegramMessageId}`
+          : future
+            ? `in ${Math.max(0, Math.round((Date.parse(post.postedAt) - now) / 1000))}s`
+            : "",
+        tone: future ? "warn" : "pass",
       });
     }
   }
@@ -450,6 +464,7 @@ function PostsPanel({
   posts: GeneratedPost[];
   personasById: Map<string, Persona>;
 }) {
+  const now = Date.now();
   if (posts.length === 0) {
     return (
       <div className="px-4 py-6 text-fg-faint italic text-[12px]">
@@ -462,6 +477,7 @@ function PostsPanel({
       {posts.map((post) => {
         const persona = personasById.get(post.personaId);
         const content = post.editedContent || post.generatedContent;
+        const eff = effectiveStatus(post, now);
         return (
           <li
             key={post.id}
@@ -475,7 +491,7 @@ function PostsPanel({
                 <span className="font-mono text-[10px] tracking-[0.14em] uppercase text-fg-faint">
                   {post.role}
                 </span>
-                <PostStatusPill status={post.status} />
+                <PostStatusPill status={eff} />
               </div>
               <span className="font-mono text-[10px] text-fg-faint tabular-nums">
                 {formatRelative(post.generatedAt)}
@@ -592,6 +608,7 @@ function Stat({
 function PostStatusPill({ status }: { status: string }) {
   const TONE: Record<string, string> = {
     posted: "border-pass-border bg-pass-bg text-pass-fg",
+    scheduled: "border-info-border bg-info-bg text-info-fg",
     pending_approval: "border-warn-border bg-warn-bg text-warn-fg",
     rejected: "border-fail-border bg-fail-bg text-fail-fg",
     error: "border-fail-border bg-fail-bg text-fail-fg",
