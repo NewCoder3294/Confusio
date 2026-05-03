@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { SystemFooter } from "@/components/system-footer";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <ClassificationBanner />
         <NavBar />
         <main className="flex-1 flex flex-col">{children}</main>
-        <Footer />
+        <SystemFooter />
       </body>
     </html>
   );
@@ -76,14 +77,3 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   );
 }
 
-function Footer() {
-  return (
-    <footer className="border-t border-border-subtle bg-bg-panel">
-      <div className="max-w-[1400px] mx-auto px-6 py-2 flex items-center justify-between text-[10px] font-mono text-fg-faint uppercase tracking-[0.16em]">
-        <span>OPERATOR: J2-INSCOM-DEMO</span>
-        <span>BUILD v0.1 // FOUNDRY-INTEGRATED</span>
-        <span>RECORD-OF-ACTIONS // APPEND-ONLY</span>
-      </div>
-    </footer>
-  );
-}
