@@ -43,14 +43,29 @@ async function validate(
   if (!targetChannel) return { ok: false, error: "Target channel is required." };
 
   // Channel must exist in the sandbox allowlist.
-  const channels = await listChannels().catch(() => []);
+  let channels: Awaited<ReturnType<typeof listChannels>> = [];
+  let channelLoadError: string | null = null;
+  try {
+    channels = await listChannels();
+  } catch (e) {
+    channelLoadError = (e as Error).message.slice(0, 200);
+  }
+  if (channelLoadError) {
+    return {
+      ok: false,
+      error: `Could not load channel allowlist from Foundry: ${channelLoadError}`,
+    };
+  }
   const channel = channels.find(
-    (c) => c.channel_id === targetChannel || c.displayName === targetChannel,
+    (c) =>
+      c.channel_id === targetChannel ||
+      c.displayName === targetChannel ||
+      c.displayName === `@${targetChannel}`,
   );
   if (!channel) {
     return {
       ok: false,
-      error: `Channel ${targetChannel} not in allowlist.`,
+      error: `Channel ${targetChannel} not in allowlist (${channels.length} channels loaded: ${channels.map((c) => c.channel_id).join(", ") || "none"}).`,
     };
   }
   if (!channel.isSandbox) {

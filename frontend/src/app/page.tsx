@@ -36,32 +36,45 @@ export default async function MissionBoardPage({
   return (
     <div className="flex-1 flex flex-col">
       <section className="border-b border-border-subtle bg-bg-base">
-        <div className="max-w-[1400px] mx-auto px-6 py-4 grid grid-cols-3 gap-3">
-          <StatTile
-            label="Active missions"
-            value={counts.active}
-            tone={counts.active > 0 ? "info" : "default"}
-            hint="Status: executing"
-          />
-          <StatTile
-            label="Completed missions"
-            value={counts.completed}
-            hint="Last 24h on this console"
-          />
-          <StatTile
-            label="Recent pass rate"
-            value={
-              counts.recentPassRate === null
-                ? "—"
-                : `${Math.round(counts.recentPassRate * 100)}%`
-            }
-            tone={
-              counts.recentPassRate !== null && counts.recentPassRate >= 0.8
-                ? "info"
-                : "warn"
-            }
-            hint="Avg of last 5 completed"
-          />
+        <div className="max-w-[1400px] mx-auto px-6 py-4 flex items-stretch gap-3">
+          <div className="grid grid-cols-3 gap-3 flex-1">
+            <StatTile
+              label="Active missions"
+              value={counts.active}
+              tone={counts.active > 0 ? "info" : "default"}
+              hint="Status: executing"
+            />
+            <StatTile
+              label="Completed missions"
+              value={counts.completed}
+              hint="Last 24h on this console"
+            />
+            <StatTile
+              label="Recent pass rate"
+              value={
+                counts.recentPassRate === null
+                  ? "—"
+                  : `${Math.round(counts.recentPassRate * 100)}%`
+              }
+              tone={
+                counts.recentPassRate !== null && counts.recentPassRate >= 0.8
+                  ? "info"
+                  : "warn"
+              }
+              hint="Avg of last 5 completed"
+            />
+          </div>
+          <Link
+            href="/missions/new"
+            className="flex flex-col justify-center items-center w-[180px] border border-info-border bg-info-bg/40 hover:bg-info-bg text-info-fg transition-colors"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-80">
+              Dispatch
+            </span>
+            <span className="mt-1 font-mono text-base tracking-wide">
+              + New Mission
+            </span>
+          </Link>
         </div>
       </section>
 
