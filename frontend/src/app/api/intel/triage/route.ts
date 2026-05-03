@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import crypto from "node:crypto";
 import { runTriage } from "@/lib/triage";
+import { appendThreatRecord } from "@/lib/threats";
+import { revalidatePath } from "next/cache";
 
 const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
 const ALLOWED_MIME = new Set([
@@ -59,9 +61,18 @@ export async function POST(req: Request) {
 
   try {
     const report = await runTriage(tmpPath);
-    return Response.json({
+    const receivedAt = new Date().toISOString();
+    const persisted = await appendThreatRecord({
+      receivedAt,
       filename: file.name,
-      uploadedAt: new Date().toISOString(),
+      reviewer: process.env.MENDACITY_OPERATOR || "J2-INSCOM-DEMO",
+      report,
+    }).catch(() => null);
+    if (persisted) revalidatePath("/threats");
+    return Response.json({
+      id: persisted?.id ?? null,
+      filename: file.name,
+      uploadedAt: receivedAt,
       report,
     });
   } catch (e) {
