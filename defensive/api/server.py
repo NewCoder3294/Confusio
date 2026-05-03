@@ -3,17 +3,18 @@ from __future__ import annotations
 
 import hashlib
 import io
+import json
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Annotated, Literal
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 
 from defensive.engine.composite import run as composite_run
 from defensive.engine.detectors.ai_classifier import warmup as _warmup_classifier
 from defensive.engine.verdict import Verdict
-from defensive.persistence.audit import append as audit_append
+from defensive.persistence.audit import append as audit_append, default_path as audit_default_path
 
 
 @asynccontextmanager
@@ -107,3 +108,56 @@ async def get_verify(artifact_id: str) -> dict:
             detail={"code": "artifact_not_found", "artifact_id": artifact_id},
         )
     return body
+
+
+@app.get("/v1/health")
+async def health() -> dict:
+    from defensive.engine.detectors import ai_classifier as _ai_mod
+
+    classifier_warm = _ai_mod._pipeline is not None
+
+    audit_path = audit_default_path()
+    if audit_path.exists():
+        audit_count = sum(1 for _ in audit_path.open(encoding="utf-8"))
+    else:
+        audit_count = 0
+
+    return {
+        "ok": True,
+        "classifier_warm": classifier_warm,
+        "detectors": ["c2pa", "synthid", "titan", "ai_classifier", "exif", "ela", "phash"],
+        "audit_count": audit_count,
+    }
+
+
+@app.get("/v1/recent")
+async def recent(limit: Annotated[int, Query(ge=1, le=50)] = 10) -> dict:
+    audit_path = audit_default_path()
+    if not audit_path.exists():
+        return {"items": []}
+
+    lines = audit_path.read_text(encoding="utf-8").splitlines()
+    # Newest first
+    selected = lines[-limit:][::-1]
+
+    items = []
+    for line in selected:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        items.append({
+            "ts": row.get("ts", ""),
+            "artifact_id": row.get("artifact_id", ""),
+            "sha256": row.get("sha256", ""),
+            "operator": row.get("operator", ""),
+            "source": row.get("source", ""),
+            "verdict_level": row.get("verdict_level", ""),
+            "verdict_confidence": row.get("verdict_confidence", 0.0),
+            "verdict_summary": row.get("verdict_summary", ""),
+        })
+
+    return {"items": items}
