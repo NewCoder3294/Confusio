@@ -212,6 +212,14 @@ export type LocalSyntheticMission = {
 };
 
 export async function listLocalDispatchedMissions(): Promise<LocalSyntheticMission[]> {
+  const { existsSync } = await import("node:fs");
+  const path = (await import("node:path")).default;
+  const REPO_ROOT_LOCAL = path.resolve(
+    process.env.MENDACITY_REPO_ROOT ||
+      path.join(process.env.HOME || "", "Mendacity"),
+  );
+  const GENERATED = path.join(REPO_ROOT_LOCAL, "missions/generated");
+
   const campaigns = await listCampaigns();
   const allPosts = await listAllPosts();
   const postsByCampaign = new Map<string, GeneratedPost[]>();
@@ -224,6 +232,11 @@ export async function listLocalDispatchedMissions(): Promise<LocalSyntheticMissi
   const now = Date.now();
   for (const c of campaigns) {
     const missionId = c.id.startsWith("c_") ? c.id.slice(2) : c.id;
+    // Only surface campaigns that originated from the new mission flow
+    // (c_-prefixed) AND/OR have an actual generated image. Filters out
+    // legacy campaigns that predate image generation.
+    const hasImage = existsSync(path.join(GENERATED, `${missionId}.png`));
+    if (!c.id.startsWith("c_") && !hasImage) continue;
     const posts = postsByCampaign.get(c.id) ?? [];
     const allDelivered = posts.every((p) => effectiveStatus(p, now) === "posted");
     const stages = [
