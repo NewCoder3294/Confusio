@@ -9,13 +9,26 @@ import {
   type DetectionResult,
   type Stage,
 } from "@/lib/foundry";
-import { listPersonas } from "@/lib/personas";
+import { listPersonas, type Persona } from "@/lib/personas";
+import {
+  listCampaigns,
+  listAllPosts,
+  type Campaign,
+  type GeneratedPost,
+} from "@/lib/campaigns";
 import { StatusPill } from "@/components/status-pill";
 import { DetectorPill } from "@/components/detector-pill";
 import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
 import { DispatchButton } from "@/components/dispatch-button";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { ArtifactImage } from "@/components/artifact-image";
+import {
+  CastPanel,
+  PostsPanel,
+  InjectionPanel,
+  buildCampaignEvents,
+  type TimelineEvent,
+} from "@/components/campaign-tabs";
 
 type ArtifactVariant = "source" | "stripped" | "clean";
 
@@ -32,13 +45,28 @@ export default async function MissionBoardPage({
       ? variantParam
       : "clean";
 
-  const [snap, allChannels, personas] = await Promise.all([
+  const [snap, allChannels, personas, campaigns, allPosts] = await Promise.all([
     getDashboardSnapshot(),
     listChannels(),
     listPersonas(),
+    listCampaigns(),
+    listAllPosts(),
   ]);
   const selected =
     snap.missions.find((m) => m.missionId === selectedId) ?? snap.missions[0];
+
+  const personasById = new Map(personas.map((p) => [p.id, p]));
+  const campaignByMissionId = new Map<string, Campaign>();
+  for (const c of campaigns) {
+    const mid = c.id.startsWith("c_") ? c.id.slice(2) : c.id;
+    campaignByMissionId.set(mid, c);
+  }
+  const postsByCampaignId = new Map<string, GeneratedPost[]>();
+  for (const p of allPosts) {
+    const arr = postsByCampaignId.get(p.campaignId) ?? [];
+    arr.push(p);
+    postsByCampaignId.set(p.campaignId, arr);
+  }
 
   const counts = computeCounts(snap.missions);
   const sandboxChannels = allChannels
@@ -108,6 +136,15 @@ export default async function MissionBoardPage({
                 : []
             }
             variant={variant}
+            campaign={campaignByMissionId.get(selected.missionId)}
+            posts={
+              campaignByMissionId.get(selected.missionId)
+                ? postsByCampaignId.get(
+                    campaignByMissionId.get(selected.missionId)!.id,
+                  ) ?? []
+                : []
+            }
+            personasById={personasById}
           />
         ) : (
           <Card title="No mission selected">
@@ -199,14 +236,23 @@ function MissionDetail({
   artifact,
   detections,
   variant,
+  campaign,
+  posts,
+  personasById,
 }: {
   mission: Mission;
   channel: Channel | undefined;
   artifact: Artifact | undefined;
   detections: DetectionResult[];
   variant: ArtifactVariant;
+  campaign: Campaign | undefined;
+  posts: GeneratedPost[];
+  personasById: Map<string, Persona>;
 }) {
   const stages = parseStages(mission.stagesJson);
+  const campaignEvents: TimelineEvent[] = campaign
+    ? buildCampaignEvents(campaign, posts, personasById)
+    : [];
 
   const meta = (
     <span className="flex items-baseline gap-3">
@@ -243,12 +289,6 @@ function MissionDetail({
             ),
           },
           {
-            id: "provenance",
-            label: "Provenance",
-            count: detections.length,
-            panel: <ProvenancePanel detections={detections} artifact={artifact} />,
-          },
-          {
             id: "artifact",
             label: "Artifact",
             panel: (
@@ -259,11 +299,50 @@ function MissionDetail({
               />
             ),
           },
+          ...(campaign
+            ? [
+                {
+                  id: "cast",
+                  label: "Cast",
+                  count: Object.keys(campaign.roster).length,
+                  panel: (
+                    <CastPanel
+                      campaign={campaign}
+                      personasById={personasById}
+                    />
+                  ),
+                },
+                {
+                  id: "posts",
+                  label: "Posts",
+                  count: posts.length,
+                  panel: (
+                    <PostsPanel posts={posts} personasById={personasById} />
+                  ),
+                },
+                {
+                  id: "injection",
+                  label: "Injection",
+                  panel: <InjectionPanel campaign={campaign} />,
+                },
+              ]
+            : []),
+          {
+            id: "provenance",
+            label: "Provenance",
+            count: detections.length,
+            panel: <ProvenancePanel detections={detections} artifact={artifact} />,
+          },
           {
             id: "timeline",
             label: "Timeline",
-            count: stages.length,
-            panel: <TimelinePanel stages={stages} />,
+            count: stages.length + campaignEvents.length,
+            panel: (
+              <TimelinePanel
+                stages={stages}
+                campaignEvents={campaignEvents}
+              />
+            ),
           },
           {
             id: "raw",
@@ -470,16 +549,22 @@ function ArtifactPanel({
   );
 }
 
-function TimelinePanel({ stages }: { stages: Stage[] }) {
-  if (stages.length === 0) {
+function TimelinePanel({
+  stages,
+  campaignEvents,
+}: {
+  stages: Stage[];
+  campaignEvents: TimelineEvent[];
+}) {
+  if (stages.length === 0 && campaignEvents.length === 0) {
     return (
       <div className="px-4 py-6 text-fg-faint italic text-[12px]">
-        No stage events recorded.
+        No timeline events recorded.
       </div>
     );
   }
-  const ICON: Record<string, string> = { ok: "✓", skipped: "·", error: "✗" };
-  const TONE: Record<string, string> = {
+  const STAGE_ICON: Record<string, string> = { ok: "✓", skipped: "·", error: "✗" };
+  const STAGE_TONE: Record<string, string> = {
     ok: "text-pass-fg",
     skipped: "text-fg-faint",
     error: "text-fail-fg",
@@ -493,26 +578,76 @@ function TimelinePanel({ stages }: { stages: Stage[] }) {
     provenance_check: "PROVENANCE GRADED",
     delivered: "DELIVERY",
   };
+  const CAMPAIGN_TONE: Record<TimelineEvent["tone"], string> = {
+    info: "text-info-fg",
+    pass: "text-pass-fg",
+    warn: "text-warn-fg",
+    fail: "text-fail-fg",
+    neutral: "text-fg-muted",
+  };
+  const CAMPAIGN_ICON: Record<TimelineEvent["tone"], string> = {
+    info: "→",
+    pass: "✓",
+    warn: "·",
+    fail: "✗",
+    neutral: "·",
+  };
+
+  // Merge stages + campaign events by timestamp, ascending. Stages may have
+  // missing/empty ts; sort those to the start.
+  type Item =
+    | { kind: "stage"; ts: string; data: Stage }
+    | { kind: "event"; ts: string; data: TimelineEvent };
+  const items: Item[] = [
+    ...stages.map((s) => ({ kind: "stage" as const, ts: s.ts ?? "", data: s })),
+    ...campaignEvents.map((e) => ({
+      kind: "event" as const,
+      ts: e.ts,
+      data: e,
+    })),
+  ].sort((a, b) => a.ts.localeCompare(b.ts));
+
   return (
     <ol>
-      {stages.map((s, i) => {
-        const tone = s.status ?? "ok";
+      {items.map((it, i) => {
+        if (it.kind === "stage") {
+          const s = it.data;
+          const tone = s.status ?? "ok";
+          return (
+            <li
+              key={`stage-${s.stage}-${i}`}
+              className="grid grid-cols-[24px_180px_72px_1fr] items-baseline gap-3 px-4 py-2 border-b border-border-subtle last:border-b-0"
+            >
+              <span className={`font-mono text-base ${STAGE_TONE[tone] ?? "text-fg-muted"}`}>
+                {STAGE_ICON[tone] ?? "·"}
+              </span>
+              <span className="font-mono text-[11px] tracking-[0.12em] text-fg-default">
+                {STAGE_LABEL[s.stage] ?? s.stage.toUpperCase()}
+              </span>
+              <span className="font-mono text-[10px] text-fg-faint tabular-nums">
+                {s.ts ? new Date(s.ts).toISOString().slice(11, 19) + "Z" : "—"}
+              </span>
+              <span className="text-[12px] text-fg-muted italic">
+                {s.summary ?? "—"}
+              </span>
+            </li>
+          );
+        }
+        const e = it.data;
         return (
           <li
-            key={`${s.stage}-${i}`}
-            className="grid grid-cols-[24px_140px_72px_1fr] items-baseline gap-3 px-4 py-2 border-b border-border-subtle last:border-b-0"
+            key={`event-${i}`}
+            className="grid grid-cols-[24px_180px_72px_1fr] items-baseline gap-3 px-4 py-2 border-b border-border-subtle last:border-b-0"
           >
-            <span className={`font-mono text-base ${TONE[tone] ?? "text-fg-muted"}`}>
-              {ICON[tone] ?? "·"}
+            <span className={`font-mono text-base ${CAMPAIGN_TONE[e.tone]}`}>
+              {CAMPAIGN_ICON[e.tone]}
             </span>
-            <span className="font-mono text-[11px] tracking-[0.12em] text-fg-default">
-              {STAGE_LABEL[s.stage] ?? s.stage.toUpperCase()}
-            </span>
+            <span className="text-[12px] text-fg-default">{e.label}</span>
             <span className="font-mono text-[10px] text-fg-faint tabular-nums">
-              {s.ts ? new Date(s.ts).toISOString().slice(11, 19) + "Z" : "—"}
+              {e.ts ? new Date(e.ts).toISOString().slice(11, 19) + "Z" : "—"}
             </span>
-            <span className="text-[12px] text-fg-muted italic">
-              {s.summary ?? "—"}
+            <span className="text-[10px] text-fg-faint italic">
+              {e.detail}
             </span>
           </li>
         );
