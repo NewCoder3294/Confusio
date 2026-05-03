@@ -123,6 +123,22 @@ def degrade_to_phone(source_png: Path) -> dict:
     return metrics
 
 
+def _fix_mojibake(s: str) -> str:
+    """PIL returns EXIF strings as Latin-1-decoded ``str``. iPhones (and many
+    Android devices) actually write UTF-8 — so a value like ``Model`` may come
+    back as ``è§æ¤ç¨...`` (Latin-1 view of UTF-8 bytes). Detect that and
+    re-decode. If the round-trip fails, return the original string so genuine
+    Latin-1 strings aren't damaged."""
+    if not s:
+        return s
+    if not any(0x80 <= ord(c) <= 0xFF for c in s):
+        return s
+    try:
+        return s.encode("latin-1").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return s
+
+
 def _summarize_exif(jpeg_path: Path) -> dict:
     """Extract a small operator-facing summary of the transplanted EXIF."""
     try:
@@ -156,7 +172,7 @@ def _summarize_exif(jpeg_path: Path) -> dict:
                     val = val.decode("utf-8", errors="replace").strip("\x00").strip()
                 except Exception:
                     val = repr(val)
-            interesting[label] = str(val)
+            interesting[label] = _fix_mojibake(str(val))
     except Exception as exc:
         return {"_error": f"exif read failed: {exc}"}
     return {k: v for k, v in interesting.items() if v}
