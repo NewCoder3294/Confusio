@@ -726,7 +726,7 @@ function DropZonePanel({
                 fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
               }}
             >
-              Running 8 detectors
+              Running 7 detectors
             </span>
           </>
         ) : (
