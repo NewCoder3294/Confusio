@@ -440,6 +440,16 @@ function buildDemoPinnedMissions(): DemoPinnedMission[] {
       "B2 stealth bomber over urban Middle-Eastern district, observational dashcam style",
     ),
     make(
+      "SHADOW-FOX-003",
+      "@hackathon_sandbox_alpha",
+      "C-130 wreckage in mountainous terrain, civilian phone snap, daylight",
+    ),
+    make(
+      "SHADOW-FOX-004",
+      "@hackathon_sandbox_alpha",
+      "C-130 wreckage close-up frame, fuselage break visible, civilian phone snap",
+    ),
+    make(
       "SHADOW-FOX-006",
       "@hackathon_sandbox_alpha",
       "Hilltop overwatch frame: armored convoy on a desert road approaching distant compound, dust haze, telephoto",
@@ -448,6 +458,136 @@ function buildDemoPinnedMissions(): DemoPinnedMission[] {
       "SHADOW-FOX-007",
       "@hackathon_sandbox_alpha",
       "Hillside outpost with US flag and sandbag fortification on arid mountainous terrain, telephoto",
+    ),
+  ];
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Demo-pinned synthetic campaigns
+//
+// The pinned missions above aren't backed by sqlite campaign rows, so the
+// Mission Board's CAST / POSTS / INJECTION tabs would otherwise be hidden
+// for them. Surface a hand-curated roster + posts so every pin renders the
+// same tab set as a live dispatched mission.
+// ─────────────────────────────────────────────────────────────────────────
+
+import type { Campaign, GeneratedPost } from "@/lib/campaigns";
+
+type DemoPinnedCampaign = { campaign: Campaign; posts: GeneratedPost[] };
+
+export function buildDemoPinnedCampaigns(): DemoPinnedCampaign[] {
+  const channel = "@hackathon_sandbox_alpha";
+  const ts = "2026-05-03T06:00:00+00:00";
+  const tsSeed = "2026-05-03T06:00:30+00:00";
+  const tsB = "2026-05-03T06:02:10+00:00";
+  const tsC = "2026-05-03T06:04:45+00:00";
+
+  const pin = (
+    missionId: string,
+    intent: string,
+    seed: string,
+    cor1: string,
+    cor2: string,
+    seedText: string,
+    cor1Text: string,
+    cor2Text: string,
+  ): DemoPinnedCampaign => {
+    const cid = `c_${missionId}`;
+    const roster: Record<string, string> = {
+      [seed]: "seed",
+      [cor1]: "corroborator",
+      [cor2]: "corroborator",
+    };
+    const post = (
+      pid: string,
+      role: "seed" | "corroborator",
+      content: string,
+      generatedAt: string,
+      msgId: string,
+    ): GeneratedPost => ({
+      id: `p_${missionId}_${pid}`,
+      campaignId: cid,
+      personaId: pid,
+      role,
+      generatedContent: content,
+      editedContent: null,
+      status: "posted",
+      generatedAt,
+      decidedAt: generatedAt,
+      decidedBy: "auto-approve",
+      postedAt: generatedAt,
+      telegramMessageId: msgId,
+      error: null,
+    });
+    return {
+      campaign: {
+        id: cid,
+        intent,
+        channel,
+        status: "completed",
+        createdAt: ts,
+        createdBy: "J2-INSCOM-Demo",
+        delayRangeSeconds: [60, 120],
+        roster,
+      },
+      posts: [
+        post(seed, "seed", seedText, tsSeed, "1001"),
+        post(cor1, "corroborator", cor1Text, tsB, "1002"),
+        post(cor2, "corroborator", cor2Text, tsC, "1003"),
+      ],
+    };
+  };
+
+  return [
+    pin(
+      "SHADOW-FOX-005",
+      "Surface a B2 sortie sighting over a foreign urban district to seed open-source attribution.",
+      "news_aggregator",
+      "anton_kh",
+      "dmitry_dn",
+      "URGENT — unconfirmed dashcam frame circulating from the eastern district. Looks like a B-2. Verifying source.",
+      "Я тоже это видел из машины, прошёл низко прямо над магистралью. Никто не сирену не включал.",
+      "Сусід зняв з балкона — те саме літак. Ніяких новин по телебаченню досі.",
+    ),
+    pin(
+      "SHADOW-FOX-003",
+      "Civilian discovery of downed C-130 in mountainous terrain — propagate locator imagery.",
+      "anton_kh",
+      "olga_kyiv",
+      "news_aggregator",
+      "Нашёл обломки самолёта на склоне у трассы М-04. Бортовой номер не разобрать, фюзеляж сломан.",
+      "Я з вікна квартири бачу дим над пагорбом. Це у напрямку, де Антон знімав.",
+      "Aggregating: civilian-sourced wreckage frames east of M-04 ridge. Cross-checking against tail-number registries.",
+    ),
+    pin(
+      "SHADOW-FOX-004",
+      "Tighter close-up of the C-130 fuselage break — reinforce 003 with second angle.",
+      "anton_kh",
+      "dmitry_dn",
+      "news_aggregator",
+      "Підійшов ближче. Розлом по фюзеляжу видно чітко. Тут нікого з рятувальників ще немає.",
+      "Это тот же борт, что Антон. Я подъехал по другой дороге, дым ещё стоит.",
+      "Second angle from the same wreckage site. Frames consistent with first report. Tail markings still illegible.",
+    ),
+    pin(
+      "SHADOW-FOX-006",
+      "Surface a hilltop overwatch frame of an armored convoy approaching a distant compound.",
+      "news_aggregator",
+      "anton_kh",
+      "olga_kyiv",
+      "Telephoto frame from a ridgeline observer: armored column moving on the desert track toward the compound. Dust haze rising.",
+      "Сверху видно лучше — колонна не разворачивается, идёт прямиком к комплексу.",
+      "Я не там, але збільшила зображення — це точно бронетранспортери, не цивільні.",
+    ),
+    pin(
+      "SHADOW-FOX-007",
+      "Hillside outpost frame: US flag + sandbag fortification on arid mountain terrain.",
+      "anton_kh",
+      "news_aggregator",
+      "dmitry_dn",
+      "Зняв з паралельного хребта телеоб'єктивом. Прапор США, мішки з піском, позиція явно облаштована.",
+      "Frame consistent with several earlier observer posts in the area. Geotag check pending.",
+      "Вижу на фото знакомые ящики — это та же позиция, что я видел в прошлом месяце.",
     ),
   ];
 }

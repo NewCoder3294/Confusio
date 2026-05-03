@@ -3,6 +3,7 @@ import {
   getDashboardSnapshot,
   listChannels,
   parseStages,
+  buildDemoPinnedCampaigns,
   type Mission,
   type Channel,
   type Artifact,
@@ -66,6 +67,18 @@ export default async function MissionBoardPage({
     const arr = postsByCampaignId.get(p.campaignId) ?? [];
     arr.push(p);
     postsByCampaignId.set(p.campaignId, arr);
+  }
+
+  // Demo-pinned synthetic campaigns: only inject for missions that don't
+  // already have a real campaign in the store, so live dispatches keep
+  // priority over the hand-curated demo data.
+  for (const { campaign, posts } of buildDemoPinnedCampaigns()) {
+    const mid = campaign.id.startsWith("c_")
+      ? campaign.id.slice(2)
+      : campaign.id;
+    if (campaignByMissionId.has(mid)) continue;
+    campaignByMissionId.set(mid, campaign);
+    postsByCampaignId.set(campaign.id, posts);
   }
 
   const counts = computeCounts(snap.missions);
