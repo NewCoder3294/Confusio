@@ -59,6 +59,7 @@ function NavBar() {
           <NavLink href="/intel">Intel Inbox</NavLink>
           <NavLink href="/backstop">Backstop</NavLink>
           <NavLink href="/personas">Personas</NavLink>
+          <NavLink href="/channels">Channels</NavLink>
           <NavLink href="/audit">Authorization &amp; Audit</NavLink>
         </div>
       </div>

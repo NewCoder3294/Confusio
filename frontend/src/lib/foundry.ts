@@ -98,6 +98,8 @@ export type Stage = {
 
 async function foundryFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const url = `${HOST.replace(/\/$/, "")}${path}`;
+  const cacheOpts: { next?: { revalidate: number }; cache?: "no-store" } =
+    init.method && init.method !== "GET" ? { cache: "no-store" } : { next: { revalidate: 5 } };
   const res = await fetch(url, {
     ...init,
     headers: {
@@ -105,16 +107,36 @@ async function foundryFetch<T>(path: string, init: RequestInit = {}): Promise<T>
       "Content-Type": "application/json",
       ...(init.headers ?? {}),
     },
-    // Next.js 16: fetch is uncached by default. We want fresh reads on
-    // every page render so the operator sees current state. Using a small
-    // revalidate keeps things snappy in dev.
-    next: { revalidate: 5 },
+    ...cacheOpts,
   });
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`Foundry ${res.status} on ${path}: ${body.slice(0, 300)}`);
   }
   return (await res.json()) as T;
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Action API — writes
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Apply an Ontology action. Action API names are kebab-case
+ * (`create-channel`, `edit-channel`, `delete-channel`). Parameters are
+ * camelCase except for the manually-added Channel.channel_id (snake) — see
+ * project memory `Mendacity Foundry build`.
+ */
+export async function applyAction(
+  actionApiName: string,
+  parameters: Record<string, unknown>,
+): Promise<unknown> {
+  return foundryFetch(
+    `/api/v2/ontologies/${ONTOLOGY_RID}/actions/${actionApiName}/apply`,
+    {
+      method: "POST",
+      body: JSON.stringify({ parameters, options: { mode: "VALIDATE_AND_EXECUTE" } }),
+    },
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────
