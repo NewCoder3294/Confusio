@@ -43,3 +43,4 @@ social/.heartbeat
 .gstack/
 .superpowers/
 defensive/audit.jsonl
+defensive_verify_bot.session
