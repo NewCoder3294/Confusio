@@ -6,14 +6,14 @@ from defensive.engine.verdict import Severity
 
 
 class TestTitan:
-    def test_credentials_missing_returns_warn(self, tiny_jpeg_bytes):
+    def test_credentials_missing_returns_na(self, tiny_jpeg_bytes):
         with patch(
             "defensive.engine.detectors.titan.detect_titan_watermark",
             side_effect=RuntimeError("No AWS credentials found"),
         ):
             sig = titan_run(tiny_jpeg_bytes)
         assert sig.detector == "titan"
-        assert sig.severity is Severity.warn
+        assert sig.severity is Severity.na
         assert "unavailable" in sig.evidence.lower()
 
     def test_watermark_detected_returns_fail(self, tiny_jpeg_bytes):

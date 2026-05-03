@@ -74,12 +74,13 @@ const DETECTOR_LABELS: Record<string, string> = {
   synthid: "SYNTH",
   titan: "TITAN",
   ai_classifier: "AI-GEN",
+  ai_classifier_v2: "AI-GEN-V2",
   exif: "EXIF",
   ela: "ELA",
   phash: "PHASH",
 };
 
-const DETECTOR_ORDER = ["c2pa", "synthid", "titan", "ai_classifier", "exif", "ela", "phash"];
+const DETECTOR_ORDER = ["c2pa", "synthid", "titan", "ai_classifier", "ai_classifier_v2", "exif", "ela", "phash"];
 
 /* ─────────────────────────────────────────────────────────────────────── */
 /* Severity / verdict inline styles                                          */
@@ -161,7 +162,7 @@ function StatusBar({
     : "Engine cold";
 
   const detectorCount = health?.detectors.length ?? 0;
-  const detectorsLabel = `${detectorCount}/7 detectors ready`;
+  const detectorsLabel = `${detectorCount}/8 detectors ready`;
 
   return (
     <div
@@ -252,7 +253,7 @@ function StatusBar({
                   width: "7px",
                   height: "7px",
                   borderRadius: "50%",
-                  background: detectorCount === 7 ? "#6cd690" : "#e3b14a",
+                  background: detectorCount === 8 ? "#6cd690" : "#e3b14a",
                   display: "inline-block",
                   flexShrink: 0,
                 }}
@@ -726,7 +727,7 @@ function DropZonePanel({
                 fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
               }}
             >
-              Running 7 detectors
+              Running 8 detectors
             </span>
           </>
         ) : (

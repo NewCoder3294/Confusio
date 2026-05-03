@@ -22,7 +22,7 @@ def run(image_bytes: bytes) -> DetectorSignal:
     except RuntimeError as e:
         elapsed_ms = int((time.monotonic() - started) * 1000)
         return DetectorSignal(
-            detector=NAME, severity=Severity.warn, score=None,
+            detector=NAME, severity=Severity.na, score=None,
             evidence=f"detector unavailable: {type(e).__name__}",
             latency_ms=elapsed_ms,
         )

@@ -6,14 +6,14 @@ from defensive.engine.verdict import Severity
 
 
 class TestSynthid:
-    def test_skipped_without_credentials_returns_warn(self, tiny_jpeg_bytes):
+    def test_skipped_without_credentials_returns_na(self, tiny_jpeg_bytes):
         with patch(
             "defensive.engine.detectors.synthid.verify_google_watermark",
             return_value={"status": "skipped", "detail": "no GCP project"},
         ):
             sig = synthid_run(tiny_jpeg_bytes)
         assert sig.detector == "synthid"
-        assert sig.severity is Severity.warn
+        assert sig.severity is Severity.na
 
     def test_watermark_detected_returns_fail(self, tiny_jpeg_bytes):
         with patch(

@@ -23,7 +23,7 @@ def run(image_bytes: bytes) -> DetectorSignal:
     status = report.get("status")
     if status != "ok":
         return DetectorSignal(
-            detector=NAME, severity=Severity.warn, score=None,
+            detector=NAME, severity=Severity.na, score=None,
             evidence=f"detector unavailable: {status or 'unknown'}",
             latency_ms=elapsed_ms,
         )

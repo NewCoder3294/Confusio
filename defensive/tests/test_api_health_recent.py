@@ -15,6 +15,7 @@ def _patch_warmup(monkeypatch):
     """Prevent the lifespan warm-up from downloading the HF model."""
     from defensive.api import server
     monkeypatch.setattr(server, "_warmup_classifier", lambda: None)
+    monkeypatch.setattr(server, "_warmup_classifier_v2", lambda: None)
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +33,7 @@ class TestHealth:
         assert body["ok"] is True
         assert isinstance(body["classifier_warm"], bool)
         assert "detectors" in body
-        assert len(body["detectors"]) == 7
+        assert len(body["detectors"]) == 8
         assert isinstance(body["audit_count"], int)
 
     def test_audit_count_counts_lines(self, monkeypatch, tmp_path):
