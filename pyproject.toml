@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mendacity"
+version = "0.1.0"
+description = "Image provenance checks: C2PA, optional Amazon Titan watermark detection, optional Google SynthID verification"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "c2pa-python>=0.32",
+    "boto3>=1.35",
+]
+
+[project.optional-dependencies]
+google = ["google-cloud-aiplatform>=1.70"]
+
+dev = ["pytest>=8", "piexif>=1.1", "Pillow>=10"]
+
+[project.scripts]
+mendacity-check = "mendacity.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

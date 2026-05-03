@@ -6,15 +6,25 @@ __pycache__/
 .Python
 .venv/
 venv/
+*.egg-info/
+src/*.egg-info/
+dist/
+build/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Node
+node_modules/
 
 # Editors
 .vscode/
 .idea/
 *.swp
 .DS_Store
+
+# Vendored repos
+vendor/*/.git/
 
 # Mendacity secrets / state — NEVER commit
 social/config/api_credentials.env

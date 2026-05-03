@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Optional Node tooling for scripts/synthidbye_run.ts (SynthIDBye vendor)",
+  "devDependencies": {
+    "sharp": "^0.33.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}
