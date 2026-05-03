@@ -1,6 +1,13 @@
 """Shared test fixtures."""
 from __future__ import annotations
 
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "slow: integration tests that load the real ML model (skip with -m \"not slow\")",
+    )
+
 import io
 from pathlib import Path
 
