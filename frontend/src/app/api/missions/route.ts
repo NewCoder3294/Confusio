@@ -19,19 +19,43 @@ const PYTHON_BIN = process.env.MENDACITY_PYTHON || "python3";
 async function spawnImageGen(
   missionId: string,
   prompt: string,
+  channel: string,
 ): Promise<void> {
   await mkdir(GENERATED_DIR, { recursive: true });
   const outPath = path.join(GENERATED_DIR, `${missionId}.png`);
-  const child = spawn(
+  // Two-stage subprocess: image_gen writes the raw PNG, then process_artifact
+  // produces .jpg (EXIF transplanted) + .steg.png (LSB-embedded) +
+  // .meta.json (sidecar metadata for the Injection tab). Chained via shell
+  // && so steg+exif only run on a successful generation.
+  const cmd = [
     PYTHON_BIN,
-    ["-m", "mendacity.image_gen", "--prompt", prompt, "--output", outPath],
-    {
-      cwd: REPO_ROOT,
-      env: { ...process.env },
-      detached: true,
-      stdio: "ignore",
-    },
-  );
+    "-m",
+    "mendacity.image_gen",
+    "--prompt",
+    JSON.stringify(prompt),
+    "--output",
+    outPath,
+    "&&",
+    PYTHON_BIN,
+    "-m",
+    "mendacity.process_artifact",
+    "--mission-id",
+    missionId,
+    "--source",
+    outPath,
+    "--out-dir",
+    GENERATED_DIR,
+    "--channel",
+    JSON.stringify(channel),
+    "--prompt",
+    JSON.stringify(prompt),
+  ].join(" ");
+  const child = spawn("sh", ["-c", cmd], {
+    cwd: REPO_ROOT,
+    env: { ...process.env },
+    detached: true,
+    stdio: "ignore",
+  });
   child.unref();
 }
 
@@ -322,7 +346,7 @@ export async function POST(req: Request) {
   // missions/generated/<missionId>.png a few seconds later; the Backstop
   // page polls and shows it once present.
   try {
-    await spawnImageGen(v.missionId, v.artifactPrompt);
+    await spawnImageGen(v.missionId, v.artifactPrompt, v.targetChannel);
   } catch {
     // image generation is best-effort; campaign still dispatches.
   }

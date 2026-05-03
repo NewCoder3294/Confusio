@@ -7,6 +7,10 @@ import {
 import { type Persona } from "@/lib/personas";
 import { Block } from "@/components/surfaces";
 
+// Re-export the live, metadata-driven Injection panel so existing call sites
+// (Mission Board MissionDetail) get the new behavior without import churn.
+export { InjectionPanel } from "@/components/injection-panel";
+
 /* ─────────────────────────────────────────────────────────────────────── */
 /* Cast — operator-assigned roster + recommended corroborators             */
 /* ─────────────────────────────────────────────────────────────────────── */
