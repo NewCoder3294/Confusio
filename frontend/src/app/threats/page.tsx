@@ -35,9 +35,9 @@ export default async function ThreatLibraryPage({
         title="Threat Library"
         brief="Append-only record of every Intel Inbox triage. Records are immutable; correction goes via a new triage."
       />
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="w-full mx-auto px-6 py-4 flex flex-col gap-4">
-          <div className="grid grid-cols-4 gap-2">
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 w-full mx-auto px-6 py-4 flex flex-col gap-4">
+          <div className="grid grid-cols-4 gap-2 shrink-0">
             <Tally href="/threats" label="Total" value={counts.total} active={filter === "all"} />
             <Tally
               href="/threats?filter=synthetic"
@@ -166,7 +166,7 @@ function EmptyLibrary({
 
 function ThreatTable({ records }: { records: ThreatRecord[] }) {
   return (
-    <div className="border border-border-subtle bg-bg-panel">
+    <div className="flex-1 min-h-0 overflow-y-auto border border-border-subtle bg-bg-panel">
       <table className="w-full text-[12px]">
         <thead>
           <tr className="border-b border-border-subtle text-[10px] uppercase tracking-[0.14em] text-fg-faint font-mono">

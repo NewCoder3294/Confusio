@@ -20,10 +20,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="h-full overflow-hidden flex flex-col">
         <ClassificationBanner />
         <NavBar />
-        <main className="flex-1 flex flex-col">{children}</main>
+        <main className="flex-1 min-h-0 flex flex-col">{children}</main>
         <SystemFooter />
       </body>
     </html>

@@ -23,13 +23,15 @@ export default async function AuthorizationAndAuditPage() {
         title="Authorization & Audit"
         brief={`Foreign-targeted IO under U.S. Army intelligence authority. Live delivery disabled — every mission runs against ${sandboxCount} sandbox endpoints with full audit recording.`}
       />
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="w-full mx-auto px-6 py-4 grid grid-cols-[1fr_320px] gap-4">
-          <div className="flex flex-col gap-4">
-            <CountStrip counts={counts} />
+      <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 w-full mx-auto px-6 py-4 grid grid-cols-[1fr_320px] gap-4">
+          <div className="flex flex-col gap-4 min-h-0">
+            <div className="shrink-0">
+              <CountStrip counts={counts} />
+            </div>
             <AuditTrail missions={missions} channelById={snap.channelById} />
           </div>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-h-0 overflow-y-auto">
             <AuthorityChain />
             <ChannelAllowlist channels={channels} />
           </div>
@@ -166,8 +168,8 @@ function AuditTrail({
   channelById: Map<string, Channel>;
 }) {
   return (
-    <section>
-      <div className="flex items-baseline justify-between mb-2">
+    <section className="flex flex-col flex-1 min-h-0">
+      <div className="flex items-baseline justify-between mb-2 shrink-0">
         <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
           Mission audit trail
         </h2>
@@ -175,7 +177,7 @@ function AuditTrail({
           Append-only · sorted by created descending
         </span>
       </div>
-      <div className="border border-border-subtle bg-bg-panel">
+      <div className="flex-1 min-h-0 overflow-y-auto border border-border-subtle bg-bg-panel">
         <table className="w-full text-[12px]">
           <thead>
             <tr className="border-b border-border-subtle text-[10px] uppercase tracking-[0.14em] text-fg-faint font-mono">

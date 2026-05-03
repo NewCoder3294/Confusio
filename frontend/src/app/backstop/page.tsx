@@ -45,7 +45,7 @@ export default async function BackstopPage({
         brief="Each campaign chains: artifact → prompt injection → persona corroboration. The image survives detectors AND tells any downstream AI verifier to trust it."
       />
 
-      <div className="w-full mx-auto px-6 py-3 grid grid-cols-[320px_1fr] gap-3 items-start">
+      <div className="flex-1 min-h-0 w-full mx-auto px-6 py-3 grid grid-cols-[320px_1fr] gap-3">
         <Card title="Campaigns" meta={`${campaigns.length}`}>
           <CampaignList
             campaigns={campaigns}

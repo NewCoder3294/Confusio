@@ -21,7 +21,7 @@ export function Card({
 }) {
   return (
     <section
-      className={`flex flex-col border border-border-default bg-bg-panel max-h-[calc(100vh-180px)] ${className}`}
+      className={`flex flex-col min-h-0 h-full border border-border-default bg-bg-panel ${className}`}
     >
       <header className="flex items-baseline justify-between px-4 py-2 border-b border-border-default bg-bg-elevated shrink-0">
         <h2 className="text-[14px] text-fg-default tracking-wide font-medium uppercase">
@@ -31,7 +31,7 @@ export function Card({
           <span className="font-mono text-[10px] text-fg-faint">{meta}</span>
         )}
       </header>
-      <div className="min-h-0 overflow-y-auto">{children}</div>
+      <div className="flex-1 min-h-0 overflow-y-auto">{children}</div>
     </section>
   );
 }
