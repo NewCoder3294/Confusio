@@ -6,7 +6,7 @@ import {
 import { PageHeader } from "@/components/surfaces";
 
 export const metadata = {
-  title: "Mendacity — Threat Library",
+  title: "Confusio — Threat Library",
 };
 
 export default async function ThreatLibraryPage({

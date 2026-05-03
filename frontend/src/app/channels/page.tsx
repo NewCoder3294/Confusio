@@ -3,7 +3,7 @@ import { NewChannelForm } from "@/components/channel-admin";
 import { PageHeader } from "@/components/surfaces";
 
 export const metadata = {
-  title: "Mendacity — Channels",
+  title: "Confusio — Channels",
 };
 
 export default async function ChannelsPage() {

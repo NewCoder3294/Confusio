@@ -10,7 +10,7 @@ import { NewAgentTrigger } from "@/components/new-agent-trigger";
 import { DeleteAgentButton } from "@/components/delete-agent-button";
 
 export const metadata = {
-  title: "Mendacity — Agents",
+  title: "Confusio — Agents",
 };
 
 const EMPTY_ACTIVITY: PersonaActivity = {
