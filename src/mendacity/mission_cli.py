@@ -266,6 +266,25 @@ def _cmd_personas(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_login(args: argparse.Namespace) -> int:
+    """Run interactive Telethon login for a persona.
+
+    Wraps the existing social.scripts.login_persona script for discoverability
+    inside the unified CLI. The login itself is interactive — operator must
+    enter the SMS verification code Telegram sends to the persona's phone.
+    Cannot be automated.
+    """
+    if str(MISSIONS_DIR.parent) not in sys.path:
+        sys.path.insert(0, str(MISSIONS_DIR.parent))
+    try:
+        from social.scripts.login_persona import main as login_main
+    except Exception as exc:
+        print(f"login wrapper failed to import: {exc}", file=sys.stderr)
+        return 2
+    # The script's main() takes argv[0] = script-name, argv[1] = persona_id.
+    return login_main(["login_persona", args.persona_id])
+
+
 def _cmd_status(args: argparse.Namespace) -> int:
     """Compact one-line status for a mission_id."""
     p = MISSIONS_DIR / "results" / f"{args.mission_id}.json"
@@ -458,6 +477,16 @@ def main(argv: list[str] | None = None) -> int:
         help="list available personas and their Telegram session auth status",
     )
     p_personas.set_defaults(func=_cmd_personas)
+
+    p_login = sub.add_parser(
+        "login",
+        help="interactively re-login an expired persona (requires SMS code)",
+    )
+    p_login.add_argument(
+        "persona_id",
+        help="persona to re-authenticate (must exist under social/personas/)",
+    )
+    p_login.set_defaults(func=_cmd_login)
 
     p_status = sub.add_parser(
         "status", help="compact one-line status for a completed mission",

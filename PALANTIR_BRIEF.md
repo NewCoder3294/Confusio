@@ -32,7 +32,7 @@ Streamlit (the existing local operator console) is the fallback if Foundry isn't
 
 | You own (Palantir) | Other Claude owns (local) |
 |---|---|
-| Foundry Ontology (entities, properties, relations, actions) | `mendacity run-mission <spec.yaml>` CLI spine |
+| Foundry Ontology (entities, properties, relations, actions) | `mendacity-mission` CLI spine (`run`, `watch`, `audit`, `plan`, `personas`, `status`, `audit-mission`, `match-persona`, `grade`) |
 | AIP Logic functions (mission orchestration, agent calls) | Image generation pipeline (existing `scripts/`) |
 | Foundry Workshop dashboard (operator UI) | Provenance verification loop (`src/mendacity/pipeline.py`) |
 | AIP Studio agent that interprets natural-language operator intent | SynthIDBye watermark stripping (`vendor/SynthIDBye/`) |
@@ -329,24 +329,29 @@ Your job: make the Foundry segments tight. Pre-bake demo data so the Mission Boa
 
 ```
 ~/Mendacity/
-├── src/mendacity/             # Local engine (provenance CLI) — DO NOT TOUCH
-│   ├── cli.py                 # mendacity-check (current); mendacity run-mission (incoming)
+├── src/mendacity/             # Local engine — DO NOT TOUCH
+│   ├── cli.py                 # mendacity-check (legacy provenance CLI)
+│   ├── mission.py             # orchestrator + validate_spec + watch_inbox
+│   ├── mission_cli.py         # mendacity-mission entrypoint (9 subcommands)
+│   ├── mission_planner.py     # plan_mission + match_archetype_to_persona
+│   ├── audit.py               # before/after report generator
+│   ├── image_gen.py           # DALL-E 3 wrapper
 │   ├── pipeline.py            # analyze_image() — returns provenance report
 │   ├── c2pa_report.py
 │   ├── titan.py
 │   └── google_wm.py
 ├── social/                    # Local engine (persona + Telegram) — DO NOT TOUCH
-│   ├── orchestrator.py        # campaign daemon
+│   ├── orchestrator.py        # campaign daemon (legacy SQLite path)
 │   ├── persona_agent.py
-│   ├── telegram_client.py
-│   └── app.py                 # Streamlit operator console (will be the fallback if Foundry slips)
+│   ├── telegram_client.py     # send_message + send_image
+│   └── app.py                 # Streamlit operator console (fallback)
 ├── scripts/                   # Image manipulation utilities
 │   ├── apply_jpeg_exif.py
 │   └── synthidbye_run.ts      # SynthID watermark strip
 ├── vendor/SynthIDBye/         # Vendored watermark stripper
 ├── fixtures/                  # EXIF templates and test data
 ├── assets/                    # Test images
-├── missions/                  # NEW: created by other Claude — your transport drops here
+├── missions/                  # Engine I/O — your transport drops here
 │   ├── inbox/                 #   <mission_id>.yaml — Foundry writes
 │   └── results/               #   <mission_id>.json — engine writes
 └── PALANTIR_BRIEF.md          # this doc

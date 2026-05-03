@@ -1,11 +1,57 @@
 # Mendacity
 
-Information-layer module of the Mendacity deception platform.
+Information-layer module of the Mendacity deception platform — an offensive synthetic-deception toolchain built for U.S. Army intelligence (Title 10, foreign actors only) for the 3rd Annual NATSEC Hackathon at Cerebral Valley.
 
 ## Components
 
-- [`social/`](./social/README.md) — multi-persona AI Telegram agent (issue #3).
-- [`src/mendacity/`](./src/mendacity) — image provenance CLI (see below).
+- [`src/mendacity/mission*`](./src/mendacity) — **mission orchestrator** (`mendacity-mission`): plan → generate → strip → EXIF-transplant → provenance-grade → deliver.
+- [`src/mendacity/audit.py`](./src/mendacity/audit.py) — before/after audit report generator (`mendacity-mission audit`).
+- [`src/mendacity/pipeline.py`](./src/mendacity/pipeline.py) — provenance check engine: C2PA + Titan + SynthID.
+- [`social/`](./social/README.md) — multi-persona Telegram delivery layer (Telethon, dossier-grade Streamlit operator console).
+- [`scripts/synthidbye_run.ts`](./scripts/synthidbye_run.ts) + [`vendor/SynthIDBye/`](./vendor/SynthIDBye) — watermark stripping for adversary-evasion.
+
+---
+
+## Mission CLI
+
+End-to-end mission orchestration. A single command takes a free-text operator intent or a structured YAML spec and produces a sandbox-delivered, provenance-graded artifact.
+
+### Subcommands
+
+| Command | Purpose |
+|---|---|
+| `mendacity-mission run <spec.yaml>` | Execute one mission, write result to `missions/results/`. |
+| `mendacity-mission watch [--workers N]` | Daemon: poll `missions/inbox/`, process new specs (parallel optional). |
+| `mendacity-mission plan "<intent>"` | LLM-convert operator intent into a strict MissionSpec YAML. |
+| `mendacity-mission status <id>` | One-line status of a completed mission. |
+| `mendacity-mission grade <result.json>` | Re-print pass/fail summary. |
+| `mendacity-mission audit <image>` | Before/after transform report on any image. |
+| `mendacity-mission audit-mission <id>` | Re-audit a completed mission's source artifact. |
+| `mendacity-mission match-persona "<archetype>"` | Resolve archetype to best-matching persona via LLM. |
+| `mendacity-mission personas` | List available personas with live Telegram session status. |
+| `mendacity-mission login <id>` | Re-authenticate an expired Telethon persona session (interactive — needs SMS code). |
+
+### Mission flow (the engine)
+
+Each mission progresses through these stages:
+
+1. `validated` — schema check + Title 10 + foreign target_class + sandbox allowlist
+2. `preflight` — persona session liveness check (live deliveries only)
+3. `persona_generated` — fabricates persona + (optional) DALL-E avatar
+4. `artifact_selected` — generates image via DALL-E 3 OR copies a fixture
+5. `watermark_strip` — runs SynthIDBye to defeat AI-watermark detection
+6. `exif_transplant` — applies a real-camera EXIF profile (e.g., iPhone X)
+7. `provenance_check` — runs C2PA + (optional) Titan + (optional) SynthID
+8. `regen_attempt` (if needed) — re-runs strip + EXIF + check up to N times on grading failure
+9. `delivered` — Telegram post with image attached (or `dry_run` skip)
+
+### Mission spec example
+
+See [`missions/example.yaml`](./missions/example.yaml). All hard constraints (`title-10`, `foreign`, `must_pass: [c2pa, titan, synthid]`) are enforced at validation; specs that violate them are aborted before any work runs.
+
+### Sandbox allowlist
+
+Engine refuses any mission whose `target.channel` is not in [`missions/sandbox_channels.json`](./missions/sandbox_channels.json). This is the Title-10 sandbox boundary.
 
 ---
 
