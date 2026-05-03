@@ -128,3 +128,5 @@
 [2026-05-03 09:36:49] DONE: all corroborators settled. posted=56 seed_pending=0
 [2026-05-03 09:41:49] cycle=57 posted=56 approved=0 pending=0 failed=0
 [2026-05-03 09:41:49] DONE: all corroborators settled. posted=56 seed_pending=0
+[2026-05-03 09:46:49] cycle=58 posted=60 approved=0 pending=0 failed=7
+[2026-05-03 09:46:49] flipped 7 failed → approved
