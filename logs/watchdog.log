@@ -2,3 +2,5 @@
 [2026-05-03 04:07:12] flipped 10 failed → approved
 [2026-05-03 04:08:42] cycle=2 posted=16 approved=0 pending=5 failed=10
 [2026-05-03 04:08:42] flipped 10 failed → approved
+[2026-05-03 04:08:48] cycle=1 posted=16 approved=10 pending=5 failed=0
+[2026-05-03 04:11:49] cycle=2 posted=27 approved=0 pending=7 failed=0

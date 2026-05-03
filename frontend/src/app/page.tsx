@@ -327,7 +327,7 @@ function MissionDetail({
                 {
                   id: "injection",
                   label: "Injection",
-                  panel: <InjectionPanel campaign={campaign} />,
+                  panel: <InjectionPanel missionId={mission.missionId} />,
                 },
               ]
             : []),
