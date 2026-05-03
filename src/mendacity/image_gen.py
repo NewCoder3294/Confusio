@@ -104,3 +104,34 @@ def generate_image(
         size=size,
         quality=quality,
     )
+
+
+def _cli(argv: list[str] | None = None) -> int:
+    """python -m mendacity.image_gen --prompt "..." --output /path/to/file.png"""
+    import argparse
+    import sys
+
+    p = argparse.ArgumentParser(description="Generate one image via DALL-E 3.")
+    p.add_argument("--prompt", required=True)
+    p.add_argument("--output", required=True)
+    p.add_argument("--size", default="1024x1024")
+    p.add_argument("--quality", default="standard")
+    args = p.parse_args(argv)
+
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    try:
+        result = generate_image(
+            args.prompt,
+            output_path=Path(args.output),
+            size=args.size,
+            quality=args.quality,
+        )
+    except ImageGenError as exc:
+        print(f"image_gen: {exc}", file=sys.stderr)
+        return 1
+    print(str(result.output_path))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_cli())

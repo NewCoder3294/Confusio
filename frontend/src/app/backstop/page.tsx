@@ -9,6 +9,7 @@ import {
 import { listPersonas, type Persona } from "@/lib/personas";
 import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { CampaignArtifactPreview } from "@/components/campaign-artifact-preview";
 
 export const metadata = {
   title: "Mendacity — Attack Dispatch",
@@ -217,9 +218,18 @@ function SummaryPanel({
     return s === "scheduled" || s === "pending_approval";
   }).length;
   const [delayMin, delayMax] = campaign.delayRangeSeconds;
+  // Campaign id is "c_<missionId>"; the generated image lives at
+  // /api/campaign-image/<missionId>. Cache-bust on each render so the
+  // AutoRefresh poll surfaces the file as soon as DALL-E writes it.
+  const missionId = campaign.id.startsWith("c_")
+    ? campaign.id.slice(2)
+    : campaign.id;
 
   return (
     <>
+      <Block label="Artifact">
+        <CampaignArtifactPreview missionId={missionId} prompt={campaign.intent} />
+      </Block>
       <Block label="Intent">
         <p className="text-[13px] text-fg-default leading-6">{campaign.intent}</p>
       </Block>

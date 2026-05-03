@@ -1,5 +1,6 @@
 import "server-only";
 import { mkdir, writeFile, rename } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import path from "node:path";
 import crypto from "node:crypto";
 import { listChannels } from "@/lib/foundry";
@@ -12,6 +13,27 @@ const REPO_ROOT = path.resolve(
     path.join(process.env.HOME || "", "Mendacity"),
 );
 const INBOX = path.join(REPO_ROOT, "missions/inbox");
+const GENERATED_DIR = path.join(REPO_ROOT, "missions/generated");
+const PYTHON_BIN = process.env.MENDACITY_PYTHON || "python3";
+
+async function spawnImageGen(
+  missionId: string,
+  prompt: string,
+): Promise<void> {
+  await mkdir(GENERATED_DIR, { recursive: true });
+  const outPath = path.join(GENERATED_DIR, `${missionId}.png`);
+  const child = spawn(
+    PYTHON_BIN,
+    ["-m", "mendacity.image_gen", "--prompt", prompt, "--output", outPath],
+    {
+      cwd: REPO_ROOT,
+      env: { ...process.env },
+      detached: true,
+      stdio: "ignore",
+    },
+  );
+  child.unref();
+}
 
 const MID_RE = /^[A-Za-z0-9][A-Za-z0-9_\-]{0,63}$/;
 
@@ -290,6 +312,15 @@ export async function POST(req: Request) {
     });
   } catch (e) {
     campaignError = (e as Error).message.slice(0, 300);
+  }
+
+  // Fire-and-forget image generation. The image lands in
+  // missions/generated/<missionId>.png a few seconds later; the Backstop
+  // page polls and shows it once present.
+  try {
+    await spawnImageGen(v.missionId, v.artifactPrompt);
+  } catch {
+    // image generation is best-effort; campaign still dispatches.
   }
 
   revalidatePath("/");
