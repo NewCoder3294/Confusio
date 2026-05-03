@@ -13,9 +13,6 @@ export const KNOWN_KEYS = [
   "TELEGRAM_API_ID",
   "TELEGRAM_API_HASH",
   "OPERATOR_USER_ID",
-  "TWILIO_ACCOUNT_SID",
-  "TWILIO_AUTH_TOKEN",
-  "TWILIO_FROM_NUMBER",
 ] as const;
 
 export type KnownKey = (typeof KNOWN_KEYS)[number];

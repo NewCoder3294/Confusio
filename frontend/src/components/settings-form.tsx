@@ -64,32 +64,6 @@ const PROVIDERS: Provider[] = [
       },
     ],
   },
-  {
-    id: "twilio",
-    title: "Twilio (SMS)",
-    blurb:
-      "Reserved slot for SMS/voice transport. The engine does not consume these yet — saving here just stages the credentials for when SMS personas come online.",
-    status: "ui-only",
-    fields: [
-      {
-        key: "TWILIO_ACCOUNT_SID",
-        label: "Account SID",
-        placeholder: "AC…",
-      },
-      {
-        key: "TWILIO_AUTH_TOKEN",
-        label: "Auth token",
-        type: "password",
-        placeholder: "32 hex chars",
-      },
-      {
-        key: "TWILIO_FROM_NUMBER",
-        label: "From number",
-        placeholder: "+15555550123",
-        hint: "E.164 format. Must be a Twilio-purchased or verified number.",
-      },
-    ],
-  },
 ];
 
 export function SettingsForm({

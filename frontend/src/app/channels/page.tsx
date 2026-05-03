@@ -8,8 +8,20 @@ export const metadata = {
 
 export default async function ChannelsPage() {
   const channels = await listChannels();
-  const sandbox = channels.filter((c) => c.isSandbox);
-  const nonSandbox = channels.filter((c) => !c.isSandbox);
+  // Dedupe defensively — Foundry occasionally returns rows with an empty
+  // channel_id, and React's reconciliation chokes on duplicate keys. Prefer
+  // the first non-empty channel_id; fall back to displayName for the
+  // de-duplication identity so empty-PK rows still appear once.
+  const seen = new Set<string>();
+  const unique: Channel[] = [];
+  for (const c of channels) {
+    const key = c.channel_id || c.displayName;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    unique.push(c);
+  }
+  const sandbox = unique.filter((c) => c.isSandbox);
+  const nonSandbox = unique.filter((c) => !c.isSandbox);
 
   return (
     <>
@@ -88,9 +100,9 @@ function ChannelTable({
               </tr>
             </thead>
             <tbody>
-              {channels.map((c) => (
+              {channels.map((c, idx) => (
                 <tr
-                  key={c.channel_id}
+                  key={c.channel_id || c.displayName || `row-${idx}`}
                   className="border-b border-border-subtle last:border-b-0 hover:bg-bg-hover"
                 >
                   <td className="px-3 py-2 font-mono text-fg-mono">
