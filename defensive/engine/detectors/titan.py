@@ -12,8 +12,9 @@ NAME = "titan"
 
 def run(image_bytes: bytes) -> DetectorSignal:
     """Severity:
-      pass — n/a (absence is the norm; never returned)
-      warn — watermark absent or detector unavailable (no AWS creds)
+      na   — watermark absent or detector unavailable (absence is the norm:
+             only Bedrock-generated images carry the watermark, and we cannot
+             treat its absence as evidence either way)
       fail — watermark detected (i.e., image was Titan-generated)
     """
     started = time.monotonic()
@@ -35,6 +36,6 @@ def run(image_bytes: bytes) -> DetectorSignal:
             evidence="Titan watermark detected", latency_ms=elapsed_ms,
         )
     return DetectorSignal(
-        detector=NAME, severity=Severity.warn, score=None,
+        detector=NAME, severity=Severity.na, score=None,
         evidence="absent", latency_ms=elapsed_ms,
     )

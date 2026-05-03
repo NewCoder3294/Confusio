@@ -13,7 +13,7 @@ NAME = "c2pa"
 def run(image_bytes: bytes, *, mime_type: str = "image/jpeg") -> DetectorSignal:
     """Severity:
       pass — valid manifest with passing validation
-      warn — manifest absent
+      na   — manifest absent (the norm; absence is not evidence)
       fail — manifest present but validation failed
     """
     started = time.monotonic()
@@ -23,12 +23,12 @@ def run(image_bytes: bytes, *, mime_type: str = "image/jpeg") -> DetectorSignal:
     status = report.get("status")
     if status == "manifest_not_found":
         return DetectorSignal(
-            detector=NAME, severity=Severity.warn, score=None,
+            detector=NAME, severity=Severity.na, score=None,
             evidence="no manifest", latency_ms=elapsed_ms,
         )
     if status == "error":
         return DetectorSignal(
-            detector=NAME, severity=Severity.warn, score=None,
+            detector=NAME, severity=Severity.na, score=None,
             evidence=f"reader error: {report.get('error_type', 'unknown')}",
             latency_ms=elapsed_ms,
         )
