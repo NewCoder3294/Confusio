@@ -42,3 +42,4 @@ social/.heartbeat
 .streamlit/secrets.toml
 .gstack/
 .superpowers/
+defensive/audit.jsonl
