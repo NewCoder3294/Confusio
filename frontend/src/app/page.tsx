@@ -740,18 +740,15 @@ function MiniStat({
   value: string | number;
   tone?: "default" | "info" | "pass" | "warn" | "fail";
 }) {
+  // Foundry-style mini-stat: only colour the value when something is
+  // actively wrong. Active/done/pass-rate are neutral data — colouring
+  // them all turns the bar into a Christmas tree.
   const valueColor =
-    tone === "info"
-      ? "text-info-fg"
-      : tone === "pass"
-        ? "text-pass-fg"
-        : tone === "warn"
-          ? "text-warn-fg"
-          : tone === "fail"
-            ? "text-fail-fg"
-            : "text-fg-default";
+    tone === "fail" && Number(value) > 0
+      ? "text-fail-fg"
+      : "text-fg-default";
   return (
-    <div className="border border-border-subtle bg-bg-panel px-3 py-1 flex flex-col justify-center">
+    <div className="border border-border-subtle bg-bg-panel px-3 py-1 flex flex-col justify-center min-w-[68px]">
       <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-fg-faint">
         {label}
       </div>
