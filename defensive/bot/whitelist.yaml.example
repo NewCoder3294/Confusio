@@ -1,0 +1,6 @@
+# Telegram user ID → operator identity.
+# To find your Telegram user ID: DM @userinfobot.
+# Copy this file to defensive/bot/whitelist.yaml and fill in.
+
+# Example:
+# 123456789: J2-INSCOM-Demo
