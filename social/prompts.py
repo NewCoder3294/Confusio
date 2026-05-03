@@ -170,4 +170,16 @@ def build_prompt(
             **common, previous_posts=_format_previous_posts(previous_posts)
         )
 
+    # Operator-console dispatches use the umbrella role "corroborator" for any
+    # non-seed cast member. Map it to "witness" when there's a prior post to
+    # corroborate, otherwise fall back to "reaction".
+    if role == "corroborator":
+        if previous_posts:
+            return _WITNESS.format(
+                **common, previous_post=previous_posts[-1].content
+            )
+        return _REACTION.format(
+            **common, previous_posts=_format_previous_posts(previous_posts)
+        )
+
     raise ValueError(f"unknown role: {role}")
