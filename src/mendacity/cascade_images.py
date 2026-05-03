@@ -12,12 +12,19 @@ corroborator's reply.
 
 Why Gemini and not gpt-image-1: cost (free tier today) and latency (~3-5s
 vs 12-18s) — the cascade has to feel snappy in a live demo.
+
+Quality matching: we pass the seed image to Gemini as visual reference so
+the corroborator perspectives inherit the seed's aesthetic (low-fidelity,
+amateur phone capture, similar lighting, similar compression). Without that
+reference, Gemini renders cinematic golden-hour images that betray the
+"random bystander" framing.
 """
 from __future__ import annotations
 
 import argparse
 import io
 import logging
+import mimetypes
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -42,44 +49,41 @@ GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
 # Per-persona perspective
 # ---------------------------------------------------------------------------
 
-# Derive a vantage-point hint from a persona profile. Keep this purely
-# rule-based — no extra LLM call — so the cascade stays fast and cheap.
+# Vantage-point hint per persona profile. Kept short so the camera-quality
+# directives in the prompt template aren't crowded out.
 def _perspective_for(persona_id: str) -> str:
     pid = persona_id.lower()
     if "olga" in pid:
-        return (
-            "from a second-floor apartment window looking down through curtains, "
-            "slightly obstructed view, indoor reflection visible at the edge"
-        )
+        return "looking down from a second-floor apartment window through partly-drawn curtains"
     if "anton" in pid:
-        return (
-            "from the driver's seat of a parked beat-up sedan at the side of the "
-            "road, dashboard visible at the bottom edge, side-mirror in frame"
-        )
+        return "from the driver's seat of a parked old sedan, dashboard visible at the bottom"
     if "dmitry" in pid:
-        return (
-            "from across the street near a small auto shop entrance, slight "
-            "telephoto framing, wires/poles in the upper foreground"
-        )
+        return "from across the street near a small auto shop, wires and a power pole in the upper foreground"
     if "news" in pid or "aggregator" in pid:
-        return (
-            "telephoto crop of a forwarded social-media post — visible chat-app "
-            "letterbox bars, slight JPEG re-compression artifacts"
-        )
-    return (
-        "from a different angle than the source frame — handheld phone, casual, "
-        "slight motion blur"
-    )
+        return "as a re-shared screenshot of a chat-app message — letterbox bars, extra JPEG compression"
+    return "from a different bystander angle, handheld phone, slight motion blur"
 
 
-def _prompt_for(seed_prompt: str, persona_id: str) -> str:
+def _prompt_for(seed_prompt: str, persona_id: str, has_reference: bool) -> str:
     perspective = _perspective_for(persona_id)
+    quality = (
+        "Match the camera quality, lighting, time of day, weather, and overall "
+        "aesthetic of the reference image exactly. The reference is a low-quality "
+        "amateur phone snap — slightly blurry, slight motion blur, mediocre dynamic "
+        "range, JPEG compression artifacts, no cinematic styling. Reproduce that "
+        "look. Do not improve the lighting. Do not make it look professional."
+        if has_reference
+        else "Low-fidelity amateur phone snap. Slightly blurry. Slight motion blur. "
+        "JPEG compression. Mediocre dynamic range. No cinematic styling. No bokeh. "
+        "No golden-hour drama. Documentary, ugly, accidental."
+    )
     return (
-        f"The same scene as: {seed_prompt}. "
-        f"But shot {perspective}. "
-        f"Same time of day, same subject, plausibly the same incident captured "
-        f"by a different bystander. Photorealistic phone capture, "
-        f"low-fidelity, no text overlay, no graphics, no logos, documentary."
+        f"Render the SAME real-world scene as the reference (if shown): {seed_prompt}. "
+        f"Shot {perspective}. "
+        f"{quality} "
+        f"Same time of day, same subject, same weather and lighting as the reference. "
+        f"This is the same incident captured by a different bystander on the same kind of phone. "
+        f"No text overlay, no logos, no graphics, no UI elements."
     )
 
 
@@ -87,18 +91,50 @@ def _prompt_for(seed_prompt: str, persona_id: str) -> str:
 # Gemini call
 # ---------------------------------------------------------------------------
 
-def _generate_one(mission_id: str, persona_id: str, seed_prompt: str, out_dir: Path) -> Path:
+def _resolve_seed_image(out_dir: Path, mission_id: str) -> Path | None:
+    """Find the seed artifact image in out_dir. Prefer the EXIF-transplanted
+    JPEG (closest to what the channel sees), fall back to the raw PNG."""
+    for ext in ("jpg", "png"):
+        p = out_dir / f"{mission_id}.{ext}"
+        if p.exists() and p.stat().st_size > 0:
+            return p
+    return None
+
+
+def _generate_one(
+    mission_id: str,
+    persona_id: str,
+    seed_prompt: str,
+    out_dir: Path,
+    seed_image_path: Path | None,
+) -> Path:
     from google import genai  # lazy
+    from google.genai import types
 
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY not set")
     client = genai.Client(api_key=api_key)
-    prompt = _prompt_for(seed_prompt, persona_id)
-    log.info("cascade-image: %s persona=%s", mission_id, persona_id)
+
+    has_ref = seed_image_path is not None
+    prompt = _prompt_for(seed_prompt, persona_id, has_reference=has_ref)
+    contents: list = [prompt]
+    if has_ref:
+        mime, _ = mimetypes.guess_type(str(seed_image_path))
+        if not mime:
+            mime = "image/jpeg" if seed_image_path.suffix.lower() in {".jpg", ".jpeg"} else "image/png"
+        contents.append(
+            types.Part.from_bytes(
+                data=seed_image_path.read_bytes(), mime_type=mime
+            )
+        )
+    log.info(
+        "cascade-image: %s persona=%s ref=%s",
+        mission_id, persona_id, seed_image_path.name if has_ref else "none",
+    )
     resp = client.models.generate_content(
         model=GEMINI_IMAGE_MODEL,
-        contents=[prompt],
+        contents=contents,
     )
     for cand in resp.candidates:
         for part in cand.content.parts:
@@ -106,11 +142,12 @@ def _generate_one(mission_id: str, persona_id: str, seed_prompt: str, out_dir: P
             if inline and inline.data:
                 png_path = out_dir / f"{mission_id}-{persona_id}.png"
                 png_path.write_bytes(inline.data)
-                # JPEG mirror: orchestrator prefers .jpg first.
+                # JPEG mirror at moderate quality so it actually shows the
+                # compression artifacts the prompt asked for.
                 jpg_path = out_dir / f"{mission_id}-{persona_id}.jpg"
                 try:
                     img = Image.open(io.BytesIO(inline.data)).convert("RGB")
-                    img.save(jpg_path, format="JPEG", quality=85)
+                    img.save(jpg_path, format="JPEG", quality=78)
                 except Exception:
                     log.exception("jpeg mirror failed for %s", png_path)
                 return png_path
@@ -145,11 +182,26 @@ def main(argv: list[str] | None = None) -> int:
         log.warning("no persona ids supplied; nothing to do")
         return 0
 
+    seed_image_path = _resolve_seed_image(out_dir, args.mission_id)
+    if seed_image_path is None:
+        log.warning(
+            "seed image not found in %s for %s — proceeding text-only "
+            "(quality match will be weaker)",
+            out_dir, args.mission_id,
+        )
+
     # Run in parallel — Gemini image gen tolerates concurrent requests on a
     # single key and the demo wins seconds from the parallelism.
     with ThreadPoolExecutor(max_workers=min(4, len(persona_ids))) as pool:
         futures = {
-            pool.submit(_generate_one, args.mission_id, pid, args.seed_prompt, out_dir): pid
+            pool.submit(
+                _generate_one,
+                args.mission_id,
+                pid,
+                args.seed_prompt,
+                out_dir,
+                seed_image_path,
+            ): pid
             for pid in persona_ids
         }
         any_failed = False
