@@ -26,6 +26,7 @@ social/mendacity.db
 social/mendacity.db-journal
 social/mendacity.db-wal
 social/mendacity.db-shm
+social/.heartbeat
 
 # Streamlit
 .streamlit/secrets.toml

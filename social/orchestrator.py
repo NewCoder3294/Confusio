@@ -43,6 +43,7 @@ from social.telegram_client import (
 
 _ENV_PATH = Path(__file__).parent / "config" / "api_credentials.env"
 _CHANNEL_CFG_PATH = Path(__file__).parent / "config" / "channel_config.json"
+HEARTBEAT_PATH = Path(__file__).parent / ".heartbeat"
 load_dotenv(_ENV_PATH)
 
 log = logging.getLogger(__name__)
@@ -200,6 +201,7 @@ class Orchestrator:
         while True:
             try:
                 await self._tick()
+                HEARTBEAT_PATH.touch()
             except Exception:
                 log.exception("orchestrator tick error")
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
