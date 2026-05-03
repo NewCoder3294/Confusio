@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/surfaces";
 
 export const metadata = {
   title: "Mendacity — Runbook",
@@ -6,25 +7,14 @@ export const metadata = {
 
 export default function RunbookPage() {
   return (
-    <div className="flex-1 flex flex-col">
-      <section className="border-b border-border-subtle bg-bg-panel">
-        <div className="max-w-[1400px] mx-auto px-6 py-5">
-          <div className="font-mono text-[10px] tracking-[0.18em] text-classified uppercase">
-            Operator Reference — Standard Operating Procedure
-          </div>
-          <h1 className="mt-1 text-2xl text-fg-default tracking-wide font-medium">
-            Runbook
-          </h1>
-          <p className="mt-2 text-[13px] text-fg-muted leading-6 max-w-[820px]">
-            Bound reference for operators: authority lanes, approval chain,
-            detector glossary, verdict semantics, escalation paths. Treat as
-            the canonical source — the live system surfaces conform to this
-            document, not the other way around.
-          </p>
-        </div>
-      </section>
-
-      <div className="max-w-[980px] w-full mx-auto px-6 py-8 flex flex-col gap-10">
+    <>
+      <PageHeader
+        eyebrow="Operator reference — SOP"
+        title="Runbook"
+        brief="Authority, approval chain, detector glossary, verdict semantics, escalation. Live surfaces conform to this document, not the other way around."
+      />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-[980px] w-full mx-auto px-6 py-6 flex flex-col gap-8">
         <Toc
           items={[
             ["authority", "Authority & lane"],
@@ -237,8 +227,9 @@ export default function RunbookPage() {
             </li>
           </ol>
         </Section>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

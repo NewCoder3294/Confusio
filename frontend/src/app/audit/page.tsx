@@ -1,35 +1,41 @@
 import { getDashboardSnapshot, type Channel, type Mission } from "@/lib/foundry";
 import { StatusPill } from "@/components/status-pill";
+import { PageHeader } from "@/components/surfaces";
 
 export default async function AuthorizationAndAuditPage() {
   const snap = await getDashboardSnapshot();
   const channels = Array.from(snap.channelById.values()).sort((a, b) =>
     a.displayName.localeCompare(b.displayName),
   );
-  const missions = snap.missions; // already sorted desc by createdAt
+  const missions = snap.missions;
   const counts = {
     total: missions.length,
     completed: missions.filter((m) => m.status === "completed").length,
     failed: missions.filter((m) => m.status === "failed").length,
     aborted: missions.filter((m) => m.status === "aborted").length,
   };
+  const sandboxCount = channels.filter((c) => c.isSandbox).length;
 
   return (
-    <div className="flex-1 flex flex-col">
-      <LegalBanner channels={channels} />
-
-      <div className="max-w-[1400px] w-full mx-auto px-6 py-6 grid grid-cols-[1fr_360px] gap-6">
-        <div className="flex flex-col gap-6">
-          <CountStrip counts={counts} />
-          <AuditTrail missions={missions} channelById={snap.channelById} />
-        </div>
-
-        <div className="flex flex-col gap-6">
-          <AuthorityChain />
-          <ChannelAllowlist channels={channels} />
+    <>
+      <PageHeader
+        eyebrow="Title 10 §1631 — Military Information Operations"
+        title="Authorization & Audit"
+        brief={`Foreign-targeted IO under U.S. Army intelligence authority. Live delivery disabled — every mission runs against ${sandboxCount} sandbox endpoints with full audit recording.`}
+      />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-[1400px] w-full mx-auto px-6 py-4 grid grid-cols-[1fr_320px] gap-4">
+          <div className="flex flex-col gap-4">
+            <CountStrip counts={counts} />
+            <AuditTrail missions={missions} channelById={snap.channelById} />
+          </div>
+          <div className="flex flex-col gap-4">
+            <AuthorityChain />
+            <ChannelAllowlist channels={channels} />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 

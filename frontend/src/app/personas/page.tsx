@@ -5,6 +5,7 @@ import {
   type Persona,
   type PersonaActivity,
 } from "@/lib/personas";
+import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
 
 export const metadata = {
   title: "Mendacity — Personas",
@@ -31,50 +32,40 @@ export default async function PersonasPage({
   ]);
   const selected =
     personas.find((p) => p.id === selectedId) ?? personas[0] ?? null;
+  const personasById = new Map(personas.map((p) => [p.id, p]));
 
   return (
-    <div className="flex-1 flex flex-col">
-      <section className="border-b border-border-subtle bg-bg-panel">
-        <div className="max-w-[1400px] mx-auto px-6 py-5">
-          <div className="font-mono text-[10px] tracking-[0.18em] text-classified uppercase">
-            Persona Library
-          </div>
-          <h1 className="mt-1 text-2xl text-fg-default tracking-wide font-medium">
-            Fabricated Personas
-          </h1>
-          <p className="mt-2 text-[13px] text-fg-muted leading-6 max-w-[820px]">
-            Persona-bound agents used as the supporting cast for offensive
-            missions. Each persona has a stable voice, geographic anchor,
-            posting cadence, and an explicit graph of which other personas it
-            knows. Backstop coordination uses the graph to dispatch corroborating
-            posts from adjacent personas after a primary artifact lands.
-          </p>
-        </div>
-      </section>
+    <>
+      <PageHeader
+        eyebrow="Persona library"
+        title="Fabricated Personas"
+        brief="Stable identities used for the seed post and the corroborating cast that follows. Each persona has a voice profile and a graph of who it knows."
+      />
 
-      {personas.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-fg-faint italic">
-            No personas configured. Drop JSON files in social/personas/.
-          </p>
-        </div>
-      ) : (
-        <section className="flex-1 grid grid-cols-[360px_1fr] min-h-0">
+      <div className="flex-1 min-h-0 max-w-[1400px] w-full mx-auto px-6 py-3 grid grid-cols-[280px_1fr] gap-3">
+        <Card title="Roster" meta={`${personas.length}`}>
           <PersonaList
             personas={personas}
             activityById={activityById}
             selectedId={selected?.id}
           />
-          {selected ? (
-            <PersonaDetail
-              persona={selected}
-              activity={activityById.get(selected.id) ?? EMPTY_ACTIVITY}
-              personasById={new Map(personas.map((p) => [p.id, p]))}
-            />
-          ) : null}
-        </section>
-      )}
-    </div>
+        </Card>
+
+        {selected ? (
+          <PersonaDetail
+            persona={selected}
+            activity={activityById.get(selected.id) ?? EMPTY_ACTIVITY}
+            personasById={personasById}
+          />
+        ) : (
+          <Card title="No persona selected">
+            <div className="px-4 py-8 text-fg-faint italic text-[12px] text-center">
+              Pick a persona from the left.
+            </div>
+          </Card>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -89,49 +80,46 @@ function PersonaList({
   activityById: Map<string, PersonaActivity>;
   selectedId: string | undefined;
 }) {
-  return (
-    <aside className="border-r border-border-subtle bg-bg-panel overflow-y-auto">
-      <div className="px-4 py-3 border-b border-border-subtle">
-        <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint">
-          Roster ({personas.length})
-        </h2>
+  if (personas.length === 0) {
+    return (
+      <div className="px-4 py-6 text-fg-faint italic text-[12px]">
+        No personas configured.
       </div>
-      <ol>
-        {personas.map((p) => {
-          const a = activityById.get(p.id) ?? EMPTY_ACTIVITY;
-          const isSelected = p.id === selectedId;
-          const dormant = a.totalPosts === 0;
-          return (
-            <li key={p.id}>
-              <Link
-                href={{ pathname: "/personas", query: { p: p.id } }}
-                scroll={false}
-                className={`block px-4 py-3 border-b border-border-subtle hover:bg-bg-hover transition-colors ${
-                  isSelected
-                    ? "bg-bg-elevated border-l-2 border-l-info-fg"
-                    : "border-l-2 border-l-transparent"
-                }`}
-              >
-                <div className="flex items-baseline justify-between gap-3">
-                  <span className="text-[13px] text-fg-default">{p.name}</span>
-                  <span className="font-mono text-[10px] text-fg-faint uppercase tracking-[0.14em]">
-                    {p.language || "—"}
-                  </span>
-                </div>
-                <div className="mt-1 text-[11px] text-fg-muted truncate">
-                  {p.geoAnchor || "—"}
-                </div>
-                <div className="mt-[2px] text-[10px] text-fg-faint truncate font-mono">
-                  {dormant
-                    ? "no operational history"
-                    : `${a.totalPosts} post${a.totalPosts === 1 ? "" : "s"} across ${a.campaigns.length} campaign${a.campaigns.length === 1 ? "" : "s"}`}
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
-    </aside>
+    );
+  }
+  return (
+    <ol>
+      {personas.map((p) => {
+        const a = activityById.get(p.id) ?? EMPTY_ACTIVITY;
+        const isSelected = p.id === selectedId;
+        const dormant = a.totalPosts === 0;
+        return (
+          <li key={p.id}>
+            <Link
+              href={{ pathname: "/personas", query: { p: p.id } }}
+              scroll={false}
+              className={`block px-3 py-2 border-b border-border-subtle hover:bg-bg-hover transition-colors ${
+                isSelected
+                  ? "bg-bg-elevated border-l-2 border-l-info-fg"
+                  : "border-l-2 border-l-transparent"
+              }`}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[12px] text-fg-default truncate">
+                  {p.name}
+                </span>
+                <span className="font-mono text-[9px] text-fg-faint uppercase tracking-[0.14em]">
+                  {p.language || "—"}
+                </span>
+              </div>
+              <div className="mt-[1px] text-[10px] text-fg-faint truncate font-mono">
+                {p.geoAnchor || "—"} · {dormant ? "dormant" : `${a.totalPosts}p`}
+              </div>
+            </Link>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -145,230 +133,237 @@ function PersonaDetail({
   personasById: Map<string, Persona>;
 }) {
   return (
-    <article className="overflow-y-auto">
-      <header className="border-b border-border-subtle bg-bg-panel px-6 py-4">
-        <div className="flex items-baseline justify-between gap-4">
-          <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-fg-faint">
-              {persona.id}
-            </div>
-            <h1 className="mt-1 text-xl text-fg-default tracking-wide font-medium">
-              {persona.name}
-            </h1>
-          </div>
-          <CadencePill schedule={persona.postingSchedule} />
-        </div>
-        <dl className="mt-3 grid grid-cols-[140px_1fr] gap-x-4 gap-y-1 text-[12px]">
-          <Field label="Language" value={persona.language || "—"} mono />
-          <Field label="Geo anchor" value={persona.geoAnchor || "—"} />
-          <Field label="Bio" value={persona.bioShort || "—"} />
-          <Field
-            label="Session"
-            value={persona.sessionPath || "—"}
+    <Card
+      title={persona.name}
+      meta={`${persona.id} · ${persona.language}`}
+    >
+      <Tabs
+        tabs={[
+          {
+            id: "profile",
+            label: "Profile",
+            panel: <ProfilePanel persona={persona} />,
+          },
+          {
+            id: "activity",
+            label: "Activity",
+            count: activity.totalPosts,
+            panel: <ActivityPanel activity={activity} />,
+          },
+          {
+            id: "voice",
+            label: "Voice",
+            count: persona.examples.length,
+            panel: <VoicePanel persona={persona} />,
+          },
+          {
+            id: "network",
+            label: "Network",
+            count: persona.knows.length,
+            panel: (
+              <NetworkPanel persona={persona} personasById={personasById} />
+            ),
+          },
+        ]}
+      />
+    </Card>
+  );
+}
+
+function ProfilePanel({ persona }: { persona: Persona }) {
+  const [start, end] = persona.postingSchedule.activeHoursLocal;
+  return (
+    <>
+      <Block label="Identity">
+        <dl>
+          <Row label="Geo anchor" value={persona.geoAnchor || "—"} />
+          <Row label="Language" value={persona.language || "—"} mono />
+          <Row label="Bio" value={persona.bioShort || "—"} />
+        </dl>
+      </Block>
+      <Block label="Cadence">
+        <dl>
+          <Row
+            label="Posts per day"
+            value={String(persona.postingSchedule.avgPostsPerDay)}
+            mono
+          />
+          <Row
+            label="Active hours"
+            value={`${String(start).padStart(2, "0")}–${String(end).padStart(2, "0")} local`}
             mono
           />
         </dl>
-      </header>
-
-      <div className="max-w-[1100px] mx-auto px-6 py-6 flex flex-col gap-6">
-        <Section title="Operational history">
-          <div className="grid grid-cols-4 gap-2">
-            <Tally label="Total posts" value={activity.totalPosts} />
-            <Tally
-              label="Posted"
-              value={activity.postsByStatus.posted ?? 0}
-              tone="pass"
-            />
-            <Tally
-              label="Pending approval"
-              value={activity.postsByStatus.pending_approval ?? 0}
-              tone="warn"
-            />
-            <Tally
-              label="Last generated"
-              value={
-                activity.lastGeneratedAt
-                  ? formatRelative(activity.lastGeneratedAt)
-                  : "—"
-              }
-              small
-            />
-          </div>
-        </Section>
-
-        {activity.campaigns.length > 0 && (
-          <Section title="Recent campaigns">
-            <div className="border border-border-subtle bg-bg-panel">
-              <table className="w-full text-[12px]">
-                <thead>
-                  <tr className="border-b border-border-subtle text-[10px] uppercase tracking-[0.14em] text-fg-faint font-mono">
-                    <th className="text-left px-3 py-2 font-medium">Created</th>
-                    <th className="text-left px-3 py-2 font-medium">Intent</th>
-                    <th className="text-left px-3 py-2 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activity.campaigns.map((c) => (
-                    <tr
-                      key={c.id}
-                      className="border-b border-border-subtle last:border-b-0"
-                    >
-                      <td className="px-3 py-2 font-mono text-fg-mono whitespace-nowrap">
-                        {formatRelative(c.createdAt)}
-                      </td>
-                      <td className="px-3 py-2 text-fg-muted">
-                        {c.intent}
-                      </td>
-                      <td className="px-3 py-2 font-mono text-[11px] text-fg-default uppercase tracking-[0.14em]">
-                        {c.status}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Section>
-        )}
-
-        <Section title="Voice profile">
-          <div className="border border-border-subtle bg-bg-panel">
-            <dl className="text-[12px] divide-y divide-border-subtle">
-              <Block label="Backstory" value={persona.backstory} />
-              <Block label="Style" value={persona.style} />
-              {persona.vocabularyQuirks.length > 0 && (
-                <Tags label="Vocabulary quirks" items={persona.vocabularyQuirks} />
-              )}
-              {persona.topicFocus.length > 0 && (
-                <Tags label="Topic focus" items={persona.topicFocus} />
-              )}
-            </dl>
-          </div>
-        </Section>
-
-        {persona.examples.length > 0 && (
-          <Section title="Sample posts">
-            <ol className="border border-border-subtle bg-bg-panel divide-y divide-border-subtle">
-              {persona.examples.map((ex, i) => (
-                <li
-                  key={i}
-                  className="px-4 py-3 flex gap-3 text-[12px] leading-6"
-                >
-                  <span className="font-mono text-[10px] text-fg-faint w-6 tabular-nums shrink-0">
-                    {String(i + 1).padStart(2, "0")}.
-                  </span>
-                  <span className="text-fg-default italic">&ldquo;{ex}&rdquo;</span>
-                </li>
-              ))}
-            </ol>
-          </Section>
-        )}
-
-        <Section title="Persona graph — corroboration network">
-          {persona.knows.length === 0 ? (
-            <p className="text-[12px] text-fg-faint italic">
-              {persona.name} operates alone. No corroborating personas declared.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {persona.knows.map((kid) => {
-                const k = personasById.get(kid);
-                return (
-                  <Link
-                    key={kid}
-                    href={{ pathname: "/personas", query: { p: kid } }}
-                    className="border border-border-default bg-bg-panel hover:bg-bg-hover px-3 py-2 flex flex-col gap-[2px]"
-                  >
-                    <span className="font-mono text-[10px] tracking-[0.14em] text-fg-faint uppercase">
-                      Knows
-                    </span>
-                    <span className="text-[13px] text-fg-default">
-                      {k?.name ?? kid}
-                    </span>
-                    {k?.geoAnchor && (
-                      <span className="text-[10px] text-fg-faint italic">
-                        {k.geoAnchor}
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-          <p className="mt-2 text-[10px] text-fg-faint font-mono uppercase tracking-[0.14em]">
-            Backstop coordination dispatches corroborating posts from these
-            personas after a primary artifact lands.
-          </p>
-        </Section>
-      </div>
-    </article>
-  );
-}
-
-function CadencePill({
-  schedule,
-}: {
-  schedule: Persona["postingSchedule"];
-}) {
-  const [start, end] = schedule.activeHoursLocal;
-  return (
-    <div className="border border-border-default bg-bg-elevated px-3 py-2 text-right">
-      <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-fg-faint">
-        Cadence
-      </div>
-      <div className="font-mono text-[12px] text-fg-default mt-[2px]">
-        {schedule.avgPostsPerDay}/day · {String(start).padStart(2, "0")}–
-        {String(end).padStart(2, "0")} local
-      </div>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section>
-      <h2 className="text-[11px] font-mono uppercase tracking-[0.18em] text-fg-faint mb-2">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
-
-function Field({
-  label,
-  value,
-  mono,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <>
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
-        {label}
-      </dt>
-      <dd className={`text-fg-muted ${mono ? "font-mono" : ""}`}>{value}</dd>
+      </Block>
+      <Block label="Session">
+        <dl>
+          <Row label="Path" value={persona.sessionPath || "—"} mono />
+        </dl>
+      </Block>
     </>
   );
 }
 
-function Tally({
+function ActivityPanel({ activity }: { activity: PersonaActivity }) {
+  if (activity.totalPosts === 0) {
+    return (
+      <Block>
+        <p className="text-[12px] text-fg-faint italic">
+          No operational history yet.
+        </p>
+      </Block>
+    );
+  }
+  return (
+    <>
+      <Block label="Counts">
+        <div className="grid grid-cols-3 gap-2">
+          <Stat label="Total" value={activity.totalPosts} />
+          <Stat
+            label="Posted"
+            value={activity.postsByStatus.posted ?? 0}
+            tone="pass"
+          />
+          <Stat
+            label="Pending"
+            value={activity.postsByStatus.pending_approval ?? 0}
+            tone="warn"
+          />
+        </div>
+        {activity.lastGeneratedAt && (
+          <div className="mt-3 text-[10px] font-mono text-fg-faint uppercase tracking-[0.14em]">
+            Last generated · {formatRelative(activity.lastGeneratedAt)}
+          </div>
+        )}
+      </Block>
+      {activity.campaigns.length > 0 && (
+        <Block label="Recent campaigns">
+          <table className="w-full text-[12px]">
+            <thead>
+              <tr className="border-b border-border-subtle text-[10px] uppercase tracking-[0.14em] text-fg-faint font-mono">
+                <th className="text-left py-2 font-medium pr-3">Created</th>
+                <th className="text-left py-2 font-medium pr-3">Intent</th>
+                <th className="text-left py-2 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {activity.campaigns.map((c) => (
+                <tr
+                  key={c.id}
+                  className="border-b border-border-subtle last:border-b-0"
+                >
+                  <td className="py-2 pr-3 font-mono text-fg-mono whitespace-nowrap">
+                    {formatRelative(c.createdAt)}
+                  </td>
+                  <td className="py-2 pr-3 text-fg-muted">{c.intent}</td>
+                  <td className="py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-fg-default">
+                    {c.status}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Block>
+      )}
+    </>
+  );
+}
+
+function VoicePanel({ persona }: { persona: Persona }) {
+  return (
+    <>
+      <Block label="Backstory">
+        <p className="text-[12px] text-fg-default leading-6">
+          {persona.backstory}
+        </p>
+      </Block>
+      <Block label="Style">
+        <p className="text-[12px] text-fg-default leading-6">{persona.style}</p>
+      </Block>
+      {persona.vocabularyQuirks.length > 0 && (
+        <Block label="Vocabulary quirks">
+          <Tags items={persona.vocabularyQuirks} />
+        </Block>
+      )}
+      {persona.topicFocus.length > 0 && (
+        <Block label="Topic focus">
+          <Tags items={persona.topicFocus} />
+        </Block>
+      )}
+      {persona.examples.length > 0 && (
+        <Block label="Sample posts">
+          <ol className="flex flex-col gap-2">
+            {persona.examples.map((ex, i) => (
+              <li
+                key={i}
+                className="flex gap-3 text-[12px] leading-5 border-l-2 border-border-default pl-3"
+              >
+                <span className="font-mono text-[10px] text-fg-faint w-5 tabular-nums shrink-0">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className="text-fg-default italic">
+                  &ldquo;{ex}&rdquo;
+                </span>
+              </li>
+            ))}
+          </ol>
+        </Block>
+      )}
+    </>
+  );
+}
+
+function NetworkPanel({
+  persona,
+  personasById,
+}: {
+  persona: Persona;
+  personasById: Map<string, Persona>;
+}) {
+  if (persona.knows.length === 0) {
+    return (
+      <Block>
+        <p className="text-[12px] text-fg-faint italic">
+          {persona.name} operates alone — no corroborating personas declared.
+        </p>
+      </Block>
+    );
+  }
+  return (
+    <Block label="Knows">
+      <div className="grid grid-cols-2 gap-2">
+        {persona.knows.map((kid) => {
+          const k = personasById.get(kid);
+          return (
+            <Link
+              key={kid}
+              href={{ pathname: "/personas", query: { p: kid } }}
+              className="border border-border-default bg-bg-base hover:bg-bg-hover px-3 py-2 transition-colors"
+            >
+              <div className="text-[12px] text-fg-default">{k?.name ?? kid}</div>
+              <div className="text-[10px] text-fg-faint">
+                {k?.geoAnchor ?? "—"} · {k?.language ?? "—"}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+      <p className="mt-3 text-[10px] text-fg-faint italic">
+        Backstop coordination dispatches corroborating posts from these
+        personas after the seed lands.
+      </p>
+    </Block>
+  );
+}
+
+function Stat({
   label,
   value,
   tone = "default",
-  small = false,
 }: {
   label: string;
-  value: string | number;
+  value: number;
   tone?: "default" | "pass" | "warn";
-  small?: boolean;
 }) {
   const valueColor =
     tone === "pass"
@@ -377,46 +372,28 @@ function Tally({
         ? "text-warn-fg"
         : "text-fg-default";
   return (
-    <div className="border border-border-subtle bg-bg-panel px-4 py-3">
-      <div className="text-[10px] uppercase tracking-[0.16em] text-fg-faint font-mono">
+    <div className="border border-border-subtle bg-bg-base px-3 py-2">
+      <div className="text-[10px] uppercase tracking-[0.14em] text-fg-faint font-mono">
         {label}
       </div>
-      <div
-        className={`mt-1 font-medium tabular-nums ${valueColor} ${small ? "text-[13px] font-mono" : "text-2xl"}`}
-      >
+      <div className={`mt-1 text-xl font-medium tabular-nums ${valueColor}`}>
         {value}
       </div>
     </div>
   );
 }
 
-function Block({ label, value }: { label: string; value: string }) {
+function Tags({ items }: { items: string[] }) {
   return (
-    <div className="grid grid-cols-[140px_1fr] gap-3 px-3 py-2">
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
-        {label}
-      </dt>
-      <dd className="text-fg-default leading-6">{value}</dd>
-    </div>
-  );
-}
-
-function Tags({ label, items }: { label: string; items: string[] }) {
-  return (
-    <div className="grid grid-cols-[140px_1fr] gap-3 px-3 py-2">
-      <dt className="text-fg-faint uppercase tracking-[0.14em] font-mono text-[10px]">
-        {label}
-      </dt>
-      <dd className="flex flex-wrap gap-1">
-        {items.map((t, i) => (
-          <span
-            key={i}
-            className="inline-block border border-border-default bg-bg-base px-2 py-[2px] text-[11px] text-fg-mono font-mono"
-          >
-            {t}
-          </span>
-        ))}
-      </dd>
+    <div className="flex flex-wrap gap-1">
+      {items.map((t, i) => (
+        <span
+          key={i}
+          className="inline-block border border-border-default bg-bg-base px-2 py-[2px] text-[11px] text-fg-mono font-mono"
+        >
+          {t}
+        </span>
+      ))}
     </div>
   );
 }

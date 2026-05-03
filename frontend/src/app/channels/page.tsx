@@ -1,5 +1,6 @@
 import { listChannels, type Channel } from "@/lib/foundry";
 import { NewChannelForm } from "@/components/channel-admin";
+import { PageHeader } from "@/components/surfaces";
 
 export const metadata = {
   title: "Mendacity — Channels",
@@ -11,49 +12,37 @@ export default async function ChannelsPage() {
   const nonSandbox = channels.filter((c) => !c.isSandbox);
 
   return (
-    <div className="flex-1 flex flex-col">
-      <section className="border-b border-border-subtle bg-bg-panel">
-        <div className="max-w-[1400px] mx-auto px-6 py-5">
-          <div className="font-mono text-[10px] tracking-[0.18em] text-classified uppercase">
-            Channel Allowlist Administration
-          </div>
-          <h1 className="mt-1 text-2xl text-fg-default tracking-wide font-medium">
-            Channels
-          </h1>
-          <p className="mt-2 text-[13px] text-fg-muted leading-6 max-w-[820px]">
-            Source of truth for delivery targets. Every mission resolves its
-            target through this allowlist before the engine accepts it.
-            Sandbox channels are creatable from this surface; promotion to
-            non-sandbox requires out-of-band legal sign-off and is performed
-            in Foundry directly.
-          </p>
-        </div>
-      </section>
-
-      <div className="max-w-[1400px] w-full mx-auto px-6 py-6 grid grid-cols-[1fr_400px] gap-6">
-        <div className="flex flex-col gap-6">
-          <ChannelTable
-            title="Sandbox channels"
-            subtitle={`${sandbox.length} active · usable as mission targets`}
-            channels={sandbox}
-            tone="pass"
-          />
-          {nonSandbox.length > 0 && (
+    <>
+      <PageHeader
+        eyebrow="Allowlist administration"
+        title="Channels"
+        brief="Delivery targets. Missions resolve their channel through this list before the engine accepts them. Sandbox-only from this surface."
+      />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-[1400px] w-full mx-auto px-6 py-4 grid grid-cols-[1fr_360px] gap-4">
+          <div className="flex flex-col gap-4">
             <ChannelTable
-              title="Non-sandbox channels"
-              subtitle="Read-only — promotion requires J2 + OGC sign-off"
-              channels={nonSandbox}
-              tone="fail"
+              title="Sandbox channels"
+              subtitle={`${sandbox.length} active`}
+              channels={sandbox}
+              tone="pass"
             />
-          )}
+            {nonSandbox.length > 0 && (
+              <ChannelTable
+                title="Non-sandbox"
+                subtitle="Read-only · J2 + OGC sign-off required"
+                channels={nonSandbox}
+                tone="fail"
+              />
+            )}
+          </div>
+          <aside className="flex flex-col gap-3">
+            <NewChannelForm />
+            <Reference />
+          </aside>
         </div>
-
-        <aside className="flex flex-col gap-4">
-          <NewChannelForm />
-          <Reference />
-        </aside>
       </div>
-    </div>
+    </>
   );
 }
 

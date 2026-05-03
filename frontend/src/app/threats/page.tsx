@@ -3,6 +3,7 @@ import {
   listThreatRecords,
   type ThreatRecord,
 } from "@/lib/threats";
+import { PageHeader } from "@/components/surfaces";
 
 export const metadata = {
   title: "Mendacity — Threat Library",
@@ -28,65 +29,46 @@ export default async function ThreatLibraryPage({
           : all;
 
   return (
-    <div className="flex-1 flex flex-col">
-      <section className="border-b border-border-subtle bg-bg-panel">
-        <div className="max-w-[1400px] mx-auto px-6 py-5">
-          <div className="font-mono text-[10px] tracking-[0.18em] text-classified uppercase">
-            Defensive — Triage Archive
+    <>
+      <PageHeader
+        eyebrow="Defensive — Triage archive"
+        title="Threat Library"
+        brief="Append-only record of every Intel Inbox triage. Records are immutable; correction goes via a new triage."
+      />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-[1400px] w-full mx-auto px-6 py-4 flex flex-col gap-4">
+          <div className="grid grid-cols-4 gap-2">
+            <Tally href="/threats" label="Total" value={counts.total} active={filter === "all"} />
+            <Tally
+              href="/threats?filter=synthetic"
+              label="Synthetic"
+              value={counts.synthetic}
+              active={filter === "synthetic"}
+              tone="fail"
+            />
+            <Tally
+              href="/threats?filter=inconclusive"
+              label="Inconclusive"
+              value={counts.inconclusive}
+              active={filter === "inconclusive"}
+              tone="warn"
+            />
+            <Tally
+              href="/threats?filter=authentic"
+              label="Authentic"
+              value={counts.authentic}
+              active={filter === "authentic"}
+              tone="pass"
+            />
           </div>
-          <h1 className="mt-1 text-2xl text-fg-default tracking-wide font-medium">
-            Threat Library
-          </h1>
-          <p className="mt-2 text-[13px] text-fg-muted leading-6 max-w-[820px]">
-            Append-only record of every defensive triage performed on the
-            Intel Inbox. Source of truth:{" "}
-            <span className="font-mono">
-              missions/threat-library/triage-log.ndjson
-            </span>
-            . Records are immutable; correction goes via a new triage with
-            an updated submission, not by editing prior verdicts.
-          </p>
+          {filtered.length === 0 ? (
+            <EmptyLibrary filter={filter} totalAll={counts.total} />
+          ) : (
+            <ThreatTable records={filtered} />
+          )}
         </div>
-      </section>
-
-      <div className="max-w-[1400px] w-full mx-auto px-6 py-6 flex flex-col gap-6">
-        <div className="grid grid-cols-4 gap-2">
-          <Tally
-            href="/threats"
-            label="Total triages"
-            value={counts.total}
-            active={filter === "all"}
-          />
-          <Tally
-            href="/threats?filter=synthetic"
-            label="Suspected synthetic"
-            value={counts.synthetic}
-            active={filter === "synthetic"}
-            tone="fail"
-          />
-          <Tally
-            href="/threats?filter=inconclusive"
-            label="Inconclusive"
-            value={counts.inconclusive}
-            active={filter === "inconclusive"}
-            tone="warn"
-          />
-          <Tally
-            href="/threats?filter=authentic"
-            label="Suspected authentic"
-            value={counts.authentic}
-            active={filter === "authentic"}
-            tone="pass"
-          />
-        </div>
-
-        {filtered.length === 0 ? (
-          <EmptyLibrary filter={filter} totalAll={counts.total} />
-        ) : (
-          <ThreatTable records={filtered} />
-        )}
       </div>
-    </div>
+    </>
   );
 }
 
