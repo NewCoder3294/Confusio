@@ -6,9 +6,10 @@ import {
   type PersonaActivity,
 } from "@/lib/personas";
 import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
+import { NewAgentTrigger } from "@/components/new-agent-trigger";
 
 export const metadata = {
-  title: "Mendacity — Personas",
+  title: "Mendacity — Agents",
 };
 
 const EMPTY_ACTIVITY: PersonaActivity = {
@@ -33,13 +34,20 @@ export default async function PersonasPage({
   const selected =
     personas.find((p) => p.id === selectedId) ?? personas[0] ?? null;
   const personasById = new Map(personas.map((p) => [p.id, p]));
+  const agentLite = personas.map((p) => ({
+    id: p.id,
+    name: p.name,
+    language: p.language,
+    geoAnchor: p.geoAnchor,
+  }));
 
   return (
     <>
       <PageHeader
-        eyebrow="Persona library"
-        title="Fabricated Personas"
-        brief="Stable identities used for the seed post and the corroborating cast that follows. Each persona has a voice profile and a graph of who it knows."
+        eyebrow="Agent library"
+        title="Fabricated Agents"
+        brief="Stable identities used for the seed post and the corroborating cast that follows. Each agent has a voice profile and a graph of who it knows."
+        actions={<NewAgentTrigger agents={agentLite} />}
       />
 
       <div className="flex-1 min-h-0 w-full mx-auto px-6 py-3 grid grid-cols-[280px_1fr] gap-3">
@@ -58,9 +66,10 @@ export default async function PersonasPage({
             personasById={personasById}
           />
         ) : (
-          <Card title="No persona selected">
+          <Card title="No agent selected">
             <div className="px-4 py-8 text-fg-faint italic text-[12px] text-center">
-              Pick a persona from the left.
+              Pick an agent from the left, or create one with{" "}
+              <span className="font-mono">+ New agent</span>.
             </div>
           </Card>
         )}
@@ -83,7 +92,7 @@ function PersonaList({
   if (personas.length === 0) {
     return (
       <div className="px-4 py-6 text-fg-faint italic text-[12px]">
-        No personas configured.
+        No agents configured.
       </div>
     );
   }
@@ -324,7 +333,7 @@ function NetworkPanel({
     return (
       <Block>
         <p className="text-[12px] text-fg-faint italic">
-          {persona.name} operates alone — no corroborating personas declared.
+          {persona.name} operates alone — no corroborating agents declared.
         </p>
       </Block>
     );
@@ -350,7 +359,7 @@ function NetworkPanel({
       </div>
       <p className="mt-3 text-[10px] text-fg-faint italic">
         Backstop coordination dispatches corroborating posts from these
-        personas after the seed lands.
+        agents after the seed lands.
       </p>
     </Block>
   );

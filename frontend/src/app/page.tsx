@@ -15,6 +15,7 @@ import { DetectorPill } from "@/components/detector-pill";
 import { Card, Tabs, Block, Row, PageHeader } from "@/components/surfaces";
 import { DispatchButton } from "@/components/dispatch-button";
 import { AutoRefresh } from "@/components/auto-refresh";
+import { ArtifactImage } from "@/components/artifact-image";
 
 type ArtifactVariant = "source" | "stripped" | "clean";
 
@@ -425,19 +426,19 @@ function ArtifactPanel({
 
   return (
     <>
-      <div className="bg-bg-base flex items-center justify-center overflow-hidden border-b border-border-subtle h-[320px]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={
-            artifact.artifactId.startsWith("local:")
-              ? `/api/campaign-image/${encodeURIComponent(artifact.artifactId.slice(6))}`
-              : `/api/artifact/${encodeURIComponent(artifact.artifactId)}?variant=${variant}`
-          }
-          alt={`Mission ${mission.missionId} artifact (${variant})`}
-          className="max-h-full max-w-full object-contain"
-          style={{ imageOrientation: "from-image" }}
+      {artifact.artifactId.startsWith("local:") ? (
+        <ArtifactImage
+          localMissionId={artifact.artifactId.slice(6)}
+          prompt={artifact.prompt}
+          alt={`Mission ${mission.missionId} artifact`}
         />
-      </div>
+      ) : (
+        <ArtifactImage
+          artifactId={artifact.artifactId}
+          variant={variant}
+          alt={`Mission ${mission.missionId} artifact (${variant})`}
+        />
+      )}
       <Block>
         <div className="flex items-baseline justify-between gap-3">
           <div>

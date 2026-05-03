@@ -46,7 +46,7 @@ function NavBar() {
         <div className="flex items-center gap-1">
           <NavLink href="/">Mission Board</NavLink>
           <NavLink href="/backstop">Backstop</NavLink>
-          <NavLink href="/personas">Personas</NavLink>
+          <NavLink href="/personas">Agents</NavLink>
           <NavLink href="/channels">Channels</NavLink>
           <NavLink href="/audit">Audit</NavLink>
           <NavLink href="/runbook">Runbook</NavLink>
