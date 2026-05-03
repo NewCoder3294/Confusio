@@ -67,3 +67,15 @@ class PersonaAgent:
     async def post(self, content: str, channel: str) -> PostResult:
         """Send via Telethon with FloodWait backoff. Operator-approved content only."""
         return await send_with_backoff(self._tg, channel, content)
+
+    async def post_image(
+        self, image_path: str, caption: str, channel: str
+    ) -> PostResult:
+        """Send an image with caption (used for seed posts that ship the
+        generated artifact alongside the persona's text)."""
+        await self._tg.start()
+        try:
+            await self._tg.join_channel(channel)
+        except Exception:
+            pass
+        return await self._tg.send_image(channel, image_path, caption=caption)

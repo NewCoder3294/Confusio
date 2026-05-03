@@ -59,6 +59,39 @@ async function spawnImageGen(
   child.unref();
 }
 
+async function spawnProcessUploadedArtifact(
+  missionId: string,
+  prompt: string,
+  channel: string,
+): Promise<void> {
+  await mkdir(GENERATED_DIR, { recursive: true });
+  const outPath = path.join(GENERATED_DIR, `${missionId}.png`);
+  // Operator uploaded the raw artifact themselves. Run only the
+  // process_artifact stage (steg + EXIF transplant) on it.
+  const cmd = [
+    PYTHON_BIN,
+    "-m",
+    "mendacity.process_artifact",
+    "--mission-id",
+    missionId,
+    "--source",
+    outPath,
+    "--out-dir",
+    GENERATED_DIR,
+    "--channel",
+    JSON.stringify(channel),
+    "--prompt",
+    JSON.stringify(prompt),
+  ].join(" ");
+  const child = spawn("sh", ["-c", cmd], {
+    cwd: REPO_ROOT,
+    env: { ...process.env },
+    detached: true,
+    stdio: "ignore",
+  });
+  child.unref();
+}
+
 const MID_RE = /^[A-Za-z0-9][A-Za-z0-9_\-]{0,63}$/;
 
 type Input = {
@@ -169,12 +202,21 @@ async function validate(
   // from this UI per PRODUCT.md.
   const dryRun = true;
 
+  // Sandbox channel display names like "@hackathon_sandbox_alpha" don't
+  // resolve as Telegram entities. Translate any sandbox channel to the
+  // single real test invite link so Telethon can send. The Foundry channel
+  // registry is the user-facing name; the URL below is the wire address.
+  const SANDBOX_TELEGRAM_URL = "https://t.me/+2la3xpus5vRmYmIx";
+  const wireChannel = channel.isSandbox
+    ? SANDBOX_TELEGRAM_URL
+    : channel.displayName || channel.channel_id;
+
   return {
     ok: true,
     value: {
       missionId,
       operator,
-      targetChannel: channel.displayName || channel.channel_id,
+      targetChannel: wireChannel,
       audienceProfile,
       seedPersona,
       corroborators,
@@ -260,13 +302,38 @@ function corroboratorPostText(
 }
 
 export async function POST(req: Request) {
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+  // Accept either JSON (prompt-only) or multipart form (uploaded image).
+  const contentType = req.headers.get("content-type") || "";
+  let input: Input;
+  let uploadedImage: { bytes: Buffer; mime: string; filename: string } | null = null;
+  if (contentType.includes("multipart/form-data")) {
+    const fd = await req.formData();
+    const file = fd.get("artifactImage");
+    if (file instanceof File) {
+      const buf = Buffer.from(await file.arrayBuffer());
+      uploadedImage = {
+        bytes: buf,
+        mime: file.type || "image/png",
+        filename: file.name || "artifact.png",
+      };
+    }
+    const corrIds = fd.getAll("corroboratorPersonaIds").map((v) => String(v));
+    input = {
+      operator: fd.get("operator")?.toString() || undefined,
+      targetChannel: fd.get("targetChannel")?.toString() || undefined,
+      audienceProfile: fd.get("audienceProfile")?.toString() || undefined,
+      seedPersonaId: fd.get("seedPersonaId")?.toString() || undefined,
+      corroboratorPersonaIds: corrIds,
+      artifactPrompt: fd.get("artifactPrompt")?.toString() || undefined,
+    };
+  } else {
+    try {
+      input = (await req.json()) as Input;
+    } catch {
+      return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+    }
   }
-  const valid = await validate(body as Input);
+  const valid = await validate(input);
   if (!valid.ok) return Response.json({ error: valid.error }, { status: 400 });
   const v = valid.value;
 
@@ -286,45 +353,15 @@ export async function POST(req: Request) {
     );
   }
 
-  // Spin up the corresponding social-media attack chain. Seed posts
-  // immediately; corroborators are scheduled with a stagger so the timeline
-  // visibly progresses.
+  // Insert the campaign with roster only — the orchestrator daemon
+  // generates seed + corroborator content via LLM and posts to Telegram
+  // (image attached for the seed). No pre-faked posts.
   const campaignId = `c_${v.missionId}`;
-  // Short stagger so the mission visibly lands and completes within the
-  // demo refresh window — operator sees corroborators flip in quickly,
-  // then status moves to completed. Prevents a backlog of "executing"
-  // missions piling up when the operator dispatches several in sequence.
   const delayRange: [number, number] = [5, 15];
-  const now = Date.now();
-  const posts: DispatchPost[] = [];
-  const roster: Record<string, "seed" | "corroborator"> = {};
-
-  posts.push({
-    id: `p_${crypto.randomBytes(4).toString("hex")}`,
-    personaId: v.seedPersona.id,
-    role: "seed",
-    generatedContent: seedPostText(v.seedPersona, v.artifactPrompt),
-    postedAt: new Date(now).toISOString(),
-    status: "posted",
-  });
-  roster[v.seedPersona.id] = "seed";
-
-  for (let i = 0; i < v.corroborators.length; i++) {
-    const c = v.corroborators[i];
-    const cumulative = Array.from({ length: i + 1 }, () =>
-      delayRange[0] +
-      Math.random() * (delayRange[1] - delayRange[0]),
-    ).reduce((a, b) => a + b, 0);
-    posts.push({
-      id: `p_${crypto.randomBytes(4).toString("hex")}`,
-      personaId: c.id,
-      role: "corroborator",
-      generatedContent: corroboratorPostText(c, v.seedPersona.name),
-      postedAt: new Date(now + cumulative * 1000).toISOString(),
-      status: "pending_approval",
-    });
-    roster[c.id] = "corroborator";
-  }
+  const roster: Record<string, "seed" | "corroborator"> = {
+    [v.seedPersona.id]: "seed",
+  };
+  for (const c of v.corroborators) roster[c.id] = "corroborator";
 
   let campaignError: string | null = null;
   try {
@@ -336,19 +373,29 @@ export async function POST(req: Request) {
       createdBy: v.operator,
       delayRangeSeconds: delayRange,
       roster,
-      posts,
+      posts: [],
     });
   } catch (e) {
     campaignError = (e as Error).message.slice(0, 300);
   }
 
-  // Fire-and-forget image generation. The image lands in
-  // missions/generated/<missionId>.png a few seconds later; the Backstop
-  // page polls and shows it once present.
+  // Either generate the image, or use the operator-uploaded one.
+  // In both cases the post-processing chain (steg + EXIF transplant) runs.
   try {
-    await spawnImageGen(v.missionId, v.artifactPrompt, v.targetChannel);
+    if (uploadedImage) {
+      await mkdir(GENERATED_DIR, { recursive: true });
+      const outPath = path.join(GENERATED_DIR, `${v.missionId}.png`);
+      await writeFile(outPath, new Uint8Array(uploadedImage.bytes));
+      await spawnProcessUploadedArtifact(
+        v.missionId,
+        v.artifactPrompt,
+        v.targetChannel,
+      );
+    } else {
+      await spawnImageGen(v.missionId, v.artifactPrompt, v.targetChannel);
+    }
   } catch {
-    // image generation is best-effort; campaign still dispatches.
+    // image step is best-effort; campaign still dispatches.
   }
 
   revalidatePath("/");

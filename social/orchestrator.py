@@ -311,11 +311,11 @@ class Orchestrator:
             await self.storage.mark_schedule_generated(campaign_id, persona_id, role)
 
     async def _auto_approve_sandbox_posts(self) -> None:
-        """Flip pending_approval → approved for non-seed posts on sandbox channels.
+        """Flip pending_approval → approved for sandbox-channel posts.
 
-        Only runs when ``auto_approve_sandbox`` is enabled. Seed posts always
-        require manual approval to preserve the audit trail on the actual
-        mission artifact; corroborator/backstop posts skip the gate.
+        Only runs when ``auto_approve_sandbox`` is enabled. In sandbox mode
+        seed posts are also auto-approved so the operator console can drive
+        the full cascade end-to-end without manual gating.
         """
         for campaign in await self.storage.list_active_campaigns():
             if campaign.status != "running":
@@ -326,8 +326,6 @@ class Orchestrator:
                 campaign.id, statuses=("pending_approval",)
             )
             for post in pending:
-                if post.role == "seed":
-                    continue
                 await self.storage.update_post_decision(
                     post.id,
                     status="approved",
@@ -363,7 +361,15 @@ class Orchestrator:
                     if join_key not in self._joined:
                         await agent.join(campaign.channel)
                         self._joined.add(join_key)
-                    result = await agent.post(post.final_content, campaign.channel)
+                    image_path = self._seed_image_for(campaign, post)
+                    if image_path is not None:
+                        result = await agent.post_image(
+                            str(image_path), post.final_content, campaign.channel
+                        )
+                    else:
+                        result = await agent.post(
+                            post.final_content, campaign.channel
+                        )
                 except RateLimitedError as exc:
                     await self.storage.update_post_failed(
                         post.id, error=f"rate limited after retries: {exc.seconds}s"
@@ -426,6 +432,25 @@ class Orchestrator:
                 )
             )
         return out
+
+    def _seed_image_for(self, campaign: Campaign, post: GeneratedPost) -> Path | None:
+        """Return the artifact image path to attach when sending `post`, or
+        None for a text-only send. Only seed posts ride on the artifact image;
+        corroborators reply in-thread (text only). The image is searched for
+        by mission id (campaign.id without the leading ``c_``) under
+        ``missions/generated/`` — preferring the EXIF-transplanted JPEG, then
+        the raw PNG."""
+        if post.role != "seed":
+            return None
+        mission_id = (
+            campaign.id[2:] if campaign.id.startswith("c_") else campaign.id
+        )
+        gen_dir = Path(__file__).resolve().parent.parent / "missions" / "generated"
+        for ext in ("jpg", "png"):
+            candidate = gen_dir / f"{mission_id}.{ext}"
+            if candidate.exists() and candidate.stat().st_size > 0:
+                return candidate
+        return None
 
     def _seed_persona(self, campaign: Campaign) -> str:
         seeds = [pid for pid, role in campaign.roster.items() if role == "seed"]
