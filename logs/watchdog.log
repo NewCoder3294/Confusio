@@ -414,3 +414,4 @@
 [2026-05-04 13:59:33] DONE: all corroborators settled. posted=111 seed_pending=0
 [2026-05-04 14:04:33] cycle=200 posted=111 approved=0 pending=0 failed=0
 [2026-05-04 14:04:33] DONE: all corroborators settled. posted=111 seed_pending=0
+[2026-05-04 14:09:33] watchdog exiting (cycle=200)
